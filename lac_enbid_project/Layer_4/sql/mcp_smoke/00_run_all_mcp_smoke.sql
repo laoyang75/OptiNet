@@ -1,0 +1,8 @@
+-- Layer_4 MCP smoke runner (no DO $$ blocks)
+--
+-- Why: DBHub MCP executor may not support dollar-quoted DO blocks; this smoke variant uses plain SQL only.
+--
+-- Run these files in order:
+-- 1) `lac_enbid_project/Layer_4/sql/mcp_smoke/40_step40_cell_gps_filter_fill__mcp_smoke.sql`
+-- 2) `lac_enbid_project/Layer_4/sql/mcp_smoke/41_step41_cell_signal_fill__mcp_smoke.sql`
+-- 3) `lac_enbid_project/Layer_4/sql/mcp_smoke/42_step42_compare__mcp_smoke.sql`

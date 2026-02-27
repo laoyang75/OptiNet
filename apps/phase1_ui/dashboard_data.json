@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "project": "Phase1 可视化研究平台",
+    "db_name": "ip_loc2",
+    "snapshot_ts_utc": "2026-02-26T04:54:17.520Z",
+    "run_id": "phase1_20260226_125354",
+    "status": "s0_completed"
+  },
+  "row_counts": {
+    "l0_rows": 118519386,
+    "l2_rows": 21788648,
+    "l3_bs_rows": 138121,
+    "l4_final_rows": 30491963,
+    "l5_lac_rows": 878,
+    "l5_bs_rows": 163778,
+    "l5_cell_rows": 493651
+  },
+  "gps_metrics": {
+    "row_cnt": 30491963,
+    "gps_missing_cnt": 341238,
+    "gps_drift_cnt": 3823239,
+    "gps_fill_from_bs_cnt": 3959928,
+    "gps_fill_from_bs_severe_collision_cnt": 2867,
+    "gps_fill_from_risk_bs_cnt": 82255,
+    "gps_not_filled_cnt": 119427,
+    "severe_collision_row_cnt": 2867,
+    "bs_id_lt_256_row_cnt": 2102
+  },
+  "signal_metrics": {
+    "need_fill_row_cnt": 30491963,
+    "filled_by_cell_nearest_row_cnt": 30140602,
+    "filled_by_bs_top_cell_row_cnt": 166068,
+    "missing_field_before_sum": 73150482,
+    "missing_field_after_sum": 63561699,
+    "filled_field_sum": 9588783
+  },
+  "anomaly_counts": {
+    "bs": {
+      "collision": 8277,
+      "severe_collision": 21,
+      "dynamic_cell": 5,
+      "bs_id_lt_256": 36,
+      "multi_operator_shared": 51387
+    },
+    "cell": {
+      "collision": 36244,
+      "severe_collision": 51,
+      "dynamic_cell": 5,
+      "bs_id_lt_256": 36,
+      "multi_operator_shared": 163667
+    }
+  },
+  "exposure_contract": {
+    "cn_contract_cols": 8,
+    "en_contract_cols": 8
+  },
+  "gate_results": [
+    {
+      "gate_code": "step40_vs_final_rows",
+      "gate_name": "行数守恒：Step40 vs Final",
+      "actual_value": 30491963,
+      "expected_value": 30491963,
+      "diff_value": 0,
+      "pass": true
+    },
+    {
+      "gate_code": "gps_not_filled_vs_fact",
+      "gate_name": "对账：Not_Filled 指标一致",
+      "actual_value": 119427,
+      "expected_value": 119427,
+      "diff_value": 0,
+      "pass": true
+    },
+    {
+      "gate_code": "severe_fill_vs_fact",
+      "gate_name": "对账：Severe Fill 指标一致",
+      "actual_value": 2867,
+      "expected_value": 2867,
+      "diff_value": 0,
+      "pass": true
+    },
+    {
+      "gate_code": "bs_id_lt_256_vs_fact",
+      "gate_name": "对账：bs_id_lt_256 指标一致",
+      "actual_value": 2102,
+      "expected_value": 2102,
+      "diff_value": 0,
+      "pass": true
+    },
+    {
+      "gate_code": "invalid_lac_l5_total",
+      "gate_name": "无效LAC泄漏（L5三表）",
+      "actual_value": 0,
+      "expected_value": 0,
+      "diff_value": 0,
+      "pass": true
+    },
+    {
+      "gate_code": "contract_fields_cn",
+      "gate_name": "Layer5字段存在性：中文底表",
+      "actual_value": 8,
+      "expected_value": 8,
+      "diff_value": 0,
+      "pass": true
+    },
+    {
+      "gate_code": "contract_fields_en",
+      "gate_name": "Layer5字段存在性：EN视图",
+      "actual_value": 8,
+      "expected_value": 8,
+      "diff_value": 0,
+      "pass": true
+    }
+  ],
+  "closure_note": {
+    "dynamic_all_scope_l4": 7,
+    "dynamic_filtered_scope_l4": 5,
+    "dynamic_l5": 5,
+    "explain": "按 Step52 过滤口径（运营商+制式+有效键）闭环一致。"
+  }
+}

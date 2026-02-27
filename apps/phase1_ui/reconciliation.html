@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 对账页</title>
+  <link rel="stylesheet" href="./ui_base.css" />
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 对账页</h1>
+      <p class="sub">核对汇总指标与事实口径，快速确认差值是否可解释。</p>
+      <div class="hero-actions">
+        <a class="link-btn" href="./dashboard.html">首页看板</a>
+        <a class="link-btn" href="./layer.html">分层剖面页</a>
+        <a class="link-btn" href="./exposure.html">异常暴露页</a>
+        <a class="link-btn" href="./issues.html">问题闭环页</a>
+        <a class="link-btn" href="./patches.html">补丁日志页</a>
+        <a class="link-btn" href="./glossary.html">术语缩写页</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">查询条件</h2>
+    <section class="card controls">
+      <div class="control-item">
+        <label for="run-id">run_id（可选）</label>
+        <input id="run-id" type="text" placeholder="留空=默认最新批次" />
+      </div>
+      <div class="control-item">
+        <label for="page">page</label>
+        <input id="page" type="text" value="1" />
+      </div>
+      <div class="control-item">
+        <label for="page-size">page_size</label>
+        <select id="page-size">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>&nbsp;</label>
+        <button id="query-btn" class="btn" type="button">查询对账结果</button>
+      </div>
+      <div class="control-item">
+        <label>通过情况</label>
+        <div id="pass-pill" class="pill">等待查询</div>
+      </div>
+      <div class="control-item">
+        <label>数据源</label>
+        <div id="source-pill" class="pill">未查询</div>
+      </div>
+      <div class="control-item">
+        <label>分页状态</label>
+        <div id="page-pill" class="pill">未查询</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">对账明细</h2>
+    <section class="card">
+      <table class="table" id="checks-table"></table>
+    </section>
+  </div>
+
+  <script src="./ui_common.js"></script>
+  <script>
+    function renderChecks(data, sourceLabel) {
+      const checks = data.checks || [];
+      const passCnt = checks.filter((c) => c.pass_flag).length;
+      const page = Number(data.page || 1);
+      const total = Number(data.total == null ? checks.length : data.total);
+      const totalPages = Number(data.total_pages || 0);
+      document.getElementById("pass-pill").textContent = `本页通过 ${passCnt}/${checks.length}`;
+      document.getElementById("source-pill").textContent = sourceLabel;
+      document.getElementById("page-pill").textContent = `总计 ${total} 条｜第 ${page}/${totalPages || 1} 页`;
+
+      const table = document.getElementById("checks-table");
+      if (!checks.length) {
+        table.innerHTML = `<tbody><tr><td class="empty">暂无对账结果。</td></tr></tbody>`;
+        return;
+      }
+
+      table.innerHTML = `
+        <thead><tr><th>对账项</th><th>实际值(LHS)</th><th>期望值(RHS)</th><th>差值</th><th>状态</th></tr></thead>
+        <tbody>
+          ${checks.map((c) => `
+            <tr>
+              <td>${Phase1UI.localizeTerms(c.check_name || c.check_code || "-")}</td>
+              <td>${Phase1UI.nf(c.lhs_value)}</td>
+              <td>${Phase1UI.nf(c.rhs_value)}</td>
+              <td>${Phase1UI.nf(c.diff_value)}</td>
+              <td class="${c.pass_flag ? "pass" : "fail"}">${c.pass_flag ? "通过" : "未通过"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+    }
+
+    async function queryReconciliation() {
+      const runId = document.getElementById("run-id").value.trim();
+      const page = Number(document.getElementById("page").value || "1");
+      const pageSize = Number(document.getElementById("page-size").value || "100");
+      document.getElementById("pass-pill").textContent = "查询中...";
+      document.getElementById("source-pill").textContent = "查询中...";
+      Phase1UI.writeQuery({ run_id: runId, page, page_size: pageSize });
+
+      const apiData = await Phase1UI.fetchFromApi("/api/phase1/reconciliation", { run_id: runId, page, page_size: pageSize });
+      if (apiData) {
+        renderChecks(apiData, "API");
+        Phase1UI.updateNavLinks({ run_id: apiData.run_id || runId });
+        return;
+      }
+
+      const snapshot = await Phase1UI.loadLocalSnapshot();
+      const fallback = Phase1UI.snapshotToReconciliation(snapshot, runId, page, pageSize);
+      if (fallback) {
+        renderChecks(fallback, "本地快照（dashboard_data.json）");
+        Phase1UI.updateNavLinks({ run_id: fallback.run_id || runId });
+        return;
+      }
+
+      document.getElementById("pass-pill").textContent = "查询失败";
+      document.getElementById("source-pill").textContent = "无可用数据";
+      document.getElementById("checks-table").innerHTML = `<tbody><tr><td class="empty">API 与本地快照均不可用。</td></tr></tbody>`;
+    }
+
+    document.getElementById("query-btn").addEventListener("click", queryReconciliation);
+    (() => {
+      const q = Phase1UI.readQuery();
+      if (q.run_id) document.getElementById("run-id").value = q.run_id;
+      if (q.page) document.getElementById("page").value = q.page;
+      if (q.page_size) document.getElementById("page-size").value = q.page_size;
+      Phase1UI.updateNavLinks({ run_id: q.run_id || "" });
+    })();
+    queryReconciliation();
+  </script>
+</body>
+</html>

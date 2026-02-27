@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 分层剖面</title>
+  <link rel="stylesheet" href="./ui_base.css" />
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 分层剖面页</h1>
+      <p class="sub">按 Layer 查看输入输出、质量指标与规则命中，便于分层定位问题。</p>
+      <div class="hero-actions">
+        <a class="link-btn" href="./dashboard.html">首页看板</a>
+        <a class="link-btn" href="./reconciliation.html">对账页</a>
+        <a class="link-btn" href="./exposure.html">异常暴露页</a>
+        <a class="link-btn" href="./issues.html">问题闭环页</a>
+        <a class="link-btn" href="./patches.html">补丁日志页</a>
+        <a class="link-btn" href="./glossary.html">术语缩写页</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">查询条件</h2>
+    <section class="card controls">
+      <div class="control-item">
+        <label for="run-id">run_id（可选）</label>
+        <input id="run-id" type="text" placeholder="留空=默认最新批次" />
+      </div>
+      <div class="control-item">
+        <label for="layer-id">layer_id</label>
+        <select id="layer-id">
+          <option value="L0">L0</option>
+          <option value="L2">L2</option>
+          <option value="L3">L3</option>
+          <option value="L4_Final" selected>L4_Final</option>
+          <option value="L5_LAC">L5_LAC</option>
+          <option value="L5_BS">L5_BS</option>
+          <option value="L5_CELL">L5_CELL</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label for="page">page</label>
+        <input id="page" type="text" value="1" />
+      </div>
+      <div class="control-item">
+        <label for="page-size">page_size</label>
+        <select id="page-size">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>&nbsp;</label>
+        <button id="query-btn" class="btn" type="button">查询分层剖面</button>
+      </div>
+      <div class="control-item">
+        <label>当前状态</label>
+        <div id="state-pill" class="pill">等待查询</div>
+      </div>
+      <div class="control-item">
+        <label>分页状态</label>
+        <div id="page-pill" class="pill">未查询</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">层快照</h2>
+    <section class="two-col">
+      <article class="card">
+        <table class="table">
+          <tbody id="snap-body"></tbody>
+        </table>
+      </article>
+      <article class="card">
+        <div id="source-note" class="note">数据源：未查询</div>
+      </article>
+    </section>
+
+    <h2 class="section-title">质量指标（Quality Metrics）</h2>
+    <section class="card">
+      <table class="table" id="metrics-table"></table>
+    </section>
+
+    <h2 class="section-title">规则命中（Rule Hits）</h2>
+    <section class="card">
+      <table class="table" id="rules-table"></table>
+    </section>
+  </div>
+
+  <script src="./ui_common.js"></script>
+  <script>
+    function renderLayer(data, sourceLabel) {
+      document.getElementById("state-pill").textContent = `run_id=${data.run_id} / layer=${data.layer_id}`;
+      document.getElementById("source-note").textContent = `数据源：${sourceLabel}`;
+      const qmTotal = Number(data.quality_metric_total || 0);
+      const qmPages = Number(data.quality_metric_total_pages || 0);
+      const rhTotal = Number(data.rule_hit_total || 0);
+      const rhPages = Number(data.rule_hit_total_pages || 0);
+      const page = Number(data.page || 1);
+      document.getElementById("page-pill").textContent =
+        `当前第 ${page} 页｜质量指标 ${qmTotal} 条(${qmPages || 1}页)｜规则命中 ${rhTotal} 条(${rhPages || 1}页)`;
+
+      const s = data.snapshot || {};
+      const snapBody = document.getElementById("snap-body");
+      snapBody.innerHTML = [
+        ["run_id", data.run_id],
+        ["layer_id", data.layer_id],
+        ["输入行数(input_rows)", Phase1UI.nf(s.input_rows)],
+        ["输出行数(output_rows)", Phase1UI.nf(s.output_rows)],
+        ["门禁状态(pass_flag)", s.pass_flag ? "通过" : "未通过"]
+      ].map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("");
+
+      const metrics = data.quality_metrics || [];
+      const metricsTable = document.getElementById("metrics-table");
+      if (!metrics.length) {
+        metricsTable.innerHTML = `<tbody><tr><td class="empty">当前层无质量指标。</td></tr></tbody>`;
+      } else {
+        metricsTable.innerHTML = `
+          <thead><tr><th>指标码</th><th>指标值</th><th>单位</th></tr></thead>
+          <tbody>
+            ${metrics.map((m) => `
+              <tr>
+                <td>${Phase1UI.localizeTerms(m.metric_code)}</td>
+                <td>${Phase1UI.nf(m.metric_value)}</td>
+                <td>${m.unit || "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      }
+
+      const rules = data.rule_hits || [];
+      const rulesTable = document.getElementById("rules-table");
+      if (!rules.length) {
+        rulesTable.innerHTML = `<tbody><tr><td class="empty">当前层无规则命中数据。</td></tr></tbody>`;
+      } else {
+        rulesTable.innerHTML = `
+          <thead><tr><th>规则码</th><th>命中行数</th><th>命中占比</th></tr></thead>
+          <tbody>
+            ${rules.map((r) => `
+              <tr>
+                <td>${Phase1UI.localizeTerms(r.rule_code)}</td>
+                <td>${Phase1UI.nf(r.hit_rows)}</td>
+                <td>${r.hit_ratio == null ? "-" : String(r.hit_ratio)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      }
+    }
+
+    async function queryLayer() {
+      const runId = document.getElementById("run-id").value.trim();
+      const layerId = document.getElementById("layer-id").value;
+      const page = Number(document.getElementById("page").value || "1");
+      const pageSize = Number(document.getElementById("page-size").value || "100");
+      document.getElementById("state-pill").textContent = "查询中...";
+      Phase1UI.writeQuery({
+        run_id: runId,
+        layer_id: layerId,
+        page: page,
+        page_size: pageSize
+      });
+
+      const apiData = await Phase1UI.fetchFromApi(`/api/phase1/layer/${encodeURIComponent(layerId)}`, {
+        run_id: runId,
+        page: page,
+        page_size: pageSize
+      });
+      if (apiData) {
+        renderLayer(apiData, "API");
+        Phase1UI.updateNavLinks({ run_id: apiData.run_id || runId });
+        return;
+      }
+
+      const snapshot = await Phase1UI.loadLocalSnapshot();
+      const fallback = Phase1UI.snapshotToLayer(snapshot, layerId, runId, page, pageSize);
+      if (fallback) {
+        renderLayer(fallback, "本地快照（dashboard_data.json）");
+        Phase1UI.updateNavLinks({ run_id: fallback.run_id || runId });
+        return;
+      }
+
+      document.getElementById("state-pill").textContent = "查询失败";
+      document.getElementById("source-note").textContent = "API 与本地快照均不可用。";
+    }
+
+    document.getElementById("query-btn").addEventListener("click", queryLayer);
+    (() => {
+      const q = Phase1UI.readQuery();
+      if (q.run_id) document.getElementById("run-id").value = q.run_id;
+      if (q.layer_id) document.getElementById("layer-id").value = q.layer_id;
+      if (q.page) document.getElementById("page").value = q.page;
+      if (q.page_size) document.getElementById("page-size").value = q.page_size;
+      Phase1UI.updateNavLinks({ run_id: q.run_id || "" });
+    })();
+    queryLayer();
+  </script>
+</body>
+</html>

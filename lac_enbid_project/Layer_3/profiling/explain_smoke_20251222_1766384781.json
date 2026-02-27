@@ -1,0 +1,23 @@
+SET
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ true
+(1 row)
+
+ set_config 
+------------
+ 2025-12-01
+(1 row)
+
+ set_config 
+------------
+ 46000
+(1 row)
+
+DROP TABLE
+DROP TABLE

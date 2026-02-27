@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 异常暴露页</title>
+  <link rel="stylesheet" href="./ui_base.css" />
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 异常暴露矩阵页</h1>
+      <p class="sub">查看关键异常字段在 BS/CELL 画像中的暴露情况和对象占比。</p>
+      <div class="hero-actions">
+        <a class="link-btn" href="./dashboard.html">首页看板</a>
+        <a class="link-btn" href="./layer.html">分层剖面页</a>
+        <a class="link-btn" href="./reconciliation.html">对账页</a>
+        <a class="link-btn" href="./issues.html">问题闭环页</a>
+        <a class="link-btn" href="./patches.html">补丁日志页</a>
+        <a class="link-btn" href="./glossary.html">术语缩写页</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">查询条件</h2>
+    <section class="card controls">
+      <div class="control-item">
+        <label for="run-id">run_id（可选）</label>
+        <input id="run-id" type="text" placeholder="留空=默认最新批次" />
+      </div>
+      <div class="control-item">
+        <label for="obj-level">对象层级(object_level)</label>
+        <select id="obj-level">
+          <option value="">全部</option>
+          <option value="BS">BS</option>
+          <option value="CELL">CELL</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label for="page">page</label>
+        <input id="page" type="text" value="1" />
+      </div>
+      <div class="control-item">
+        <label for="page-size">page_size</label>
+        <select id="page-size">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>&nbsp;</label>
+        <button id="query-btn" class="btn" type="button">查询暴露矩阵</button>
+      </div>
+      <div class="control-item">
+        <label>数据源</label>
+        <div id="source-pill" class="pill">未查询</div>
+      </div>
+      <div class="control-item">
+        <label>分页状态</label>
+        <div id="page-pill" class="pill">未查询</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">暴露明细</h2>
+    <section class="card">
+      <table class="table" id="exposure-table"></table>
+    </section>
+  </div>
+
+  <script src="./ui_common.js"></script>
+  <script>
+    function renderExposure(data, sourceLabel) {
+      document.getElementById("source-pill").textContent = sourceLabel;
+      const rows = data.rows || [];
+      const page = Number(data.page || 1);
+      const total = Number(data.total == null ? rows.length : data.total);
+      const totalPages = Number(data.total_pages || 0);
+      document.getElementById("page-pill").textContent = `总计 ${total} 条｜第 ${page}/${totalPages || 1} 页`;
+      const table = document.getElementById("exposure-table");
+
+      if (!rows.length) {
+        table.innerHTML = `<tbody><tr><td class="empty">当前条件下没有暴露记录。</td></tr></tbody>`;
+        return;
+      }
+
+      table.innerHTML = `
+        <thead><tr><th>对象层级</th><th>字段码</th><th>已暴露</th><th>异常对象数</th><th>总对象数</th><th>占比</th><th>备注</th></tr></thead>
+        <tbody>
+          ${rows.map((r) => `
+            <tr>
+              <td>${r.object_level || "-"}</td>
+              <td>${Phase1UI.localizeTerms(r.field_code || "-")}</td>
+              <td class="${r.exposed_flag ? "pass" : "fail"}">${r.exposed_flag ? "是" : "否"}</td>
+              <td>${Phase1UI.nf(r.true_obj_cnt)}</td>
+              <td>${Phase1UI.nf(r.total_obj_cnt)}</td>
+              <td>${Phase1UI.pct(Number(r.true_obj_cnt || 0), Number(r.total_obj_cnt || 0))}</td>
+              <td>${r.note || "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+    }
+
+    async function queryExposure() {
+      const runId = document.getElementById("run-id").value.trim();
+      const objectLevel = document.getElementById("obj-level").value;
+      const page = Number(document.getElementById("page").value || "1");
+      const pageSize = Number(document.getElementById("page-size").value || "100");
+      document.getElementById("source-pill").textContent = "查询中...";
+      Phase1UI.writeQuery({ run_id: runId, object_level: objectLevel, page, page_size: pageSize });
+
+      const apiData = await Phase1UI.fetchFromApi("/api/phase1/exposure-matrix", {
+        run_id: runId,
+        object_level: objectLevel,
+        page,
+        page_size: pageSize
+      });
+      if (apiData) {
+        renderExposure(apiData, "API");
+        Phase1UI.updateNavLinks({ run_id: apiData.run_id || runId });
+        return;
+      }
+
+      const snapshot = await Phase1UI.loadLocalSnapshot();
+      const fallback = Phase1UI.snapshotToExposure(snapshot, runId, objectLevel, page, pageSize);
+      if (fallback) {
+        renderExposure(fallback, "本地快照（dashboard_data.json）");
+        Phase1UI.updateNavLinks({ run_id: fallback.run_id || runId });
+        return;
+      }
+
+      document.getElementById("source-pill").textContent = "查询失败";
+      document.getElementById("exposure-table").innerHTML = `<tbody><tr><td class="empty">API 与本地快照均不可用。</td></tr></tbody>`;
+    }
+
+    document.getElementById("query-btn").addEventListener("click", queryExposure);
+    (() => {
+      const q = Phase1UI.readQuery();
+      if (q.run_id) document.getElementById("run-id").value = q.run_id;
+      if (q.object_level) document.getElementById("obj-level").value = q.object_level;
+      if (q.page) document.getElementById("page").value = q.page;
+      if (q.page_size) document.getElementById("page-size").value = q.page_size;
+      Phase1UI.updateNavLinks({ run_id: q.run_id || "" });
+    })();
+    queryExposure();
+  </script>
+</body>
+</html>

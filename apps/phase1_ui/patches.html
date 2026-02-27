@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 补丁日志页</title>
+  <link rel="stylesheet" href="./ui_base.css" />
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 补丁日志页</h1>
+      <p class="sub">记录问题修复动作与验证结果，形成“问题 -> 补丁 -> 验证”的治理链路。</p>
+      <div class="hero-actions">
+        <a class="link-btn" href="./dashboard.html">首页看板</a>
+        <a class="link-btn" href="./issues.html">问题闭环页</a>
+        <a class="link-btn" href="./layer.html">分层剖面页</a>
+        <a class="link-btn" href="./reconciliation.html">对账页</a>
+        <a class="link-btn" href="./glossary.html">术语缩写页</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">查询条件</h2>
+    <section class="card controls">
+      <div class="control-item">
+        <label for="run-id">run_id（可选）</label>
+        <input id="run-id" type="text" placeholder="留空=全部批次" />
+      </div>
+      <div class="control-item">
+        <label for="issue-id">issue_id（可选）</label>
+        <input id="issue-id" type="text" placeholder="例如 1001" />
+      </div>
+      <div class="control-item">
+        <label for="verified-flag">verified_flag（是否已验证）</label>
+        <select id="verified-flag">
+          <option value="">全部</option>
+          <option value="true">true（已验证）</option>
+          <option value="false">false（未验证）</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label for="page">page</label>
+        <input id="page" type="text" value="1" />
+      </div>
+      <div class="control-item">
+        <label for="page-size">page_size</label>
+        <select id="page-size">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>&nbsp;</label>
+        <button id="query-btn" class="btn" type="button">查询补丁日志</button>
+      </div>
+    </section>
+
+    <h2 class="section-title">新增补丁记录（API）</h2>
+    <section class="card controls">
+      <div class="control-item">
+        <label for="new-issue-id">issue_id（可选）</label>
+        <input id="new-issue-id" type="text" placeholder="关联问题ID" />
+      </div>
+      <div class="control-item">
+        <label for="new-run-id">run_id（可选）</label>
+        <input id="new-run-id" type="text" placeholder="关联运行批次" />
+      </div>
+      <div class="control-item">
+        <label for="new-change-type">change_type（变更类型）</label>
+        <input id="new-change-type" type="text" value="sql_fix" />
+      </div>
+      <div class="control-item">
+        <label for="new-owner">owner（执行人）</label>
+        <input id="new-owner" type="text" value="codex" />
+      </div>
+      <div class="control-item">
+        <label for="new-verified-flag">verified_flag</label>
+        <select id="new-verified-flag">
+          <option value="false" selected>false（未验证）</option>
+          <option value="true">true（已验证）</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label for="new-summary">change_summary（变更摘要）</label>
+        <input id="new-summary" type="text" placeholder="必填：描述本次补丁做了什么" />
+      </div>
+      <div class="control-item">
+        <label>&nbsp;</label>
+        <button id="create-btn" class="btn" type="button">新增补丁记录</button>
+      </div>
+      <div class="control-item">
+        <label>写入状态</label>
+        <div id="op-note" class="pill">等待操作</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">补丁列表</h2>
+    <section class="two-col">
+      <article class="card">
+        <div id="summary-pill" class="pill">等待查询</div>
+        <div id="source-note" class="note">数据源：未查询</div>
+      </article>
+      <article class="card">
+        <div class="note">说明：`verified_flag=true` 表示补丁已完成验证，`false` 表示待验证或验证中。</div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 12px;">
+      <table class="table" id="patches-table"></table>
+    </section>
+  </div>
+
+  <script src="./ui_common.js"></script>
+  <script>
+    function renderPatches(data, sourceLabel) {
+      const items = data.items || [];
+      const total = Number(data.total == null ? items.length : data.total);
+      const page = Number(data.page || 1);
+      const totalPages = Number(data.total_pages || 0);
+      document.getElementById("summary-pill").textContent = `补丁数量 ${total}（第 ${page}/${totalPages || 1} 页）`;
+      document.getElementById("source-note").textContent = `数据源：${sourceLabel}`;
+
+      const table = document.getElementById("patches-table");
+      if (!items.length) {
+        table.innerHTML = `<tbody><tr><td class="empty">当前条件下无补丁记录。</td></tr></tbody>`;
+        return;
+      }
+
+      table.innerHTML = `
+        <thead><tr><th>patch_id</th><th>issue_id</th><th>run_id</th><th>change_type</th><th>change_summary</th><th>verified_flag</th><th>owner</th><th>created_at</th></tr></thead>
+        <tbody>
+          ${items.map((x) => `
+            <tr>
+              <td>${x.patch_id == null ? "-" : x.patch_id}</td>
+              <td>${x.issue_id == null ? "-" : x.issue_id}</td>
+              <td>${x.run_id || "-"}</td>
+              <td>${x.change_type || "-"}</td>
+              <td>${x.change_summary || "-"}</td>
+              <td class="${x.verified_flag ? "pass" : "fail"}">${x.verified_flag ? "true（已验证）" : "false（未验证）"}</td>
+              <td>${x.owner || "-"}</td>
+              <td>${x.created_at || "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+    }
+
+    function parseOptionalIssueId(v) {
+      const s = String(v || "").trim();
+      if (!s) return null;
+      if (!/^\d+$/.test(s)) return NaN;
+      return Number(s);
+    }
+
+    async function queryPatches() {
+      const runId = document.getElementById("run-id").value.trim();
+      const issueIdRaw = document.getElementById("issue-id").value.trim();
+      const verifiedFlagRaw = document.getElementById("verified-flag").value;
+      const page = Number(document.getElementById("page").value || "1");
+      const pageSize = Number(document.getElementById("page-size").value || "100");
+      const issueId = parseOptionalIssueId(issueIdRaw);
+      const verifiedFlag = verifiedFlagRaw === "" ? null : (verifiedFlagRaw === "true");
+
+      if (Number.isNaN(issueId)) {
+        document.getElementById("summary-pill").textContent = "查询失败：issue_id 必须是整数";
+        return;
+      }
+
+      Phase1UI.writeQuery({
+        run_id: runId,
+        issue_id: issueIdRaw,
+        verified_flag: verifiedFlagRaw,
+        page,
+        page_size: pageSize
+      });
+
+      const apiData = await Phase1UI.fetchFromApi("/api/phase1/patches", {
+        run_id: runId,
+        issue_id: issueId == null ? null : issueId,
+        verified_flag: verifiedFlagRaw,
+        page,
+        page_size: pageSize
+      });
+      if (apiData) {
+        renderPatches(apiData, "API");
+        Phase1UI.updateNavLinks({ run_id: apiData.run_id || runId });
+        return;
+      }
+
+      const snapshot = await Phase1UI.loadLocalSnapshot();
+      const fallback = Phase1UI.snapshotToPatches(snapshot, runId, issueId, verifiedFlag, page, pageSize);
+      if (fallback) {
+        renderPatches(fallback, "本地快照（dashboard_data.json）");
+        Phase1UI.updateNavLinks({ run_id: fallback.run_id || runId });
+        return;
+      }
+
+      document.getElementById("summary-pill").textContent = "查询失败";
+      document.getElementById("source-note").textContent = "数据源：不可用";
+      document.getElementById("patches-table").innerHTML = `<tbody><tr><td class="empty">API 与本地快照均不可用。</td></tr></tbody>`;
+    }
+
+    async function createPatch() {
+      const issueIdRaw = document.getElementById("new-issue-id").value.trim();
+      const issueId = parseOptionalIssueId(issueIdRaw);
+      if (Number.isNaN(issueId)) {
+        document.getElementById("op-note").textContent = "创建失败：issue_id 必须是整数。";
+        return;
+      }
+      const payload = {
+        issue_id: issueId,
+        run_id: document.getElementById("new-run-id").value.trim() || null,
+        change_type: document.getElementById("new-change-type").value.trim(),
+        change_summary: document.getElementById("new-summary").value.trim(),
+        owner: document.getElementById("new-owner").value.trim() || null,
+        verified_flag: document.getElementById("new-verified-flag").value === "true"
+      };
+      const resp = await Phase1UI.requestApi("POST", "/api/phase1/patches", null, payload);
+      if (!resp.ok) {
+        const msg = resp.data && resp.data.error ? resp.data.error.message : "请求失败";
+        document.getElementById("op-note").textContent = `创建失败：${msg}`;
+        return;
+      }
+      document.getElementById("op-note").textContent = `创建成功：patch_id=${resp.data.item.patch_id}`;
+      document.getElementById("new-summary").value = "";
+      queryPatches();
+    }
+
+    document.getElementById("query-btn").addEventListener("click", queryPatches);
+    document.getElementById("create-btn").addEventListener("click", createPatch);
+    (() => {
+      const q = Phase1UI.readQuery();
+      if (q.run_id) document.getElementById("run-id").value = q.run_id;
+      if (q.issue_id) document.getElementById("issue-id").value = q.issue_id;
+      if (q.verified_flag) document.getElementById("verified-flag").value = q.verified_flag;
+      if (q.page) document.getElementById("page").value = q.page;
+      if (q.page_size) document.getElementById("page-size").value = q.page_size;
+      if (q.run_id) document.getElementById("new-run-id").value = q.run_id;
+      Phase1UI.updateNavLinks({ run_id: q.run_id || "" });
+    })();
+    queryPatches();
+  </script>
+</body>
+</html>

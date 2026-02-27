@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 问题闭环页</title>
+  <link rel="stylesheet" href="./ui_base.css" />
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 问题闭环页</h1>
+      <p class="sub">查看问题池与状态流转，支持按 run_id / status / severity 过滤。</p>
+      <div class="hero-actions">
+        <a class="link-btn" href="./dashboard.html">首页看板</a>
+        <a class="link-btn" href="./layer.html">分层剖面页</a>
+        <a class="link-btn" href="./reconciliation.html">对账页</a>
+        <a class="link-btn" href="./exposure.html">异常暴露页</a>
+        <a class="link-btn" href="./patches.html">补丁日志页</a>
+        <a class="link-btn" href="./glossary.html">术语缩写页</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">查询条件</h2>
+    <section class="card controls">
+      <div class="control-item">
+        <label for="run-id">run_id（可选）</label>
+        <input id="run-id" type="text" placeholder="留空=全部批次" />
+      </div>
+      <div class="control-item">
+        <label for="status">status（可选，状态）</label>
+        <select id="status">
+          <option value="">全部</option>
+          <option value="new">new（新建）</option>
+          <option value="in_progress">in_progress（处理中）</option>
+          <option value="verified">verified（已验证）</option>
+          <option value="rejected">rejected（驳回）</option>
+          <option value="rolled_back">rolled_back（已回滚）</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label for="severity">severity（可选，严重级别）</label>
+        <select id="severity">
+          <option value="">全部</option>
+          <option value="P0">P0（最高优先）</option>
+          <option value="P1">P1（高优先）</option>
+          <option value="P2">P2（常规）</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label for="page">page</label>
+        <input id="page" type="text" value="1" />
+      </div>
+      <div class="control-item">
+        <label for="page-size">page_size</label>
+        <select id="page-size">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>&nbsp;</label>
+        <button id="query-btn" class="btn" type="button">查询问题池</button>
+      </div>
+    </section>
+
+    <h2 class="section-title">写入操作（API）</h2>
+    <section class="two-col">
+      <article class="card">
+        <div class="note" style="margin-top: 0;">新建问题</div>
+        <div class="controls" style="margin-top: 8px;">
+          <div class="control-item">
+            <label for="new-run-id">run_id</label>
+            <input id="new-run-id" type="text" placeholder="可留空" />
+          </div>
+          <div class="control-item">
+            <label for="new-severity">severity</label>
+            <select id="new-severity"><option>P0</option><option>P1</option><option selected>P2</option></select>
+          </div>
+          <div class="control-item">
+            <label for="new-layer-id">layer_id</label>
+            <input id="new-layer-id" type="text" value="L4_Final" />
+          </div>
+          <div class="control-item">
+            <label for="new-status">status</label>
+            <select id="new-status">
+              <option selected>new</option><option>in_progress</option><option>verified</option><option>rejected</option><option>rolled_back</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <label for="new-owner">owner</label>
+            <input id="new-owner" type="text" value="codex" />
+          </div>
+          <div class="control-item">
+            <label for="new-title">title</label>
+            <input id="new-title" type="text" placeholder="必填：问题标题" />
+          </div>
+          <div class="control-item">
+            <label for="new-evidence-sql">evidence_sql</label>
+            <input id="new-evidence-sql" type="text" placeholder="可选：证据 SQL" />
+          </div>
+          <div class="control-item">
+            <label>&nbsp;</label>
+            <button id="create-btn" class="btn" type="button">创建问题</button>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="note" style="margin-top: 0;">更新问题</div>
+        <div class="controls" style="margin-top: 8px;">
+          <div class="control-item">
+            <label for="upd-issue-id">issue_id</label>
+            <input id="upd-issue-id" type="text" placeholder="必填" />
+          </div>
+          <div class="control-item">
+            <label for="upd-status">status</label>
+            <select id="upd-status">
+              <option value="">不修改</option><option>new</option><option>in_progress</option><option>verified</option><option>rejected</option><option>rolled_back</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <label for="upd-owner">owner</label>
+            <input id="upd-owner" type="text" placeholder="可选" />
+          </div>
+          <div class="control-item">
+            <label for="upd-title">title</label>
+            <input id="upd-title" type="text" placeholder="可选" />
+          </div>
+          <div class="control-item">
+            <label for="upd-severity">severity</label>
+            <select id="upd-severity">
+              <option value="">不修改</option><option>P0</option><option>P1</option><option>P2</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <label>&nbsp;</label>
+            <button id="update-btn" class="btn" type="button">更新问题</button>
+          </div>
+        </div>
+        <div id="op-note" class="note">写入接口需要 API 在线；若未启动 API，会写入失败。</div>
+      </article>
+    </section>
+
+    <h2 class="section-title">问题列表</h2>
+    <section class="two-col">
+      <article class="card">
+        <div id="summary-pill" class="pill">等待查询</div>
+        <div id="source-note" class="note">数据源：未查询</div>
+      </article>
+      <article class="card">
+        <div class="note">状态流转：`new -> in_progress -> verified/rejected/rolled_back`。若要从 `verified` 回到处理中，需先走 `rolled_back -> in_progress`。</div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 12px;">
+      <table class="table" id="issues-table"></table>
+    </section>
+  </div>
+
+  <script src="./ui_common.js"></script>
+  <script>
+    function renderIssues(data, sourceLabel) {
+      const items = data.items || [];
+      const total = Number(data.total == null ? items.length : data.total);
+      const page = Number(data.page || 1);
+      const totalPages = Number(data.total_pages || 0);
+      document.getElementById("summary-pill").textContent = `问题数量 ${total}（第 ${page}/${totalPages || 1} 页）`;
+      document.getElementById("source-note").textContent = `数据源：${sourceLabel}`;
+
+      const table = document.getElementById("issues-table");
+      if (!items.length) {
+        table.innerHTML = `<tbody><tr><td class="empty">当前条件下无问题记录（快照模式通常为空）。</td></tr></tbody>`;
+        return;
+      }
+
+      table.innerHTML = `
+        <thead><tr><th>issue_id</th><th>severity</th><th>layer_id</th><th>title</th><th>status</th><th>owner</th><th>updated_at</th></tr></thead>
+        <tbody>
+          ${items.map((x) => `
+            <tr>
+              <td>${x.issue_id == null ? "-" : x.issue_id}</td>
+              <td>${x.severity || "-"}</td>
+              <td>${x.layer_id || "-"}</td>
+              <td>${x.title || "-"}</td>
+              <td>${x.status || "-"}</td>
+              <td>${x.owner || "-"}</td>
+              <td>${x.updated_at || "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+    }
+
+    async function queryIssues() {
+      const runId = document.getElementById("run-id").value.trim();
+      const status = document.getElementById("status").value;
+      const severity = document.getElementById("severity").value;
+      const page = Number(document.getElementById("page").value || "1");
+      const pageSize = Number(document.getElementById("page-size").value || "100");
+      document.getElementById("summary-pill").textContent = "查询中...";
+      document.getElementById("source-note").textContent = "数据源：查询中";
+      Phase1UI.writeQuery({ run_id: runId, status, severity, page, page_size: pageSize });
+
+      const apiData = await Phase1UI.fetchFromApi("/api/phase1/issues", { run_id: runId, status, severity, page, page_size: pageSize });
+      if (apiData) {
+        renderIssues(apiData, "API");
+        Phase1UI.updateNavLinks({ run_id: apiData.run_id || runId });
+        return;
+      }
+
+      const snapshot = await Phase1UI.loadLocalSnapshot();
+      const fallback = Phase1UI.snapshotToIssues(snapshot, runId, status, severity, page, pageSize);
+      if (fallback) {
+        renderIssues(fallback, "本地快照（dashboard_data.json）");
+        Phase1UI.updateNavLinks({ run_id: fallback.run_id || runId });
+        return;
+      }
+
+      document.getElementById("summary-pill").textContent = "查询失败";
+      document.getElementById("source-note").textContent = "数据源：不可用";
+      document.getElementById("issues-table").innerHTML = `<tbody><tr><td class="empty">API 与本地快照均不可用。</td></tr></tbody>`;
+    }
+
+    async function createIssue() {
+      const payload = {
+        run_id: document.getElementById("new-run-id").value.trim() || null,
+        severity: document.getElementById("new-severity").value,
+        layer_id: document.getElementById("new-layer-id").value.trim(),
+        title: document.getElementById("new-title").value.trim(),
+        status: document.getElementById("new-status").value,
+        owner: document.getElementById("new-owner").value.trim() || null,
+        evidence_sql: document.getElementById("new-evidence-sql").value.trim() || null
+      };
+      const resp = await Phase1UI.requestApi("POST", "/api/phase1/issues", null, payload);
+      if (!resp.ok) {
+        const msg = resp.data && resp.data.error ? resp.data.error.message : "请求失败";
+        document.getElementById("op-note").textContent = `创建失败：${msg}`;
+        return;
+      }
+      document.getElementById("op-note").textContent = `创建成功：issue_id=${resp.data.item.issue_id}`;
+      document.getElementById("new-title").value = "";
+      document.getElementById("new-evidence-sql").value = "";
+      queryIssues();
+    }
+
+    async function updateIssue() {
+      const issueId = Number(document.getElementById("upd-issue-id").value || "0");
+      if (!issueId) {
+        document.getElementById("op-note").textContent = "更新失败：issue_id 必填。";
+        return;
+      }
+      const payload = {};
+      const status = document.getElementById("upd-status").value;
+      const owner = document.getElementById("upd-owner").value.trim();
+      const title = document.getElementById("upd-title").value.trim();
+      const severity = document.getElementById("upd-severity").value;
+      if (status) payload.status = status;
+      if (owner) payload.owner = owner;
+      if (title) payload.title = title;
+      if (severity) payload.severity = severity;
+      if (Object.keys(payload).length === 0) {
+        document.getElementById("op-note").textContent = "更新失败：至少填写一个修改字段。";
+        return;
+      }
+      const resp = await Phase1UI.requestApi("PATCH", `/api/phase1/issues/${issueId}`, null, payload);
+      if (!resp.ok) {
+        const msg = resp.data && resp.data.error ? resp.data.error.message : "请求失败";
+        document.getElementById("op-note").textContent = `更新失败：${msg}`;
+        return;
+      }
+      document.getElementById("op-note").textContent = `更新成功：issue_id=${resp.data.item.issue_id}，status=${resp.data.item.status}`;
+      queryIssues();
+    }
+
+    document.getElementById("query-btn").addEventListener("click", queryIssues);
+    document.getElementById("create-btn").addEventListener("click", createIssue);
+    document.getElementById("update-btn").addEventListener("click", updateIssue);
+    (() => {
+      const q = Phase1UI.readQuery();
+      if (q.run_id) document.getElementById("run-id").value = q.run_id;
+      if (q.status) document.getElementById("status").value = q.status;
+      if (q.severity) document.getElementById("severity").value = q.severity;
+      if (q.page) document.getElementById("page").value = q.page;
+      if (q.page_size) document.getElementById("page-size").value = q.page_size;
+      if (q.run_id) document.getElementById("new-run-id").value = q.run_id;
+      Phase1UI.updateNavLinks({ run_id: q.run_id || "" });
+    })();
+    queryIssues();
+  </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 术语与缩写说明</title>
+  <style>
+    :root {
+      --bg-1: #f5f9f2;
+      --bg-2: #e5f2ef;
+      --ink: #173038;
+      --muted: #4f6870;
+      --card: #ffffff;
+      --line: #d6e2df;
+      --accent: #1a7f93;
+      --shadow: 0 14px 36px rgba(23, 48, 56, 0.1);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Noto Sans SC", "PingFang SC", sans-serif;
+      background:
+        radial-gradient(circle at 8% -8%, #d9efdd 0%, transparent 42%),
+        radial-gradient(circle at 100% 0%, #ffe6c7 0%, transparent 32%),
+        linear-gradient(140deg, var(--bg-1), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    .hero {
+      background: linear-gradient(120deg, rgba(26, 127, 147, 0.95), rgba(18, 58, 78, 0.92));
+      color: #f4fcff;
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 32px);
+      letter-spacing: 0.2px;
+    }
+
+    .sub {
+      margin: 10px 0 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: rgba(244, 252, 255, 0.92);
+    }
+
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      color: #f8feff;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .section-title {
+      margin: 24px 0 12px;
+      font-size: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .term {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .desc {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 760px) {
+      .wrap { padding: 14px 12px 32px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 术语与缩写说明</h1>
+      <p class="sub">本页用于集中解释看板中的专业术语、缩写和字段名。首页只保留指标，不再堆叠术语说明。</p>
+      <div class="actions">
+        <a class="btn" href="./dashboard.html">返回首页看板</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">基础对象与分层</h2>
+    <section class="grid">
+      <article class="card"><div class="term">L0~L5</div><p class="desc">分层处理链路：L0 原始数据，L2 清洗聚合，L3 基站层，L4 修复补齐层，L5 画像输出层。</p></article>
+      <article class="card"><div class="term">BS (Base Station)</div><p class="desc">基站对象。一个基站下面可以挂多个小区（CELL）。</p></article>
+      <article class="card"><div class="term">CELL</div><p class="desc">小区对象，是无线网络里更细粒度的覆盖单元。</p></article>
+      <article class="card"><div class="term">LAC (Location Area Code)</div><p class="desc">位置区码，用于核心网位置归属和区域管理。</p></article>
+      <article class="card"><div class="term">EN 视图</div><p class="desc">英文列名视图（English Naming），便于对接外部系统。</p></article>
+      <article class="card"><div class="term">Trace / seq_id</div><p class="desc">样本穿透追踪；`seq_id` 是单条采样记录的稳定主键。</p></article>
+    </section>
+
+    <h2 class="section-title">信号指标与单位</h2>
+    <section class="grid">
+      <article class="card"><div class="term">RSRP</div><p class="desc">参考信号接收功率，反映覆盖强弱，数值越高（越接近 0）通常越好。</p></article>
+      <article class="card"><div class="term">RSRQ</div><p class="desc">参考信号接收质量，反映信号质量和干扰水平。</p></article>
+      <article class="card"><div class="term">SINR</div><p class="desc">信号与干扰加噪声比，反映链路质量，越高通常越好。</p></article>
+      <article class="card"><div class="term">RSSI</div><p class="desc">接收信号总强度，包含有用信号与干扰。</p></article>
+      <article class="card"><div class="term">dBm / ASU</div><p class="desc">dBm 是绝对功率单位；ASU 是终端侧离散强度等级。</p></article>
+      <article class="card"><div class="term">P50 / P90</div><p class="desc">分位数指标：P50 为中位值，P90 为高位阈值。</p></article>
+    </section>
+
+    <h2 class="section-title">流程步骤与门禁术语</h2>
+    <section class="grid">
+      <article class="card"><div class="term">Step40</div><p class="desc">位置补齐步骤，处理 GPS 缺失、异常与中心点回填。</p></article>
+      <article class="card"><div class="term">Step41</div><p class="desc">信号字段补齐步骤，修复 RSRP/RSRQ/SINR 等缺失。</p></article>
+      <article class="card"><div class="term">Step43</div><p class="desc">指标汇总步骤，负责把过程指标归集到汇总表用于对账。</p></article>
+      <article class="card"><div class="term">Step52</div><p class="desc">CELL 画像步骤，基于过滤口径产出小区级画像。</p></article>
+      <article class="card"><div class="term">Not_Filled</div><p class="desc">未补齐项，表示当前记录在对应步骤中仍未被修复。</p></article>
+      <article class="card"><div class="term">Severe Fill</div><p class="desc">严重碰撞场景的补齐统计项，用于高风险补齐监控。</p></article>
+      <article class="card"><div class="term">bs_id_lt_256</div><p class="desc">基站 ID 小于 256 的异常标签，常用于识别疑似异常编码。</p></article>
+      <article class="card"><div class="term">PASS / FAIL</div><p class="desc">门禁校验通过/未通过状态。</p></article>
+    </section>
+  </div>
+</body>
+</html>

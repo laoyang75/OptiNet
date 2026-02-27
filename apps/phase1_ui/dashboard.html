@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase1 可视化研究看板（MVP）</title>
+  <style>
+    :root {
+      --bg-1: #f4f8ef;
+      --bg-2: #e3f1ef;
+      --ink: #173038;
+      --muted: #4f6870;
+      --card: #ffffff;
+      --line: #d6e2df;
+      --ok: #1f9d66;
+      --warn: #c57a00;
+      --bad: #c73939;
+      --accent-a: #1a7f93;
+      --accent-b: #e88e2f;
+      --shadow: 0 14px 36px rgba(23, 48, 56, 0.1);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Noto Sans SC", "PingFang SC", sans-serif;
+      background:
+        radial-gradient(circle at 15% -10%, #d5f2dc 0%, transparent 44%),
+        radial-gradient(circle at 100% 0%, #ffe4c0 0%, transparent 36%),
+        linear-gradient(140deg, var(--bg-1), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    .hero {
+      background: linear-gradient(120deg, rgba(26, 127, 147, 0.95), rgba(18, 58, 78, 0.92));
+      color: #f3fbff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -60px;
+      top: -50px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232, 142, 47, 0.55), rgba(232, 142, 47, 0));
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(22px, 3vw, 34px);
+      letter-spacing: 0.3px;
+    }
+
+    .sub {
+      color: rgba(243, 251, 255, 0.88);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .meta {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: rgba(243, 251, 255, 0.9);
+    }
+
+    .meta span {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .hero-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .link-btn {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #f8feff;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .link-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .section-title {
+      margin: 26px 0 12px;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .kpi-grid {
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      transform: translateY(8px);
+      opacity: 0;
+      animation: rise 0.45s ease forwards;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+    .card:nth-child(5) { animation-delay: 0.2s; }
+    .card:nth-child(6) { animation-delay: 0.25s; }
+    .card:nth-child(7) { animation-delay: 0.3s; }
+
+    @keyframes rise {
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .v {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .duo {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .table th, .table td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px dashed var(--line);
+    }
+
+    .table th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .pass {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .fail {
+      color: var(--bad);
+      font-weight: 700;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar {
+      display: grid;
+      gap: 5px;
+    }
+
+    .bar .label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .track {
+      height: 14px;
+      border-radius: 999px;
+      background: #edf2f0;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #eff7f7;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .trace-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .trace-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      color: var(--ink);
+      background: #fbfefd;
+      outline: none;
+    }
+
+    .trace-input:focus {
+      border-color: var(--accent-a);
+      box-shadow: 0 0 0 3px rgba(26, 127, 147, 0.16);
+    }
+
+    .trace-btn {
+      border: 0;
+      border-radius: 10px;
+      background: linear-gradient(100deg, var(--accent-a), #246e8b);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .trace-btn:active {
+      transform: translateY(1px);
+    }
+
+    .trace-result {
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: #f5faf8;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 92px;
+    }
+
+    @media (max-width: 1180px) {
+      .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .duo { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .wrap { padding: 14px 12px 32px; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col { grid-template-columns: 1fr; }
+      .v { font-size: 18px; }
+      .trace-form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Phase1 可视化研究看板（MVP）</h1>
+      <p class="sub">目标：先保证“看得准”，再迭代“看得全”。当前页面聚焦 S0（第一轮修复）结果、门禁状态、异常暴露与研究入口指标。</p>
+      <div class="meta" id="meta"></div>
+      <div class="hero-actions">
+        <a class="link-btn" href="./layer.html">分层剖面页</a>
+        <a class="link-btn" href="./reconciliation.html">对账页</a>
+        <a class="link-btn" href="./exposure.html">异常暴露页</a>
+        <a class="link-btn" href="./issues.html">问题闭环页</a>
+        <a class="link-btn" href="./patches.html">补丁日志页</a>
+        <a class="link-btn" href="./glossary.html">查看术语与缩写页</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">Layer 分层总览（L0~L5）</h2>
+    <section class="grid kpi-grid" id="kpis"></section>
+
+    <h2 class="section-title">门禁状态</h2>
+    <section class="duo">
+      <article class="card">
+        <table class="table" id="gate-table"></table>
+      </article>
+      <article class="card">
+        <div class="pill" id="gate-pill"></div>
+        <p class="note" id="gate-note"></p>
+        <div class="stack" id="gate-bars"></div>
+      </article>
+    </section>
+
+    <h2 class="section-title">关键漏斗</h2>
+    <section class="two-col">
+      <article class="card">
+        <div class="k">GPS 处理构成（Step40：位置补齐）</div>
+        <div class="stack" id="gps-stack"></div>
+      </article>
+      <article class="card">
+        <div class="k">信号补齐收益（Step41：信号字段修复）</div>
+        <div class="stack" id="sig-stack"></div>
+      </article>
+    </section>
+
+    <h2 class="section-title">异常暴露（Layer5 画像）</h2>
+    <section class="two-col">
+      <article class="card">
+        <div class="k">BS 画像（基站画像）</div>
+        <div class="stack" id="bs-anomaly"></div>
+      </article>
+      <article class="card">
+        <div class="k">CELL 画像（小区画像）</div>
+        <div class="stack" id="cell-anomaly"></div>
+      </article>
+    </section>
+
+    <h2 class="section-title">样本穿透追踪（Trace）</h2>
+    <section class="two-col">
+      <article class="card">
+        <div class="k">输入 `seq_id` 或 `记录id`，查询 Layer4 处理前后证据链</div>
+        <div class="trace-form">
+          <input id="trace-input" class="trace-input" value="118519266" placeholder="例如：118519266 或 seq:118519266" />
+          <button id="trace-btn" class="trace-btn" type="button">查询样本链路</button>
+        </div>
+        <div id="trace-result" class="trace-result">等待查询...</div>
+      </article>
+      <article class="card">
+        <div class="k">查询说明</div>
+        <div class="note">
+          1. 页面优先请求 API：`/api/phase1/trace/{trace_key}`。<br/>
+          2. 若 API 不可达，页面仍保留总览可视结果，但 Trace 无法返回行级详情。<br/>
+          3. 当前建议先用 `seq_id` 查询，结果最稳定。
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const FALLBACK = {
+      "meta": {
+        "project": "Phase1 可视化研究平台",
+        "db_name": "ip_loc2",
+        "snapshot_ts_utc": "2026-02-26T04:54:17.520Z",
+        "run_id": "phase1_20260226_125354",
+        "status": "s0_completed"
+      },
+      "row_counts": {
+        "l0_rows": 118519386,
+        "l2_rows": 21788648,
+        "l3_bs_rows": 138121,
+        "l4_final_rows": 30491963,
+        "l5_lac_rows": 878,
+        "l5_bs_rows": 163778,
+        "l5_cell_rows": 493651
+      },
+      "gps_metrics": {
+        "row_cnt": 30491963,
+        "gps_fill_from_bs_cnt": 3959928,
+        "gps_fill_from_bs_severe_collision_cnt": 2867,
+        "gps_fill_from_risk_bs_cnt": 82255,
+        "gps_not_filled_cnt": 119427
+      },
+      "signal_metrics": {
+        "missing_field_before_sum": 73150482,
+        "missing_field_after_sum": 63561699,
+        "filled_field_sum": 9588783,
+        "filled_by_cell_nearest_row_cnt": 30140602,
+        "filled_by_bs_top_cell_row_cnt": 166068
+      },
+      "anomaly_counts": {
+        "bs": { "collision": 8277, "severe_collision": 21, "dynamic_cell": 5, "bs_id_lt_256": 36, "multi_operator_shared": 51387 },
+        "cell": { "collision": 36244, "severe_collision": 51, "dynamic_cell": 5, "bs_id_lt_256": 36, "multi_operator_shared": 163667 }
+      },
+      "exposure_contract": { "cn_contract_cols": 8, "en_contract_cols": 8 },
+      "gate_results": [
+        { "gate_name": "行数守恒：Step40 vs Final", "pass": true, "actual_value": 30491963, "expected_value": 30491963, "diff_value": 0 },
+        { "gate_name": "对账：Not_Filled 指标一致", "pass": true, "actual_value": 119427, "expected_value": 119427, "diff_value": 0 },
+        { "gate_name": "对账：Severe Fill 指标一致", "pass": true, "actual_value": 2867, "expected_value": 2867, "diff_value": 0 },
+        { "gate_name": "对账：bs_id_lt_256 指标一致", "pass": true, "actual_value": 2102, "expected_value": 2102, "diff_value": 0 },
+        { "gate_name": "无效LAC泄漏（L5三表）", "pass": true, "actual_value": 0, "expected_value": 0, "diff_value": 0 },
+        { "gate_name": "Layer5字段存在性：中文底表", "pass": true, "actual_value": 8, "expected_value": 8, "diff_value": 0 },
+        { "gate_name": "Layer5字段存在性：EN视图", "pass": true, "actual_value": 8, "expected_value": 8, "diff_value": 0 }
+      ],
+      "closure_note": {
+        "dynamic_all_scope_l4": 7,
+        "dynamic_filtered_scope_l4": 5,
+        "dynamic_l5": 5,
+        "explain": "按 Step52 过滤口径（运营商+制式+有效键）闭环一致。"
+      }
+    };
+
+    const nf = (n) => new Intl.NumberFormat("en-US").format(Number(n || 0));
+    const pct = (n, total) => total > 0 ? ((100 * n) / total).toFixed(2) + "%" : "0.00%";
+    const statusText = {
+      "s0_completed": "S0 已完成"
+    };
+    const commonTermReplacements = [
+      ["Not_Filled", "未补齐（Not_Filled）"],
+      ["Severe Fill", "严重碰撞补齐（Severe Fill）"],
+      ["bs_id_lt_256", "基站ID小于256（bs_id_lt_256）"],
+      ["EN视图", "英文视图（EN）"],
+      ["Step40", "Step40（位置补齐）"],
+      ["Step41", "Step41（信号补齐）"],
+      ["Step43", "Step43（指标汇总）"],
+      ["Step52", "Step52（CELL画像）"],
+      ["Final", "Final（最终输出）"]
+    ];
+
+    function localizeTerms(text) {
+      let out = String(text || "");
+      commonTermReplacements.forEach(([source, target]) => {
+        out = out.split(source).join(target);
+      });
+      return out;
+    }
+
+    function localizeTraceMessage(message) {
+      const msg = String(message || "");
+      if (!msg || msg === "ok") return "ok";
+      if (msg.includes("multiple rows matched")) return "命中多条记录，已按最新时间优先展示。";
+      if (msg.includes("snapshot mode has no row-level trace")) {
+        return "当前是快照模式（snapshot），不提供行级 Trace 明细。配置 PHASE1_DB_DSN 后可查询真实样本链路。";
+      }
+      return msg;
+    }
+
+    function syncHeroLinks(runId) {
+      const query = runId ? `?run_id=${encodeURIComponent(runId)}` : "";
+      document.querySelectorAll(".hero-actions .link-btn").forEach((el) => {
+        const base = String(el.getAttribute("href") || "").split("?")[0];
+        el.setAttribute("href", base + query);
+      });
+    }
+
+    function getApiCandidates(path) {
+      const urls = [];
+      if (window.location.protocol.startsWith("http")) {
+        urls.push(window.location.origin + path);
+      }
+      urls.push("http://127.0.0.1:8508" + path);
+      return urls;
+    }
+
+    function renderBars(el, rows, total) {
+      el.innerHTML = "";
+      rows.forEach((r) => {
+        const wrap = document.createElement("div");
+        wrap.className = "bar";
+        const label = document.createElement("div");
+        label.className = "label";
+        label.innerHTML = `<span>${r.name}</span><span>${nf(r.value)} (${pct(r.value, total)})</span>`;
+        const track = document.createElement("div");
+        track.className = "track";
+        const fill = document.createElement("div");
+        fill.className = "fill";
+        fill.style.width = pct(r.value, total);
+        track.appendChild(fill);
+        wrap.appendChild(label);
+        wrap.appendChild(track);
+        el.appendChild(wrap);
+      });
+    }
+
+    async function tryFetchJson(url) {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("fetch failed: " + url);
+      return await res.json();
+    }
+
+    async function loadData() {
+      const runId = new URLSearchParams(window.location.search).get("run_id");
+      const path = runId
+        ? `/api/phase1/dashboard-snapshot?run_id=${encodeURIComponent(runId)}`
+        : "/api/phase1/dashboard-snapshot";
+      const candidates = getApiCandidates(path);
+
+      for (const url of candidates) {
+        try {
+          return await tryFetchJson(url);
+        } catch (e) {}
+      }
+
+      try {
+        return await tryFetchJson("./dashboard_data.json");
+      } catch (e) {
+        return FALLBACK;
+      }
+    }
+
+    function render(data) {
+      const meta = document.getElementById("meta");
+      const runStatus = statusText[data.meta.status] || data.meta.status;
+      syncHeroLinks(data.meta.run_id);
+      meta.innerHTML = `
+        <span>数据库(DB): ${data.meta.db_name}</span>
+        <span>运行批次(run_id): ${data.meta.run_id}</span>
+        <span>快照时间(UTC): ${data.meta.snapshot_ts_utc}</span>
+        <span>状态(status): ${runStatus}</span>
+      `;
+
+      const kpis = [
+        ["L0 原始点位行数", data.row_counts.l0_rows],
+        ["L2 清洗后有效行数", data.row_counts.l2_rows],
+        ["L3（BS）基站画像行数", data.row_counts.l3_bs_rows],
+        ["L4 Final 最终输出行数", data.row_counts.l4_final_rows],
+        ["L5（LAC）画像行数", data.row_counts.l5_lac_rows],
+        ["L5（BS）画像行数", data.row_counts.l5_bs_rows],
+        ["L5（CELL）画像行数", data.row_counts.l5_cell_rows]
+      ];
+      const kpiEl = document.getElementById("kpis");
+      kpiEl.innerHTML = kpis.map(([k, v]) => `<article class="card"><div class="k">${k}</div><div class="v">${nf(v)}</div></article>`).join("");
+
+      const passCnt = data.gate_results.filter(g => g.pass).length;
+      const failCnt = data.gate_results.length - passCnt;
+      document.getElementById("gate-pill").textContent = `门禁通过 ${passCnt}/${data.gate_results.length}`;
+      const closureExplain = localizeTerms((data.closure_note && data.closure_note.explain) ? data.closure_note.explain : "暂无闭环说明。");
+      const closureAll = data.closure_note && data.closure_note.dynamic_all_scope_l4 !== undefined ? data.closure_note.dynamic_all_scope_l4 : "-";
+      const closureFiltered = data.closure_note && data.closure_note.dynamic_filtered_scope_l4 !== undefined ? data.closure_note.dynamic_filtered_scope_l4 : "-";
+      const closureL5 = data.closure_note && data.closure_note.dynamic_l5 !== undefined ? data.closure_note.dynamic_l5 : "-";
+      document.getElementById("gate-note").textContent = `未通过门禁 ${failCnt} 条。动态闭环：L4 全量口径 ${closureAll}，L4 过滤口径 ${closureFiltered}，L5 画像 ${closureL5}；${closureExplain}`;
+
+      const table = document.getElementById("gate-table");
+      table.innerHTML = `
+        <thead><tr><th>门禁项</th><th>实际值</th><th>期望值</th><th>差值</th><th>状态</th></tr></thead>
+        <tbody>
+          ${data.gate_results.map(g => `
+            <tr>
+              <td>${localizeTerms(g.gate_name)}</td>
+              <td>${nf(g.actual_value)}</td>
+              <td>${nf(g.expected_value)}</td>
+              <td>${nf(g.diff_value)}</td>
+              <td class="${g.pass ? "pass" : "fail"}">${g.pass ? "通过" : "未通过"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+
+      renderBars(document.getElementById("gate-bars"), [
+        { name: "通过（PASS）", value: passCnt },
+        { name: "未通过（FAIL）", value: failCnt }
+      ], data.gate_results.length || 1);
+
+      const gpsTotal = data.gps_metrics.row_cnt;
+      renderBars(document.getElementById("gps-stack"), [
+        { name: "基站补齐（Augmented_from_BS）", value: data.gps_metrics.gps_fill_from_bs_cnt },
+        { name: "严重碰撞补齐（Augmented_from_BS_SevereCollision）", value: data.gps_metrics.gps_fill_from_bs_severe_collision_cnt },
+        { name: "风险基站补齐（Augmented_from_Risk_BS）", value: data.gps_metrics.gps_fill_from_risk_bs_cnt },
+        { name: "未补齐（Not_Filled）", value: data.gps_metrics.gps_not_filled_cnt }
+      ], gpsTotal);
+
+      renderBars(document.getElementById("sig-stack"), [
+        { name: "补齐字段总数（filled_field_sum）", value: data.signal_metrics.filled_field_sum },
+        { name: "补齐后缺失字段总数（missing_field_after_sum）", value: data.signal_metrics.missing_field_after_sum },
+        { name: "按最近小区补齐行数（filled_by_cell_nearest_row_cnt）", value: data.signal_metrics.filled_by_cell_nearest_row_cnt },
+        { name: "按基站Top小区补齐行数（filled_by_bs_top_cell_row_cnt）", value: data.signal_metrics.filled_by_bs_top_cell_row_cnt }
+      ], Math.max(data.signal_metrics.missing_field_before_sum, 1));
+
+      renderBars(document.getElementById("bs-anomaly"), [
+        { name: "碰撞疑似（collision）", value: data.anomaly_counts.bs.collision },
+        { name: "严重碰撞（severe_collision）", value: data.anomaly_counts.bs.severe_collision },
+        { name: "动态小区（dynamic_cell）", value: data.anomaly_counts.bs.dynamic_cell },
+        { name: "基站ID小于256（bs_id_lt_256）", value: data.anomaly_counts.bs.bs_id_lt_256 },
+        { name: "多运营商共享（multi_operator_shared）", value: data.anomaly_counts.bs.multi_operator_shared }
+      ], data.row_counts.l5_bs_rows);
+
+      renderBars(document.getElementById("cell-anomaly"), [
+        { name: "碰撞疑似（collision）", value: data.anomaly_counts.cell.collision },
+        { name: "严重碰撞（severe_collision）", value: data.anomaly_counts.cell.severe_collision },
+        { name: "动态小区（dynamic_cell）", value: data.anomaly_counts.cell.dynamic_cell },
+        { name: "基站ID小于256（bs_id_lt_256）", value: data.anomaly_counts.cell.bs_id_lt_256 },
+        { name: "多运营商共享（multi_operator_shared）", value: data.anomaly_counts.cell.multi_operator_shared }
+      ], data.row_counts.l5_cell_rows);
+    }
+
+    async function fetchTrace(traceKey) {
+      const key = (traceKey || "").trim();
+      const el = document.getElementById("trace-result");
+      if (!key) {
+        el.textContent = "请输入 trace_key（如 seq_id 或 seq:seq_id）。";
+        return;
+      }
+      el.textContent = "查询中...";
+
+      for (const url of getApiCandidates(`/api/phase1/trace/${encodeURIComponent(key)}`)) {
+        try {
+          const data = await tryFetchJson(url);
+          if (!data || !data.primary) {
+            const rawMessage = data && data.message ? data.message : "无可用记录";
+            const localizedMessage = localizeTraceMessage(rawMessage);
+            el.textContent = `未命中（请求源: ${url})\n${localizedMessage}`;
+            return;
+          }
+          const p = data.primary;
+          const lines = [
+            `运行批次(run_id): ${data.run_id}`,
+            `匹配方式(match_type): ${data.match_type}；命中数量(match_count): ${data.match_count}`,
+            `核心键: seq_id=${p.seq_id}，operator_id_raw=${p.operator_id_raw}，tech_norm=${p.tech_norm}，LAC=${p.lac_dec_final}，BS=${p.bs_id_final}，CELL=${p.cell_id_dec}`,
+            `GPS状态: ${p.gps_status} -> ${p.gps_status_final}；修复策略(gps_fix_strategy)=${p.gps_fix_strategy}；来源(gps_source)=${p.gps_source}`,
+            `GPS坐标: 修复前(${p.lon_before_fix}, ${p.lat_before_fix})；基站中心(${p.bs_center_lon}, ${p.bs_center_lat})；修复后(${p.lon_final}, ${p.lat_final})`,
+            `信号补齐: 来源(signal_fill_source)=${p.signal_fill_source}；补齐字段数(signal_filled_field_cnt)=${p.signal_filled_field_cnt}；补齐前缺失(signal_missing_before_cnt)=${p.signal_missing_before_cnt}；补齐后缺失(signal_missing_after_cnt)=${p.signal_missing_after_cnt}`,
+            `风险标签: 严重碰撞(is_severe_collision)=${p.is_severe_collision}；碰撞疑似(is_collision_suspect)=${p.is_collision_suspect}；基站ID<256(is_bs_id_lt_256)=${p.is_bs_id_lt_256}；多运营商共享(is_multi_operator_shared)=${p.is_multi_operator_shared}；动态小区(is_dynamic_cell)=${p.is_dynamic_cell}`,
+            `原因: 碰撞原因(collision_reason)=${p.collision_reason || "-"}；动态原因(dynamic_reason)=${p.dynamic_reason || "-"}`,
+            `供体: 信号供体(signal_donor_seq_id)=${p.signal_donor_seq_id || "-"}；小区供体(cell_donor_seq_id)=${p.cell_donor_seq_id || "-"}`,
+            `服务消息(message): ${localizeTraceMessage(data.message || "ok")}`
+          ];
+          el.textContent = lines.join("\n");
+          return;
+        } catch (e) {}
+      }
+      el.textContent = "Trace API 不可达，请先启动 scripts/run_phase1_api.sh。";
+    }
+
+    document.getElementById("trace-btn").addEventListener("click", () => {
+      fetchTrace(document.getElementById("trace-input").value);
+    });
+    document.getElementById("trace-input").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") fetchTrace(document.getElementById("trace-input").value);
+    });
+
+    loadData().then(render).then(() => {
+      // 默认查询一个样本，便于快速看到穿透结果。
+      fetchTrace(document.getElementById("trace-input").value);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+docs/phase1/dev/run_logs/*.log
+docs/phase1/dev/run_logs/*.pid
+
+apps/phase1_ui/issues_store.json
+apps/phase1_ui/patches_store.json
+
