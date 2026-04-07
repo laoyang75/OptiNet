@@ -477,20 +477,28 @@ ODS_RULES = [
      "where": "dbm IS NOT NULL AND (dbm > 0 OR dbm = 0)",
      "desc": "Dbm 应为负数"},
     # ── 位置 ──
-    {"id": "ODS-013", "cat": "位置", "name": "经度越界标记",
+    {"id": "ODS-013", "cat": "位置", "name": "非原生GPS标记无效",
+     "field": "gps_valid", "action": "flag_gps",
+     "where": "cell_origin = 'cell_infos' AND (gps_info_type IS NULL OR gps_info_type NOT IN ('gps', '1'))",
+     "desc": "只信任原生GPS(gps_info_type=gps或1)，WiFi定位(2)/基站定位(4)/其他来源均标记无效"},
+    {"id": "ODS-014", "cat": "位置", "name": "非原生GPS经纬度置空",
+     "field": "lon_raw", "action": "nullify_pair",
+     "where": "cell_origin = 'cell_infos' AND gps_valid = false AND lon_raw IS NOT NULL",
+     "desc": "gps_valid=false的行，经纬度置空，防止脏坐标参与后续计算"},
+    {"id": "ODS-015", "cat": "位置", "name": "经度越界标记",
      "field": "gps_valid", "action": "flag_gps",
      "where": "lon_raw IS NOT NULL AND (lon_raw < 73 OR lon_raw > 135)",
      "desc": "经度有效范围 73~135，超出标记为 GPS 无效"},
-    {"id": "ODS-014", "cat": "位置", "name": "纬度越界标记",
+    {"id": "ODS-016", "cat": "位置", "name": "纬度越界标记",
      "field": "gps_valid", "action": "flag_gps",
      "where": "lat_raw IS NOT NULL AND (lat_raw < 3 OR lat_raw > 54)",
      "desc": "纬度有效范围 3~54，超出标记为 GPS 无效"},
     # ── WiFi ──
-    {"id": "ODS-015", "cat": "WiFi", "name": "无效 WiFi 名称置空",
+    {"id": "ODS-017", "cat": "WiFi", "name": "无效 WiFi 名称置空",
      "field": "wifi_name", "action": "nullify",
      "where": "wifi_name IN ('<unknown ssid>', 'unknown', '')",
      "desc": "SDK 返回的占位符值，无实际意义"},
-    {"id": "ODS-016", "cat": "WiFi", "name": "无效 WiFi MAC 置空",
+    {"id": "ODS-018", "cat": "WiFi", "name": "无效 WiFi MAC 置空",
      "field": "wifi_mac", "action": "nullify",
      "where": "wifi_mac IN ('02:00:00:00:00:00', '00:00:00:00:00:00', '')",
      "desc": "Android 隐私保护的伪 MAC 或空值"},
@@ -519,6 +527,11 @@ def step2_clean() -> StepResult:
             cnt = fetchone(f"SELECT COUNT(*) as cnt FROM rebuild4.etl_cleaned WHERE {rule['where']}")["cnt"]
             if cnt > 0:
                 execute(f"UPDATE rebuild4.etl_cleaned SET {rule['field']} = NULL WHERE {rule['where']}")
+        elif rule["action"] == "nullify_pair":
+            # 经纬度一起置空
+            cnt = fetchone(f"SELECT COUNT(*) as cnt FROM rebuild4.etl_cleaned WHERE {rule['where']}")["cnt"]
+            if cnt > 0:
+                execute(f"UPDATE rebuild4.etl_cleaned SET lon_raw = NULL, lat_raw = NULL WHERE {rule['where']}")
         elif rule["action"] == "flag_gps":
             cnt = fetchone(f"SELECT COUNT(*) as cnt FROM rebuild4.etl_cleaned WHERE {rule['where']}")["cnt"]
             if cnt > 0:
