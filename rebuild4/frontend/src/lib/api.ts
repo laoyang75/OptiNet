@@ -75,6 +75,7 @@ export const getFoundationL0Audit = () => request(`${BASE}/governance/foundation
 export const getFoundationL0Overview = () => request(`${BASE}/governance/foundation/l0-overview`)
 export const getFoundationOdsRules = () => request(`${BASE}/governance/foundation/ods-rules`)
 export const getEtlParseStats = () => request(`${BASE}/governance/foundation/etl/parse-stats`)
+export const getEtlParseFields = () => request(`${BASE}/governance/foundation/etl/parse-fields`)
 export const getEtlCleanStats = () => request(`${BASE}/governance/foundation/etl/clean-stats`)
 export const getEtlFillStats = () => request(`${BASE}/governance/foundation/etl/fill-stats`)
 

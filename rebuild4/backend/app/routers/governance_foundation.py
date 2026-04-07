@@ -324,6 +324,48 @@ def etl_parse_stats(scope: str = "sample"):
     }, subject_scope="governance", subject_note="解析统计")
 
 
+@router.get("/etl/parse-fields")
+def etl_parse_fields():
+    """解析后字段覆盖率（直接查 etl_parsed）。"""
+    try:
+        row = fetchone("""
+            SELECT COUNT(*) as total,
+                COUNT(*) FILTER (WHERE operator_code IS NOT NULL) as operator_code,
+                COUNT(*) FILTER (WHERE lac IS NOT NULL) as lac,
+                COUNT(*) FILTER (WHERE cell_id IS NOT NULL AND cell_id != 0) as cell_id,
+                COUNT(*) FILTER (WHERE pci IS NOT NULL) as pci,
+                COUNT(*) FILTER (WHERE freq_channel IS NOT NULL) as freq_channel,
+                COUNT(*) FILTER (WHERE bandwidth IS NOT NULL) as bandwidth,
+                COUNT(*) FILTER (WHERE rsrp IS NOT NULL) as rsrp,
+                COUNT(*) FILTER (WHERE rsrq IS NOT NULL) as rsrq,
+                COUNT(*) FILTER (WHERE sinr IS NOT NULL) as sinr,
+                COUNT(*) FILTER (WHERE rssi IS NOT NULL) as rssi,
+                COUNT(*) FILTER (WHERE dbm IS NOT NULL) as dbm,
+                COUNT(*) FILTER (WHERE asu_level IS NOT NULL) as asu_level,
+                COUNT(*) FILTER (WHERE sig_ss IS NOT NULL) as sig_ss,
+                COUNT(*) FILTER (WHERE timing_advance IS NOT NULL) as timing_advance,
+                COUNT(*) FILTER (WHERE csi_rsrp IS NOT NULL) as csi_rsrp,
+                COUNT(*) FILTER (WHERE lon_raw IS NOT NULL) as lon_raw,
+                COUNT(*) FILTER (WHERE lat_raw IS NOT NULL) as lat_raw,
+                COUNT(*) FILTER (WHERE gps_valid) as gps_valid,
+                COUNT(*) FILTER (WHERE ts_raw IS NOT NULL) as ts_raw,
+                COUNT(*) FILTER (WHERE wifi_name IS NOT NULL) as wifi_name,
+                COUNT(*) FILTER (WHERE wifi_mac IS NOT NULL) as wifi_mac,
+                COUNT(*) FILTER (WHERE ip IS NOT NULL) as ip,
+                COUNT(*) FILTER (WHERE cpu_info IS NOT NULL) as cpu_info,
+                COUNT(*) FILTER (WHERE pressure IS NOT NULL) as pressure
+            FROM rebuild4.etl_parsed
+        """)
+        total = row.pop("total")
+        fields = []
+        for name, cnt in row.items():
+            fields.append({"field": name, "count": cnt, "rate": round(cnt / total, 4) if total else 0})
+        fields.sort(key=lambda x: -x["rate"])
+        return envelope({"total": total, "fields": fields}, subject_scope="governance", subject_note="解析字段覆盖率")
+    except Exception:
+        return envelope(None, subject_scope="governance", subject_note="数据未生成")
+
+
 @router.get("/etl/clean-stats")
 def etl_clean_stats(scope: str = "sample"):
     """清洗统计（从统计表读取）。"""
@@ -342,22 +384,52 @@ def etl_clean_stats(scope: str = "sample"):
 
 @router.get("/etl/fill-stats")
 def etl_fill_stats(scope: str = "sample"):
-    """补齐统计（从统计表读取）。"""
-    row = _latest_etl(scope)
-    if not row:
-        return envelope(None, subject_scope="governance", subject_note="ETL 未执行")
-    return envelope({
-        "scope": row["scope"],
-        "run_at": row["run_at"],
-        "before_total": row["fill_total"],
-        "before_gps": row["fill_before_gps"],
-        "before_rsrp": row["fill_before_rsrp"],
-        "gps_original": row["fill_gps_original"],
-        "gps_filled": row["fill_gps_filled"],
-        "gps_none": row["fill_gps_none"],
-        "gps_rate": row["fill_gps_rate"],
-        "rsrp_original": row["fill_rsrp_original"],
-        "rsrp_filled": row["fill_rsrp_filled"],
-        "rsrp_none": row["fill_rsrp_none"],
-        "rsrp_rate": row["fill_rsrp_rate"],
-    }, subject_scope="governance", subject_note="补齐统计")
+    """补齐统计（直接查 etl_cleaned + etl_filled）。"""
+    try:
+        before = fetchone("""
+            SELECT COUNT(*) as total,
+                COUNT(*) FILTER (WHERE lon_raw IS NOT NULL AND gps_valid) as has_gps,
+                COUNT(*) FILTER (WHERE rsrp IS NOT NULL) as has_rsrp,
+                COUNT(*) FILTER (WHERE operator_code IS NOT NULL) as has_operator,
+                COUNT(*) FILTER (WHERE lac IS NOT NULL) as has_lac,
+                COUNT(*) FILTER (WHERE wifi_name IS NOT NULL) as has_wifi
+            FROM rebuild4.etl_cleaned
+        """)
+        after = fetchone("""
+            SELECT COUNT(*) as total,
+                COUNT(*) FILTER (WHERE gps_fill_source IN ('raw_gps','ss1_own')) as gps_original,
+                COUNT(*) FILTER (WHERE gps_fill_source = 'same_cell') as gps_filled,
+                COUNT(*) FILTER (WHERE gps_fill_source = 'none') as gps_none,
+                COUNT(*) FILTER (WHERE rsrp_fill_source = 'original') as rsrp_original,
+                COUNT(*) FILTER (WHERE rsrp_fill_source = 'same_cell') as rsrp_filled,
+                COUNT(*) FILTER (WHERE rsrp_fill_source = 'none') as rsrp_none,
+                COUNT(*) FILTER (WHERE operator_fill_source = 'same_cell') as operator_filled,
+                COUNT(*) FILTER (WHERE lac_fill_source = 'same_cell') as lac_filled,
+                COUNT(*) FILTER (WHERE wifi_name IS NULL AND wifi_name_filled IS NOT NULL) as wifi_filled
+            FROM rebuild4.etl_filled
+        """)
+        t = after["total"]
+        row = _latest_etl(scope)
+        return envelope({
+            "scope": scope,
+            "run_at": row["run_at"] if row else None,
+            "before_total": before["total"],
+            "before_gps": before["has_gps"],
+            "before_rsrp": before["has_rsrp"],
+            "before_operator": before["has_operator"],
+            "before_lac": before["has_lac"],
+            "before_wifi": before["has_wifi"],
+            "gps_original": after["gps_original"],
+            "gps_filled": after["gps_filled"],
+            "gps_none": after["gps_none"],
+            "gps_rate": round((t - after["gps_none"]) / t, 4) if t else 0,
+            "rsrp_original": after["rsrp_original"],
+            "rsrp_filled": after["rsrp_filled"],
+            "rsrp_none": after["rsrp_none"],
+            "rsrp_rate": round((t - after["rsrp_none"]) / t, 4) if t else 0,
+            "operator_filled": after["operator_filled"],
+            "lac_filled": after["lac_filled"],
+            "wifi_filled": after["wifi_filled"],
+        }, subject_scope="governance", subject_note="补齐统计")
+    except Exception:
+        return envelope(None, subject_scope="governance", subject_note="补齐数据未生成")

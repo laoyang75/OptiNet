@@ -158,13 +158,16 @@ def step1_parse(raw_gps: str, raw_lac: str) -> StepResult:
 
 
 def _parse_cell_infos(source_table: str, target_table: str):
-    """解析 cell_infos JSON → 每个 isConnected=1 的 cell 一行。"""
+    """解析 cell_infos JSON → 每个 isConnected=1 的 cell 一行。完整 55 列。"""
     execute(f"DROP TABLE IF EXISTS {target_table}")
     execute(f"""
         CREATE TABLE {target_table} AS
         SELECT
             r."记录数唯一标识" AS record_id,
+            'sdk' AS data_source,
+            r."数据来源dna或daa" AS data_source_detail,
             'cell_infos' AS cell_origin,
+            -- 网络
             lower(cell->>'type') AS tech_raw,
             CASE lower(cell->>'type')
                 WHEN 'lte' THEN '4G' WHEN 'nr' THEN '5G'
@@ -189,21 +192,32 @@ def _parse_cell_infos(source_table: str, target_table: str):
             ) AS cell_id,
             (cell->'cell_identity'->>'Pci')::int AS pci,
             COALESCE(
-                (cell->'signal_strength'->>'rsrp')::int,
-                (cell->'signal_strength'->>'SsRsrp')::int
-            ) AS rsrp,
-            COALESCE(
-                (cell->'signal_strength'->>'rsrq')::int,
-                (cell->'signal_strength'->>'SsRsrq')::int
-            ) AS rsrq,
-            COALESCE(
-                (cell->'signal_strength'->>'rssnr')::int,
-                (cell->'signal_strength'->>'SsSinr')::int
-            ) AS sinr,
+                (cell->'cell_identity'->>'Earfcn')::int,
+                (cell->'cell_identity'->>'earfcn')::int,
+                (cell->'cell_identity'->>'ChannelNumber')::int,
+                (cell->'cell_identity'->>'arfcn')::int,
+                (cell->'cell_identity'->>'uarfcn')::int
+            ) AS freq_channel,
+            (cell->'cell_identity'->>'Bwth')::int AS bandwidth,
+            -- 信号
+            COALESCE((cell->'signal_strength'->>'rsrp')::int, (cell->'signal_strength'->>'SsRsrp')::int) AS rsrp,
+            COALESCE((cell->'signal_strength'->>'rsrq')::int, (cell->'signal_strength'->>'SsRsrq')::int) AS rsrq,
+            COALESCE((cell->'signal_strength'->>'rssnr')::int, (cell->'signal_strength'->>'SsSinr')::int) AS sinr,
+            (cell->'signal_strength'->>'rssi')::int AS rssi,
             (cell->'signal_strength'->>'Dbm')::int AS dbm,
+            (cell->'signal_strength'->>'AsuLevel')::int AS asu_level,
+            (cell->'signal_strength'->>'Level')::int AS sig_level,
+            NULL::int AS sig_ss,
+            (cell->'signal_strength'->>'TimingAdvance')::int AS timing_advance,
+            (cell->'signal_strength'->>'CsiRsrp')::int AS csi_rsrp,
+            (cell->'signal_strength'->>'CsiRsrq')::int AS csi_rsrq,
+            (cell->'signal_strength'->>'CsiSinr')::int AS csi_sinr,
+            (cell->'signal_strength'->>'cqi')::int AS cqi,
+            -- 时间
             r.ts AS ts_raw,
             cell->>'timeStamp' AS cell_ts_raw,
             r."gps上报时间" AS gps_ts_raw,
+            -- 位置
             r.gps_info_type,
             CASE WHEN r.gps_info_type IN ('gps','1') THEN true ELSE false END AS gps_valid,
             CASE WHEN r."原始上报gps" IS NOT NULL AND r."原始上报gps" LIKE '%,%'
@@ -211,12 +225,19 @@ def _parse_cell_infos(source_table: str, target_table: str):
             CASE WHEN r."原始上报gps" IS NOT NULL AND r."原始上报gps" LIKE '%,%'
                 THEN split_part(r."原始上报gps", ',', 2)::float8 END AS lat_raw,
             'raw_gps' AS gps_filled_from,
+            -- 元数据
             r.did AS dev_id,
+            r.ip,
             r."主卡运营商id" AS plmn_main,
             r."品牌" AS brand,
             r."机型" AS model,
+            r.sdk_ver,
+            r.oaid,
+            r.pkg_name,
             r.wifi_name,
-            r.wifi_mac
+            r.wifi_mac,
+            r.cpu_info,
+            r."压力" AS pressure
         FROM {source_table} r,
             jsonb_each(NULLIF(btrim(r.cell_infos), '')::jsonb) e(key, cell)
         WHERE r.cell_infos IS NOT NULL AND length(r.cell_infos) > 5
@@ -243,15 +264,22 @@ def _parse_ss1(source_table: str, target_table: str):
         CREATE TABLE {target_table}_groups AS
         SELECT
             r."记录数唯一标识" AS record_id,
+            r."数据来源dna或daa" AS data_source_detail,
             r.ts AS ts_raw,
             r."gps上报时间" AS gps_ts_raw,
             r.gps_info_type,
             r.did AS dev_id,
+            r.ip,
             r."主卡运营商id" AS plmn_main,
             r."品牌" AS brand,
             r."机型" AS model,
+            r.sdk_ver,
+            r.oaid,
+            r.pkg_name,
             r.wifi_name,
             r.wifi_mac,
+            r.cpu_info,
+            r."压力" AS pressure,
             grp,
             grp_idx,
             split_part(grp, '&', 1) AS sig_block,
@@ -291,9 +319,10 @@ def _parse_ss1(source_table: str, target_table: str):
     execute(f"""
         CREATE TABLE {target_table} AS
         WITH cells AS (
-            SELECT c.record_id, c.grp_idx, c.cb_source,
+            SELECT c.record_id, c.data_source_detail, c.grp_idx, c.cb_source,
                 c.ts_raw, c.ts_block, c.gps_block, c.gps_ts_raw, c.gps_info_type,
-                c.sig_block, c.dev_id, c.plmn_main, c.brand, c.model, c.wifi_name, c.wifi_mac,
+                c.sig_block, c.dev_id, c.ip, c.plmn_main, c.brand, c.model,
+                c.sdk_ver, c.oaid, c.pkg_name, c.wifi_name, c.wifi_mac, c.cpu_info, c.pressure,
                 left(cell_entry, 1) AS cell_tech,
                 split_part(cell_entry, ',', 2) AS cid_str,
                 split_part(cell_entry, ',', 3) AS lac_str,
@@ -322,6 +351,8 @@ def _parse_ss1(source_table: str, target_table: str):
         )
         SELECT
             c.record_id,
+            'sdk' AS data_source,
+            c.data_source_detail,
             'ss1' AS cell_origin,
             c.cell_tech AS tech_raw,
             CASE c.cell_tech
@@ -332,13 +363,21 @@ def _parse_ss1(source_table: str, target_table: str):
             CASE WHEN c.lac_str ~ '^\d+$' THEN c.lac_str::bigint END AS lac,
             CASE WHEN c.cid_str ~ '^\d+$' THEN c.cid_str::bigint END AS cell_id,
             NULL::int AS pci,
-            CASE WHEN s.rsrp_val ~ '^-?\d+$' AND s.rsrp_val != '-1'
-                THEN s.rsrp_val::int END AS rsrp,
-            CASE WHEN s.rsrq_val ~ '^-?\d+$' AND s.rsrq_val != '-1'
-                THEN s.rsrq_val::int END AS rsrq,
-            CASE WHEN s.sinr_val ~ '^-?\d+$' AND s.sinr_val != '-1'
-                THEN s.sinr_val::int END AS sinr,
+            NULL::int AS freq_channel,
+            NULL::int AS bandwidth,
+            CASE WHEN s.rsrp_val ~ '^-?\d+$' AND s.rsrp_val != '-1' THEN s.rsrp_val::int END AS rsrp,
+            CASE WHEN s.rsrq_val ~ '^-?\d+$' AND s.rsrq_val != '-1' THEN s.rsrq_val::int END AS rsrq,
+            CASE WHEN s.sinr_val ~ '^-?\d+$' AND s.sinr_val != '-1' THEN s.sinr_val::int END AS sinr,
+            NULL::int AS rssi,
             NULL::int AS dbm,
+            NULL::int AS asu_level,
+            NULL::int AS sig_level,
+            CASE WHEN s.ss_val ~ '^-?\d+$' AND s.ss_val != '-1' THEN s.ss_val::int END AS sig_ss,
+            NULL::int AS timing_advance,
+            NULL::int AS csi_rsrp,
+            NULL::int AS csi_rsrq,
+            NULL::int AS csi_sinr,
+            NULL::int AS cqi,
             c.ts_raw,
             c.ts_block AS cell_ts_raw,
             c.gps_ts_raw,
@@ -352,11 +391,17 @@ def _parse_ss1(source_table: str, target_table: str):
             CASE WHEN c.gps_block != '0' AND c.gps_block ~ '^\d+\.\d+,'
                 THEN 'ss1_own' ELSE 'none' END AS gps_filled_from,
             c.dev_id,
+            c.ip,
             c.plmn_main,
             c.brand,
             c.model,
+            c.sdk_ver,
+            c.oaid,
+            c.pkg_name,
             c.wifi_name,
-            c.wifi_mac
+            c.wifi_mac,
+            c.cpu_info,
+            c.pressure
         FROM cells c
         LEFT JOIN sigs s
             ON s.record_id = c.record_id
@@ -485,13 +530,18 @@ def step2_clean() -> StepResult:
             "desc": rule["desc"],
         })
 
-    # 派生字段：基站ID、扇区ID、运营商中文
+    # 派生字段：基站ID、扇区ID、运营商中文、时间转换、标记
     execute("""
         ALTER TABLE rebuild4.etl_cleaned
             ADD COLUMN IF NOT EXISTS bs_id bigint,
             ADD COLUMN IF NOT EXISTS sector_id bigint,
-            ADD COLUMN IF NOT EXISTS operator_cn text
+            ADD COLUMN IF NOT EXISTS operator_cn text,
+            ADD COLUMN IF NOT EXISTS ts_std timestamptz,
+            ADD COLUMN IF NOT EXISTS cell_ts_std timestamptz,
+            ADD COLUMN IF NOT EXISTS gps_ts timestamptz,
+            ADD COLUMN IF NOT EXISTS has_cell_id boolean
     """)
+    # 基站ID + 扇区ID + 运营商中文
     execute("""
         UPDATE rebuild4.etl_cleaned SET
             bs_id = CASE
@@ -507,6 +557,28 @@ def step2_clean() -> StepResult:
                 WHEN '46001' THEN '联通' WHEN '46006' THEN '联通' WHEN '46009' THEN '联通'
                 WHEN '46003' THEN '电信' WHEN '46005' THEN '电信' WHEN '46011' THEN '电信'
                 WHEN '46015' THEN '广电' WHEN '46020' THEN '铁路'
+            END,
+            has_cell_id = (cell_id IS NOT NULL AND cell_id != 0)
+    """)
+    # 时间转换：ts_raw → ts_std（上报时间）
+    execute(r"""
+        UPDATE rebuild4.etl_cleaned SET
+            ts_std = CASE WHEN ts_raw ~ '^\d{4}-' THEN ts_raw::timestamptz END
+    """)
+    # 时间转换：cell_ts_raw → cell_ts_std（ss1 的基站扫描时间，unix 秒）
+    execute(r"""
+        UPDATE rebuild4.etl_cleaned SET
+            cell_ts_std = CASE
+                WHEN cell_origin = 'ss1' AND cell_ts_raw ~ '^\d{10}$'
+                THEN to_timestamp(cell_ts_raw::bigint)
+            END
+    """)
+    # 时间转换：gps_ts_raw → gps_ts（GPS 采集时间，unix 毫秒）
+    execute(r"""
+        UPDATE rebuild4.etl_cleaned SET
+            gps_ts = CASE
+                WHEN gps_ts_raw ~ '^\d{13}$'
+                THEN to_timestamp(gps_ts_raw::bigint / 1000.0)
             END
     """)
 
@@ -600,10 +672,16 @@ def step3_fill() -> StepResult:
             LEFT JOIN donor d ON d.record_id = c.record_id AND d.cell_id = c.cell_id
         )
         SELECT
-            record_id, cell_origin, tech_raw, tech_norm, operator_code, lac, cell_id,
-            pci, rsrp, rsrq, sinr, dbm, ts_raw, cell_ts_raw, gps_ts_raw,
+            record_id, data_source, data_source_detail, cell_origin,
+            tech_raw, tech_norm, operator_code, lac, cell_id,
+            pci, freq_channel, bandwidth,
+            rsrp, rsrq, sinr, rssi, dbm, asu_level, sig_level, sig_ss,
+            timing_advance, csi_rsrp, csi_rsrq, csi_sinr, cqi,
+            ts_raw, ts_std, cell_ts_raw, cell_ts_std, gps_ts_raw, gps_ts,
             gps_info_type, gps_valid, lon_raw, lat_raw, gps_filled_from,
-            dev_id, plmn_main, brand, model, wifi_name, wifi_mac,
+            has_cell_id,
+            dev_id, ip, plmn_main, brand, model, sdk_ver, oaid, pkg_name,
+            wifi_name, wifi_mac, cpu_info, pressure,
             bs_id, sector_id, operator_cn,
             allow_full_fill,
             -- 运营商补齐（总是可补，不受时间约束）
