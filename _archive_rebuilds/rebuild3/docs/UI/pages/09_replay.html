@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 — 回放对比</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+    border-left-color: #6366f1;
+  }
+  .sidebar-nav a .icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 90;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .topbar-context { font-size: 12px; color: #9ca3af; letter-spacing: 0.02em; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    margin-top: 52px;
+    padding: 24px 28px 40px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .card-header {
+    padding: 14px 18px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-body { padding: 18px; }
+
+  /* ── Comparison Setup ── */
+  .comparison-setup {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .run-box {
+    flex: 1;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 16px 20px;
+  }
+  .run-box-label {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .run-box-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+  .run-box-id {
+    font-size: 12px;
+    color: #4b5563;
+    font-family: 'SF Mono', 'Menlo', monospace;
+  }
+  .vs-divider {
+    font-size: 13px;
+    font-weight: 700;
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+  .comparison-meta {
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 12px;
+    color: #4b5563;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-gray { background: #f3f4f6; color: #4b5563; }
+  .badge-orange { background: #ffedd5; color: #9a3412; }
+
+  /* ── Score Ring ── */
+  .score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 0 12px;
+  }
+  .score-ring {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin-bottom: 8px;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .score-ring-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+  }
+  .score-ring-unit {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: 2px;
+  }
+  .score-ring-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4b5563;
+  }
+
+  /* ── Metric Row (6 cols) ── */
+  .metric-row-6 {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .convergence-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 14px 16px;
+    border-top: 3px solid transparent;
+    text-align: center;
+  }
+  .convergence-card.green { border-top-color: #22c55e; }
+  .convergence-card.amber { border-top-color: #fbbf24; }
+  .convergence-card.red { border-top-color: #ef4444; }
+  .convergence-label {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .convergence-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .convergence-value.green { color: #16a34a; }
+  .convergence-value.amber { color: #d97706; }
+  .convergence-value.red { color: #dc2626; }
+  .convergence-sub {
+    font-size: 11px;
+    color: #4b5563;
+    margin-top: 4px;
+  }
+
+  /* ── Two Column Detail ── */
+  .detail-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #111827;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9fafb; }
+  td.mono {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 12px;
+  }
+  .text-green { color: #16a34a; }
+  .text-amber { color: #d97706; }
+  .text-red { color: #dc2626; }
+  .text-muted { color: #9ca3af; }
+  .text-link {
+    color: #6366f1;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .text-link:hover { color: #4f46e5; text-decoration: underline; }
+
+  .check-icon { color: #22c55e; font-weight: 600; }
+  .warn-icon { color: #f59e0b; font-weight: 600; }
+
+  /* ── Trend Chart ── */
+  .chart-placeholder {
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .chart-mock {
+    width: 100%;
+    max-width: 720px;
+    height: 200px;
+    position: relative;
+  }
+  .chart-mock svg { width: 100%; height: 100%; }
+  .chart-label {
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+  }
+
+  /* ── View All Link ── */
+  .view-all {
+    padding: 10px 18px;
+    text-align: right;
+    border-top: 1px solid #f3f4f6;
+  }
+  .view-all a {
+    font-size: 12.5px;
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .view-all a:hover { color: #4f46e5; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="01_dashboard.html"><span class="icon">&#x229E;</span> 仪表盘</a>
+    <a href="02_run_center.html"><span class="icon">&#x25B6;</span> 运行中心</a>
+    <a href="03_objects_list.html"><span class="icon">&#x229F;</span> 对象浏览</a>
+    <a href="#"><span class="icon">&#x25CE;</span> 等待池</a>
+    <a href="#"><span class="icon">&#x26A0;</span> 异常看板</a>
+    <a href="#"><span class="icon">&#x2611;</span> 批次审查</a>
+    <a href="#"><span class="icon">&#x25C8;</span> 基线管理</a>
+    <a href="09_replay.html" class="active"><span class="icon">&#x21C4;</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <div class="topbar-title">回放对比</div>
+  <div class="topbar-context">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</div>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- ── Top: Comparison Setup ── -->
+  <div class="card">
+    <div class="card-header">对比设置</div>
+    <div class="card-body">
+      <div class="comparison-setup">
+        <div class="run-box">
+          <div class="run-box-label">左侧运行 (增量路径)</div>
+          <div class="run-box-title">3天初始化 + 4天增量 <span class="badge badge-green">&#x2713; 完成</span></div>
+          <div class="run-box-id">R-20260330-INIT3 + R-20260402-INCR</div>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="run-box">
+          <div class="run-box-label">右侧运行 (全量路径)</div>
+          <div class="run-box-title">7天直接初始化 <span class="badge badge-blue">&#x2713; 完成</span></div>
+          <div class="run-box-id">R-20260330-INIT7</div>
+        </div>
+        <div class="comparison-meta">
+          <div style="margin-bottom: 6px;"><span class="badge badge-green">&#x2713; 对比完成</span></div>
+          <div style="color: #9ca3af;">创建于 2026-04-03 01:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 1: Convergence Score ── -->
+  <div class="card">
+    <div class="card-header">收敛度总览</div>
+    <div class="card-body">
+      <div class="score-section">
+        <div class="score-ring-title">综合收敛度</div>
+        <div class="score-ring">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="68" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+            <circle cx="80" cy="80" r="68" fill="none" stroke="#22c55e" stroke-width="12"
+                    stroke-dasharray="427.3" stroke-dashoffset="13.7"
+                    stroke-linecap="round"/>
+          </svg>
+          <div class="score-ring-label">
+            <div class="score-ring-value">96.8%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-row-6">
+        <div class="convergence-card green">
+          <div class="convergence-label">对象收敛</div>
+          <div class="convergence-value green">97.2%</div>
+          <div class="convergence-sub">&gt;95% 达标</div>
+        </div>
+        <div class="convergence-card green">
+          <div class="convergence-label">空间收敛</div>
+          <div class="convergence-value green">95.1%</div>
+          <div class="convergence-sub">P90差&lt;200m</div>
+        </div>
+        <div class="convergence-card green">
+          <div class="convergence-label">信号收敛</div>
+          <div class="convergence-value green">96.5%</div>
+          <div class="convergence-sub">分位差&lt;3dB</div>
+        </div>
+        <div class="convergence-card amber">
+          <div class="convergence-label">异常收敛</div>
+          <div class="convergence-value amber">93.8%</div>
+          <div class="convergence-sub">&gt;90% 达标</div>
+        </div>
+        <div class="convergence-card green">
+          <div class="convergence-label">决策收敛</div>
+          <div class="convergence-value green">98.1%</div>
+          <div class="convergence-sub">四分流一致</div>
+        </div>
+        <div class="convergence-card amber">
+          <div class="convergence-label">热层稳定</div>
+          <div class="convergence-value amber">94.2%</div>
+          <div class="convergence-sub">波动可接受</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 2: Detailed Comparison ── -->
+  <div class="detail-row">
+    <!-- Left: Object Convergence -->
+    <div class="card">
+      <div class="card-header">对象收敛详情</div>
+      <div class="card-body" style="padding: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>3+4</th>
+              <th>7天</th>
+              <th>差异</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Active Cell</td>
+              <td>8,432</td>
+              <td>8,501</td>
+              <td class="text-muted">-69 (-0.8%)</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>Active BS</td>
+              <td>3,215</td>
+              <td>3,228</td>
+              <td class="text-muted">-13 (-0.4%)</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>Active LAC</td>
+              <td>1,200</td>
+              <td>1,203</td>
+              <td class="text-muted">-3 (-0.2%)</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>主键重合度</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-muted">&mdash;</td>
+              <td style="font-weight: 600;" class="text-green">97.2%</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>独有 (3+4)</td>
+              <td>45</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-muted">&mdash;</td>
+              <td><a href="#" class="text-link">查看</a></td>
+            </tr>
+            <tr>
+              <td>独有 (7天)</td>
+              <td class="text-muted">&mdash;</td>
+              <td>114</td>
+              <td class="text-muted">&mdash;</td>
+              <td><a href="#" class="text-link">查看</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Spatial Convergence -->
+    <div class="card">
+      <div class="card-header">空间收敛详情</div>
+      <div class="card-body" style="padding: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>3+4</th>
+              <th>7天</th>
+              <th>差异</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>BS中心点距离 P50</td>
+              <td>23m</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-muted">&mdash;</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>BS中心点距离 P90</td>
+              <td>156m</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-green" style="font-weight: 600;">&lt;200m</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>BS中心点距离 P99</td>
+              <td>412m</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-muted">&mdash;</td>
+              <td><span class="warn-icon">&#x26A0;</span></td>
+            </tr>
+            <tr>
+              <td>覆盖半径 P50 差</td>
+              <td>45m</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-muted">&mdash;</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>覆盖半径 P90 差</td>
+              <td>189m</td>
+              <td class="text-muted">&mdash;</td>
+              <td class="text-muted">&mdash;</td>
+              <td><span class="check-icon">&#x2713;</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 3: Divergent Objects ── -->
+  <div class="card">
+    <div class="card-header">
+      <span>主要差异对象 <span class="text-muted" style="font-weight: 400;">(共 159 个)</span></span>
+      <a href="#" class="text-link" style="font-size: 12.5px;">查看全部 &rarr;</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <table>
+        <thead>
+          <tr>
+            <th>对象</th>
+            <th>类型</th>
+            <th>3+4 结果</th>
+            <th>7天结果</th>
+            <th>差异原因</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">46000-4G-88881-11100</td>
+            <td><span class="badge badge-gray">Cell</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="badge badge-amber">waiting</span></td>
+            <td style="color: #4b5563;">增量期证据不足</td>
+          </tr>
+          <tr>
+            <td class="mono">46000-4G-88882-11101</td>
+            <td><span class="badge badge-gray">Cell</span></td>
+            <td class="text-muted">&mdash;</td>
+            <td><span class="badge badge-green">active</span></td>
+            <td style="color: #4b5563;">3天窗口未见</td>
+          </tr>
+          <tr>
+            <td class="mono">BS-460009999</td>
+            <td><span class="badge badge-gray">BS</span></td>
+            <td><span class="badge badge-orange">active / gps_bias</span></td>
+            <td><span class="badge badge-green">active / healthy</span></td>
+            <td style="color: #4b5563;">增量修正了偏差</td>
+          </tr>
+          <tr>
+            <td class="mono">46001-4G-88883-11102</td>
+            <td><span class="badge badge-gray">Cell</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="badge badge-orange">active / collision_suspect</span></td>
+            <td style="color: #4b5563;">7天检测到碰撞</td>
+          </tr>
+          <tr>
+            <td class="mono">46000-4G-88884-11103</td>
+            <td><span class="badge badge-gray">Cell</span></td>
+            <td><span class="badge badge-amber">observing</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td style="color: #4b5563;">窗口差异</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="view-all"><a href="#">查看全部 159 个差异对象 &rarr;</a></div>
+  </div>
+
+  <!-- ── Bottom: Trend Chart ── -->
+  <div class="card">
+    <div class="card-header">收敛趋势图 &mdash; 按批次展示各指标收敛变化</div>
+    <div class="card-body">
+      <div class="chart-placeholder">
+        <div class="chart-mock">
+          <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid lines -->
+            <line x1="40" y1="20" x2="40" y2="180" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="40" y1="180" x2="700" y2="180" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="40" y1="140" x2="700" y2="140" stroke="#f3f4f6" stroke-width="1" stroke-dasharray="4"/>
+            <line x1="40" y1="100" x2="700" y2="100" stroke="#f3f4f6" stroke-width="1" stroke-dasharray="4"/>
+            <line x1="40" y1="60" x2="700" y2="60" stroke="#f3f4f6" stroke-width="1" stroke-dasharray="4"/>
+            <line x1="40" y1="20" x2="700" y2="20" stroke="#f3f4f6" stroke-width="1" stroke-dasharray="4"/>
+
+            <!-- Y axis labels -->
+            <text x="8" y="184" font-size="10" fill="#9ca3af">80%</text>
+            <text x="8" y="144" font-size="10" fill="#9ca3af">85%</text>
+            <text x="8" y="104" font-size="10" fill="#9ca3af">90%</text>
+            <text x="8" y="64" font-size="10" fill="#9ca3af">95%</text>
+            <text x="4" y="24" font-size="10" fill="#9ca3af">100%</text>
+
+            <!-- X axis labels (batches) -->
+            <text x="95" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B1</text>
+            <text x="150" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B2</text>
+            <text x="205" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B3</text>
+            <text x="260" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B4</text>
+            <text x="315" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B5</text>
+            <text x="370" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B6</text>
+            <text x="425" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B7</text>
+            <text x="480" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B8</text>
+            <text x="535" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B9</text>
+            <text x="590" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B10</text>
+            <text x="645" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B11</text>
+            <text x="700" y="196" font-size="10" fill="#9ca3af" text-anchor="middle">B12</text>
+
+            <!-- 95% threshold line -->
+            <line x1="40" y1="60" x2="700" y2="60" stroke="#22c55e" stroke-width="1" stroke-dasharray="6,3" opacity="0.5"/>
+            <text x="705" y="64" font-size="9" fill="#22c55e">95%</text>
+
+            <!-- Convergence line (overall) -->
+            <polyline fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                      points="95,160 150,140 205,120 260,105 315,90 370,78 425,68 480,58 535,50 590,45 645,40 700,36"/>
+            <!-- Dots -->
+            <g fill="#6366f1">
+              <circle cx="95" cy="160" r="3.5"/>
+              <circle cx="150" cy="140" r="3.5"/>
+              <circle cx="205" cy="120" r="3.5"/>
+              <circle cx="260" cy="105" r="3.5"/>
+              <circle cx="315" cy="90" r="3.5"/>
+              <circle cx="370" cy="78" r="3.5"/>
+              <circle cx="425" cy="68" r="3.5"/>
+              <circle cx="480" cy="58" r="3.5"/>
+              <circle cx="535" cy="50" r="3.5"/>
+              <circle cx="590" cy="45" r="3.5"/>
+              <circle cx="645" cy="40" r="3.5"/>
+              <circle cx="700" cy="36" r="3.5"/>
+            </g>
+
+            <!-- Object convergence line -->
+            <polyline fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"
+                      points="95,155 150,135 205,115 260,98 315,82 370,70 425,58 480,48 535,42 590,38 645,35 700,32"/>
+
+            <!-- Anomaly convergence line (lower) -->
+            <polyline fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"
+                      points="95,170 150,155 205,140 260,125 315,110 370,98 425,85 480,76 535,70 590,65 645,60 700,56"/>
+
+            <!-- Legend -->
+            <rect x="200" y="2" width="10" height="3" rx="1" fill="#6366f1"/>
+            <text x="214" y="6" font-size="9" fill="#4b5563">综合</text>
+            <rect x="250" y="2" width="10" height="3" rx="1" fill="#22c55e"/>
+            <text x="264" y="6" font-size="9" fill="#4b5563">对象</text>
+            <rect x="300" y="2" width="10" height="3" rx="1" fill="#f59e0b"/>
+            <text x="314" y="6" font-size="9" fill="#4b5563">异常</text>
+          </svg>
+        </div>
+        <div class="chart-label">收敛趋势图 &mdash; 从 Batch 1 到 Batch 12，各维度收敛度逐步提升</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>

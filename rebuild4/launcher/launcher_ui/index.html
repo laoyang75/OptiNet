@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>rebuild4 流式治理工作台 - 启动器</title>
+  <style>
+    :root {
+      --color-primary: #4f46e5;
+      --color-primary-light: #6366f1;
+      --color-primary-surface: #eef2ff;
+      --color-green-500: #22c55e;
+      --color-green-100: #dcfce7;
+      --color-red-500: #ef4444;
+      --color-red-100: #fee2e2;
+      --color-amber-500: #f59e0b;
+      --color-amber-100: #fef3c7;
+      --color-orange-500: #f97316;
+      --color-orange-100: #ffedd5;
+      --color-gray-50: #f8fafc;
+      --color-gray-100: #f1f5f9;
+      --color-gray-200: #e2e8f0;
+      --color-gray-300: #cbd5e1;
+      --color-gray-400: #94a3b8;
+      --color-gray-500: #64748b;
+      --color-gray-700: #334155;
+      --color-gray-800: #1e293b;
+      --color-gray-900: #0f172a;
+      --color-surface: #ffffff;
+      --color-bg: linear-gradient(180deg, #eef4ff 0%, #f8fafc 38%, #f4f7fb 100%);
+      --color-log-bg: #0f172a;
+      --color-log-text: #dbe4f3;
+      --color-log-info: #93c5fd;
+      --color-log-warn: #fcd34d;
+      --color-log-error: #fda4af;
+      --color-log-time: #64748b;
+      --radius-sm: 7px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --shadow-card-hover: 0 16px 40px rgba(15, 23, 42, 0.12);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      font-family: var(--font-sans);
+      color: var(--color-gray-800);
+      background: var(--color-bg);
+      line-height: 1.5;
+    }
+
+    .launcher {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      background: linear-gradient(135deg, #4f46e5 0%, #1d4ed8 100%);
+      box-shadow: 0 10px 24px rgba(79, 70, 229, 0.24);
+    }
+
+    .header-title {
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--color-gray-900);
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: var(--color-gray-500);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(203, 213, 225, 0.72);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-card);
+      backdrop-filter: blur(12px);
+    }
+
+    .summary-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-gray-400);
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-gray-900);
+      word-break: break-all;
+    }
+
+    .summary-note {
+      font-size: 12px;
+      color: var(--color-gray-500);
+      margin-top: 4px;
+    }
+
+    .notice {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .notice.is-visible { display: block; }
+    .notice-success { background: var(--color-green-100); color: #166534; border-color: #86efac; }
+    .notice-error { background: var(--color-red-100); color: #991b1b; border-color: #fca5a5; }
+    .notice-warn { background: var(--color-amber-100); color: #92400e; border-color: #fcd34d; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: var(--color-surface);
+      color: var(--color-gray-700);
+      text-decoration: none;
+    }
+
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+    .btn-primary:hover:not(:disabled) { background: var(--color-primary-light); }
+    .btn-outline { border-color: var(--color-gray-200); }
+    .btn-outline:hover:not(:disabled) { border-color: var(--color-gray-300); background: var(--color-gray-50); }
+    .btn-danger-outline { border: 1.5px dashed var(--color-red-500); color: var(--color-red-500); }
+    .btn-danger-outline:hover:not(:disabled) { background: var(--color-red-100); }
+    .btn-ghost { background: transparent; color: var(--color-gray-500); }
+    .btn-ghost:hover:not(:disabled) { background: var(--color-gray-100); }
+    .btn-sm { padding: 6px 10px; font-size: 12px; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .service-card {
+      background: rgba(255, 255, 255, 0.86);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(203, 213, 225, 0.72);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 252px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .service-card:hover { box-shadow: var(--shadow-card-hover); }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-name { font-size: 15px; font-weight: 700; color: var(--color-gray-900); }
+    .card-tech { font-size: 12px; color: var(--color-gray-400); margin-top: 2px; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-running { background: var(--color-green-100); color: #166534; }
+    .status-running .status-dot { background: var(--color-green-500); animation: pulse-green 1.8s infinite; }
+    .status-stopped { background: var(--color-red-100); color: #991b1b; }
+    .status-stopped .status-dot { background: var(--color-red-500); }
+    .status-starting { background: var(--color-amber-100); color: #92400e; }
+    .status-starting .status-dot { background: var(--color-amber-500); animation: pulse-amber 1s infinite; }
+    .status-port-open { background: var(--color-orange-100); color: #9a3412; }
+    .status-port-open .status-dot { background: var(--color-orange-500); }
+
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    }
+
+    @keyframes pulse-amber {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .card-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .meta-item {
+      text-align: center;
+      background: var(--color-gray-50);
+      border-radius: var(--radius-sm);
+      padding: 7px 6px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      color: var(--color-gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meta-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-gray-800);
+      margin-top: 2px;
+      font-family: var(--font-mono);
+    }
+
+    .meta-na { color: var(--color-gray-300); font-weight: 500; }
+    .service-hint { font-size: 12px; color: var(--color-gray-500); min-height: 36px; }
+
+    .card-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .card-links a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+
+    .card-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: auto;
+    }
+
+    .log-viewer {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(203, 213, 225, 0.72);
+      overflow: hidden;
+    }
+
+    .log-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--color-gray-200);
+      background: rgba(248, 250, 252, 0.95);
+    }
+
+    .log-toolbar-left, .log-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      background: var(--color-gray-100);
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      color: var(--color-gray-500);
+      border-radius: 5px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .filter-pills { display: flex; gap: 4px; }
+
+    .pill {
+      border: 1px solid var(--color-gray-200);
+      background: var(--color-surface);
+      color: var(--color-gray-500);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+    }
+
+    .pill.active { background: var(--color-primary-surface); border-color: #a5b4fc; color: var(--color-primary); }
+    .pill-info.active { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+    .pill-warn.active { background: var(--color-amber-100); border-color: #fcd34d; color: #92400e; }
+    .pill-error.active { background: var(--color-red-100); border-color: #fca5a5; color: #991b1b; }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-gray-500);
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .toggle-track {
+      width: 32px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--color-gray-300);
+      position: relative;
+      transition: background 0.15s ease;
+    }
+
+    .toggle-track.on { background: var(--color-primary); }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      transition: transform 0.15s ease;
+    }
+
+    .toggle-track.on .toggle-thumb { transform: translateX(14px); }
+
+    .log-content {
+      background: var(--color-log-bg);
+      padding: 16px 18px;
+      min-height: 280px;
+      max-height: 420px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.75;
+    }
+
+    .log-content::-webkit-scrollbar { width: 7px; }
+    .log-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+    .log-empty { color: var(--color-log-time); }
+    .log-line { white-space: pre-wrap; word-break: break-word; }
+    .log-line .ts { color: var(--color-log-time); }
+    .log-line .level-info { color: var(--color-log-info); font-weight: 700; }
+    .log-line .level-warn { color: var(--color-log-warn); font-weight: 700; }
+    .log-line .level-error { color: var(--color-log-error); font-weight: 700; }
+    .log-line .msg { color: var(--color-log-text); }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--color-gray-500);
+    }
+
+    @media (max-width: 980px) {
+      .summary-strip { grid-template-columns: repeat(2, 1fr); }
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .launcher { padding: 16px 12px 28px; }
+      .summary-strip { grid-template-columns: 1fr; }
+      .card-actions { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="launcher">
+    <header class="header">
+      <div class="header-left">
+        <div class="header-logo">R4</div>
+        <div>
+          <div class="header-title">rebuild4 启动器</div>
+          <div class="header-subtitle">独立 Python 入口 · 先确认服务，再进入流式治理工作台</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="actionAll('start')">一键启动全部</button>
+        <button class="btn btn-outline" onclick="actionAll('stop')">一键停止全部</button>
+        <button class="btn btn-outline" onclick="actionAll('restart')">一键重启全部</button>
+        <button class="btn btn-outline" id="open-workbench-btn" onclick="openWorkbench()" disabled>打开工作台</button>
+        <button class="btn btn-outline" onclick="refreshNow()">刷新状态</button>
+      </div>
+    </header>
+
+    <section class="summary-strip" id="summary-strip">
+      <article class="summary-card">
+        <div class="summary-label">Launcher</div>
+        <div class="summary-value" id="launcher-url">--</div>
+        <div class="summary-note">独立入口，不依赖前后端先启动</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-label">Workbench</div>
+        <div class="summary-value" id="workbench-url">--</div>
+        <div class="summary-note">前端工作台地址</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-label">Backend Health</div>
+        <div class="summary-value" id="backend-health-url">--</div>
+        <div class="summary-note">后端健康检查地址</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-label">Generated</div>
+        <div class="summary-value" id="generated-at">--</div>
+        <div class="summary-note">状态轮询自动刷新</div>
+      </article>
+    </section>
+
+    <div id="notice" class="notice"></div>
+
+    <section class="cards-grid" id="cards-grid"></section>
+
+    <section class="log-viewer">
+      <div class="log-toolbar">
+        <div class="log-toolbar-left">
+          <div class="tabs" id="log-tabs"></div>
+          <div class="filter-pills" id="log-filters">
+            <button class="pill active" data-level="all" onclick="setLevel('all', this)">全部</button>
+            <button class="pill pill-info" data-level="info" onclick="setLevel('info', this)">信息</button>
+            <button class="pill pill-warn" data-level="warn" onclick="setLevel('warn', this)">警告</button>
+            <button class="pill pill-error" data-level="error" onclick="setLevel('error', this)">错误</button>
+          </div>
+        </div>
+        <div class="log-toolbar-right">
+          <label class="toggle-label" onclick="toggleAutoScroll()">
+            <div class="toggle-track on" id="auto-scroll-toggle"><div class="toggle-thumb"></div></div>
+            自动滚动
+          </label>
+          <button class="btn btn-ghost btn-sm" onclick="clearLog()">清除视图</button>
+        </div>
+      </div>
+      <div class="log-content" id="log-content"></div>
+    </section>
+
+    <div class="footer-note">危险操作说明：仅本机服务支持 `kill-port`；数据库当前为远端只读输入源，启动器只做状态检查。</div>
+  </div>
+
+  <script>
+    const state = {
+      services: [],
+      activeService: 'backend',
+      level: 'all',
+      autoScroll: true,
+      logLines: [],
+      clearedView: false,
+    };
+
+    let servicesTimer = null;
+    let logsTimer = null;
+
+    function statusLabel(status) {
+      return {
+        running: '运行中',
+        stopped: '已停止',
+        starting: '启动中',
+        'port-open': '端口占用',
+      }[status] || status || '--';
+    }
+
+    function statusClass(status) {
+      return {
+        running: 'status-running',
+        stopped: 'status-stopped',
+        starting: 'status-starting',
+        'port-open': 'status-port-open',
+      }[status] || 'status-stopped';
+    }
+
+    function escapeHtml(value) {
+      const div = document.createElement('div');
+      div.textContent = value == null ? '' : String(value);
+      return div.innerHTML;
+    }
+
+    function showNotice(message, tone) {
+      const node = document.getElementById('notice');
+      node.className = `notice is-visible notice-${tone}`;
+      node.textContent = message;
+      window.clearTimeout(node._timer);
+      node._timer = window.setTimeout(() => {
+        node.className = 'notice';
+        node.textContent = '';
+      }, 4200);
+    }
+
+    async function request(path, options) {
+      const response = await fetch(path, {
+        method: options && options.method ? options.method : 'GET',
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.status === 'error') {
+        const msg = payload.message || payload.detail || `请求失败: ${response.status}`;
+        throw new Error(msg);
+      }
+      return payload;
+    }
+
+    function renderSummary(payload) {
+      document.getElementById('launcher-url').textContent = payload.launcher.url;
+      document.getElementById('workbench-url').textContent = payload.quick_links.workbench;
+      document.getElementById('backend-health-url').textContent = payload.quick_links.backend_health;
+      document.getElementById('generated-at').textContent = payload.generated_at.replace('T', ' ');
+      const frontend = (payload.services || []).find((item) => item.service_key === 'frontend');
+      const openWorkbenchBtn = document.getElementById('open-workbench-btn');
+      openWorkbenchBtn.disabled = !frontend || !['running', 'port-open'].includes(frontend.status);
+    }
+
+    function serviceOpenLink(service) {
+      if (!service || !['running', 'port-open'].includes(service.status)) {
+        return null;
+      }
+      if (service.service_key === 'frontend' && service.links && service.links.service_url) {
+        return { href: service.links.service_url, label: '打开页面' };
+      }
+      if (service.service_key === 'backend' && service.links && service.links.health_url) {
+        return { href: service.links.health_url, label: '健康检查' };
+      }
+      return null;
+    }
+
+    function renderCards() {
+      const grid = document.getElementById('cards-grid');
+      grid.innerHTML = state.services.map((service) => {
+        const pidValue = service.pid == null ? '<span class="meta-na">--</span>' : escapeHtml(service.pid);
+        const uptimeValue = service.uptime ? escapeHtml(service.uptime) : '<span class="meta-na">--</span>';
+        const healthLink = service.links && service.links.health_url
+          ? `<a href="${escapeHtml(service.links.health_url)}" target="_blank" rel="noreferrer">健康检查</a>`
+          : '';
+        const serviceLink = service.links && service.links.service_url
+          ? `<a href="${escapeHtml(service.links.service_url)}" target="_blank" rel="noreferrer">服务地址</a>`
+          : '';
+        const openLink = serviceOpenLink(service);
+        const actionButtons = [];
+        if (service.supports_actions) {
+          actionButtons.push(`<button class="btn btn-outline btn-sm" onclick="actionService('${service.service_key}','start')">启动</button>`);
+          actionButtons.push(`<button class="btn btn-outline btn-sm" onclick="actionService('${service.service_key}','stop')">停止</button>`);
+          actionButtons.push(`<button class="btn btn-outline btn-sm" onclick="actionService('${service.service_key}','restart')">重启</button>`);
+        }
+        if (service.supports_kill) {
+          actionButtons.push(`<button class="btn btn-danger-outline btn-sm" onclick="killPort('${service.service_key}', ${service.port})">杀掉端口</button>`);
+        }
+        if (openLink) {
+          actionButtons.push(`<a class="btn btn-primary btn-sm" href="${escapeHtml(openLink.href)}" target="_blank" rel="noreferrer">${escapeHtml(openLink.label)}</a>`);
+        }
+        const actionRow = actionButtons.length
+          ? `<div class="card-actions">${actionButtons.join('')}</div>`
+          : '';
+        return `
+          <article class="service-card" id="card-${service.service_key}">
+            <div class="card-header">
+              <div>
+                <div class="card-name">${escapeHtml(service.name)}</div>
+                <div class="card-tech">${escapeHtml(service.tech)}</div>
+              </div>
+              <span class="status-badge ${statusClass(service.status)}">
+                <span class="status-dot"></span>${statusLabel(service.status)}
+              </span>
+            </div>
+            <div class="card-meta">
+              <div class="meta-item">
+                <div class="meta-label">PID</div>
+                <div class="meta-value">${pidValue}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Port</div>
+                <div class="meta-value">:${escapeHtml(service.port)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Uptime</div>
+                <div class="meta-value">${uptimeValue}</div>
+              </div>
+            </div>
+            <div class="service-hint">${escapeHtml(service.hint || service.note || '')}</div>
+            <div class="card-links">${serviceLink}${serviceLink && healthLink ? '<span>·</span>' : ''}${healthLink}</div>
+            ${actionRow}
+          </article>
+        `;
+      }).join('');
+    }
+
+    function openWorkbench() {
+      const frontend = state.services.find((item) => item.service_key === 'frontend');
+      const openLink = serviceOpenLink(frontend);
+      if (!openLink) {
+        showNotice('前端尚未启动，暂时无法打开工作台', 'warn');
+        return;
+      }
+      window.open(openLink.href, '_blank', 'noopener,noreferrer');
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById('log-tabs');
+      tabs.innerHTML = state.services.map((service) => `
+        <button class="tab ${state.activeService === service.service_key ? 'active' : ''}" onclick="setService('${service.service_key}')">
+          ${escapeHtml(service.name)}
+        </button>
+      `).join('');
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('log-content');
+      if (state.clearedView) {
+        container.innerHTML = '<div class="log-empty">日志视图已清空，下一次自动刷新会重新载入。</div>';
+        return;
+      }
+      const filtered = state.level === 'all'
+        ? state.logLines
+        : state.logLines.filter((line) => line.level === state.level);
+      if (!filtered.length) {
+        container.innerHTML = '<div class="log-empty">暂无日志</div>';
+        return;
+      }
+      container.innerHTML = filtered.map((line) => {
+        const ts = line.ts ? `[${escapeHtml(line.ts)}]` : '[--]';
+        const level = (line.level || 'info').toUpperCase().padEnd(5, ' ');
+        return `<div class="log-line"><span class="ts">${ts}</span> <span class="level-${escapeHtml(line.level || 'info')}">${level}</span> <span class="msg">${escapeHtml(line.msg || '')}</span></div>`;
+      }).join('');
+      if (state.autoScroll) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function syncFilterButtons() {
+      document.querySelectorAll('#log-filters .pill').forEach((node) => {
+        node.classList.toggle('active', node.dataset.level === state.level);
+      });
+    }
+
+    async function loadServices(silent) {
+      try {
+        const payload = await request('/api/launcher/services');
+        state.services = payload.services || [];
+        if (!state.services.find((item) => item.service_key === state.activeService)) {
+          state.activeService = state.services[0] ? state.services[0].service_key : 'backend';
+        }
+        renderSummary(payload);
+        renderCards();
+        renderTabs();
+      } catch (error) {
+        if (!silent) showNotice(error.message || '无法加载服务状态', 'error');
+      }
+    }
+
+    async function loadLogs(silent) {
+      try {
+        const payload = await request(`/api/launcher/logs/${encodeURIComponent(state.activeService)}?limit=240`);
+        state.logLines = payload.lines || [];
+        state.clearedView = false;
+        renderLogs();
+      } catch (error) {
+        if (!silent) showNotice(error.message || '无法加载日志', 'error');
+      }
+    }
+
+    async function refreshNow() {
+      await loadServices(false);
+      await loadLogs(false);
+    }
+
+    async function actionService(service, action) {
+      try {
+        const payload = await request(`/api/launcher/services/${encodeURIComponent(service)}/${encodeURIComponent(action)}`, { method: 'POST' });
+        showNotice(payload.message || `${service} ${action} 完成`, payload.status === 'ok' ? 'success' : 'warn');
+        await refreshNow();
+      } catch (error) {
+        showNotice(error.message || '执行失败', 'error');
+      }
+    }
+
+    async function actionAll(action) {
+      try {
+        const payload = await request(`/api/launcher/services/all/${encodeURIComponent(action)}`, { method: 'POST' });
+        showNotice(payload.message || `批量 ${action} 完成`, payload.status === 'ok' ? 'success' : 'warn');
+        await refreshNow();
+      } catch (error) {
+        showNotice(error.message || '批量操作失败', 'error');
+      }
+    }
+
+    async function killPort(service, port) {
+      const confirmed = window.confirm(`确认要强制释放端口 :${port} 吗？\n\n这是危险操作，请先确认该端口确实属于冲突进程。`);
+      if (!confirmed) return;
+      try {
+        const payload = await request(`/api/launcher/services/${encodeURIComponent(service)}/kill-port`, { method: 'POST' });
+        showNotice(payload.message || `端口 :${port} 已处理`, payload.status === 'ok' ? 'warn' : 'error');
+        await refreshNow();
+      } catch (error) {
+        showNotice(error.message || 'kill-port 失败', 'error');
+      }
+    }
+
+    function setService(service) {
+      state.activeService = service;
+      renderTabs();
+      loadLogs(false);
+    }
+
+    function setLevel(level) {
+      state.level = level;
+      syncFilterButtons();
+      renderLogs();
+    }
+
+    function toggleAutoScroll() {
+      state.autoScroll = !state.autoScroll;
+      document.getElementById('auto-scroll-toggle').classList.toggle('on', state.autoScroll);
+      if (state.autoScroll) {
+        const container = document.getElementById('log-content');
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function clearLog() {
+      state.clearedView = true;
+      renderLogs();
+    }
+
+    async function init() {
+      syncFilterButtons();
+      await loadServices(false);
+      await loadLogs(false);
+      servicesTimer = window.setInterval(() => loadServices(true), 5000);
+      logsTimer = window.setInterval(() => loadLogs(true), 3000);
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (servicesTimer) window.clearInterval(servicesTimer);
+      if (logsTimer) window.clearInterval(logsTimer);
+    });
+
+    init();
+  </script>
+</body>
+</html>

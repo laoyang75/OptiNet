@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>异常工作台 — rebuild3 流式治理工作台</title>
+<style>
+  /* ── CSS Custom Properties ── */
+  :root {
+    --c-indigo-50:  #EEF2FF;
+    --c-indigo-100: #E0E7FF;
+    --c-indigo-200: #C7D2FE;
+    --c-indigo-500: #6366F1;
+    --c-indigo-600: #4F46E5;
+    --c-indigo-700: #4338CA;
+    --c-indigo-900: #312E81;
+    --c-indigo-950: #1E1B4B;
+
+    --c-green-50:  #F0FDF4;
+    --c-green-600: #16A34A;
+    --c-red-50:    #FEF2F2;
+    --c-red-600:   #DC2626;
+    --c-orange-50: #FFF7ED;
+    --c-orange-600:#EA580C;
+    --c-blue-50:   #EFF6FF;
+    --c-blue-600:  #2563EB;
+    --c-purple-50: #FAF5FF;
+    --c-purple-600:#9333EA;
+    --c-yellow-50: #FEFCE8;
+    --c-yellow-600:#CA8A04;
+    --c-gray-50:   #F9FAFB;
+    --c-gray-100:  #F3F4F6;
+    --c-gray-200:  #E5E7EB;
+    --c-gray-300:  #D1D5DB;
+    --c-gray-400:  #9CA3AF;
+    --c-gray-500:  #6B7280;
+    --c-gray-600:  #4B5563;
+    --c-gray-700:  #374151;
+    --c-gray-800:  #1F2937;
+    --c-gray-900:  #111827;
+    --c-white:     #FFFFFF;
+
+    /* semantic */
+    --delta-improve: var(--c-green-600);
+    --delta-worsen:  var(--c-red-600);
+    --delta-warn:    var(--c-orange-600);
+    --delta-neutral: var(--c-gray-400);
+
+    --sidebar-w: 240px;
+    --topbar-h: 56px;
+    --radius: 12px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover: 0 4px 12px rgba(0,0,0,.08);
+  }
+
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    color: var(--c-gray-800);
+    background: var(--c-gray-50);
+    min-width: 1100px;
+    line-height: 1.6;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── Layout Shell ── */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--c-indigo-950);
+    color: var(--c-indigo-200);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-brand {
+    height: var(--topbar-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-white);
+    letter-spacing: .02em;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .sidebar-nav { padding: 12px 8px; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--c-indigo-200);
+    transition: background .15s, color .15s;
+    margin-bottom: 2px;
+  }
+  .sidebar-nav a:hover { background: rgba(255,255,255,.08); color: var(--c-white); }
+  .sidebar-nav a.active {
+    background: var(--c-indigo-600);
+    color: var(--c-white);
+    font-weight: 500;
+  }
+  .sidebar-nav .nav-icon {
+    width: 20px; height: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Main Area ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    height: var(--topbar-h);
+    background: var(--c-white);
+    border-bottom: 1px solid var(--c-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-title { font-size: 16px; font-weight: 600; color: var(--c-gray-900); }
+  .topbar-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--c-gray-500);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--c-green-600);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
+  }
+
+  /* ── Content ── */
+  .content { padding: 24px 32px 48px; }
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-gray-900);
+    margin-bottom: 12px;
+  }
+  .section + .section { margin-top: 28px; }
+
+  /* ── Summary Bar ── */
+  .summary-bar {
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .summary-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .summary-big {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--c-gray-900);
+  }
+  .summary-label {
+    font-size: 13px;
+    color: var(--c-gray-500);
+    font-weight: 500;
+  }
+  .summary-delta {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .summary-delta.red { color: var(--delta-worsen); }
+  .summary-delta.green { color: var(--delta-improve); }
+  .summary-delta.gray { color: var(--delta-neutral); }
+  .summary-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--c-gray-200);
+  }
+  .summary-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .summary-chip.red    { color: var(--c-red-600); background: var(--c-red-50); }
+  .summary-chip.orange { color: var(--c-orange-600); background: var(--c-orange-50); }
+  .summary-chip.blue   { color: var(--c-blue-600); background: var(--c-blue-50); }
+  .summary-chip.purple { color: var(--c-purple-600); background: var(--c-purple-50); }
+  .summary-chip.gray   { color: var(--c-gray-600); background: var(--c-gray-100); }
+  .summary-chip.yellow { color: var(--c-yellow-600); background: var(--c-yellow-50); }
+  .summary-chip.green  { color: var(--c-green-600); background: var(--c-green-50); }
+
+  /* ── View Tabs (top level: object vs record) ── */
+  .view-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--c-gray-200);
+  }
+  .view-tab {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--c-gray-500);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .view-tab:hover { color: var(--c-gray-800); }
+  .view-tab.active {
+    color: var(--c-indigo-600);
+    border-bottom-color: var(--c-indigo-600);
+    font-weight: 600;
+  }
+  .view-tab .view-tab-count {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--c-gray-100);
+    color: var(--c-gray-500);
+    font-weight: 600;
+  }
+  .view-tab.active .view-tab-count {
+    background: var(--c-indigo-50);
+    color: var(--c-indigo-600);
+  }
+
+  /* ── Sub Tabs (within each view) ── */
+  .tabs-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 2px solid var(--c-gray-200);
+    margin-bottom: 12px;
+  }
+  .tab-item {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--c-gray-500);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+  }
+  .tab-item:hover { color: var(--c-gray-800); }
+  .tab-item.active {
+    color: var(--c-indigo-600);
+    border-bottom-color: var(--c-indigo-600);
+    font-weight: 600;
+  }
+  .tab-count {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--c-gray-100);
+    color: var(--c-gray-500);
+    margin-left: 4px;
+    font-weight: 600;
+  }
+  .tab-item.active .tab-count {
+    background: var(--c-indigo-50);
+    color: var(--c-indigo-600);
+  }
+
+  /* ── Filters ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-label {
+    font-size: 12px;
+    color: var(--c-gray-400);
+    font-weight: 500;
+  }
+  .filter-btn {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--c-gray-200);
+    background: var(--c-white);
+    font-size: 12px;
+    color: var(--c-gray-600);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .filter-btn:hover { border-color: var(--c-indigo-200); color: var(--c-indigo-600); }
+  .filter-btn.active {
+    background: var(--c-indigo-50);
+    border-color: var(--c-indigo-500);
+    color: var(--c-indigo-600);
+    font-weight: 600;
+  }
+  .filter-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--c-gray-200);
+  }
+
+  /* ── Content Body ── */
+  .workspace-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .workspace-table-area {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Inline Stats Row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* ── Table ── */
+  .data-table {
+    width: 100%;
+    min-width: 760px;
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--c-gray-400);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: var(--c-gray-50);
+    border-bottom: 1px solid var(--c-gray-200);
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--c-gray-100);
+    vertical-align: middle;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tbody tr { transition: background .1s; }
+  .data-table tbody tr:hover { background: var(--c-gray-50); }
+
+  .mono {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 12px;
+  }
+  .link-cell {
+    color: var(--c-indigo-600);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .link-cell:hover { text-decoration: underline; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge.red    { color: var(--c-red-600); background: var(--c-red-50); }
+  .badge.orange { color: var(--c-orange-600); background: var(--c-orange-50); }
+  .badge.blue   { color: var(--c-blue-600); background: var(--c-blue-50); }
+  .badge.purple { color: var(--c-purple-600); background: var(--c-purple-50); }
+  .badge.yellow { color: var(--c-yellow-600); background: var(--c-yellow-50); }
+  .badge.green  { color: var(--c-green-600); background: var(--c-green-50); }
+  .badge.gray   { color: var(--c-gray-500); background: var(--c-gray-100); }
+
+  /* Health icons */
+  .health {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .health.red    { color: var(--c-red-600); background: var(--c-red-50); }
+  .health.orange { color: var(--c-orange-600); background: var(--c-orange-50); }
+  .health.blue   { color: var(--c-blue-600); background: var(--c-blue-50); }
+  .health.purple { color: var(--c-purple-600); background: var(--c-purple-50); }
+
+  .disqualified {
+    color: var(--c-red-600);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .qualified {
+    color: var(--c-green-600);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .conditional {
+    color: var(--c-orange-600);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .text-muted { color: var(--c-gray-400); }
+  .text-sm { font-size: 12px; }
+
+  /* ── Expanded Row ── */
+  .expanded-row td {
+    padding: 0 !important;
+    border-bottom: 1px solid var(--c-gray-200) !important;
+  }
+  .expanded-detail {
+    background: var(--c-indigo-50);
+    border-top: 2px solid var(--c-indigo-200);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .expanded-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-gray-500);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+  }
+  .expanded-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .expanded-block {
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .expanded-kv {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .expanded-kv .k {
+    color: var(--c-gray-400);
+    font-size: 12px;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  .expanded-kv .v {
+    font-weight: 500;
+    color: var(--c-gray-800);
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 12px;
+  }
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 12px;
+  }
+  .timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .timeline-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--c-indigo-500);
+  }
+  .timeline-label {
+    font-size: 11px;
+    color: var(--c-gray-500);
+    text-align: center;
+    max-width: 100px;
+  }
+  .timeline-line {
+    width: 40px;
+    height: 2px;
+    background: var(--c-gray-300);
+    margin: 0 4px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Right Panel Cards ── */
+  .panel-card {
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+  }
+  .panel-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-gray-900);
+    margin-bottom: 14px;
+  }
+
+  /* Mini bar chart */
+  .mini-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .mini-bar-label {
+    font-size: 11px;
+    color: var(--c-gray-500);
+    min-width: 100px;
+    text-align: right;
+  }
+  .mini-bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--c-gray-100);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+  .mini-bar-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--c-gray-700);
+    min-width: 24px;
+  }
+
+  /* Sparkline placeholder */
+  .sparkline-placeholder {
+    height: 48px;
+    background: var(--c-gray-50);
+    border: 1px dashed var(--c-gray-200);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--c-gray-400);
+    margin-bottom: 10px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .stat-row + .stat-row { border-top: 1px solid var(--c-gray-100); }
+  .stat-label { color: var(--c-gray-500); }
+  .stat-value { font-weight: 600; color: var(--c-gray-800); }
+  .stat-value.red { color: var(--c-red-600); }
+  .stat-value.green { color: var(--c-green-600); }
+
+  /* ── View Panel (show/hide) ── */
+  .view-panel { display: none; }
+  .view-panel.active { display: block; }
+
+  /* ── Record table specifics ── */
+  .record-table { min-width: 900px; }
+  .record-table td { font-size: 13px; }
+  .record-note {
+    font-size: 12px;
+    color: var(--c-gray-500);
+    line-height: 1.5;
+  }
+  .fact-dest {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .fact-dest .arrow {
+    color: var(--c-gray-400);
+    margin: 0 2px;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <a href="01_flow_overview.html">
+        <span class="nav-icon">&#9678;</span> 流转总览
+      </a>
+      <a href="01_flow_overview_timeline.html">
+        <span class="nav-icon">&#9202;</span> 流转快照
+      </a>
+      <a href="02_run_batch_center.html">
+        <span class="nav-icon">&#9881;</span> 运行/批次中心
+      </a>
+      <a href="03_objects.html">
+        <span class="nav-icon">&#9724;</span> 对象浏览
+      </a>
+      <a href="05_observation_workspace.html">
+        <span class="nav-icon">&#9201;</span> 等待/观察工作台
+      </a>
+      <a href="06_anomaly_workspace.html" class="active">
+        <span class="nav-icon">&#9888;</span> 异常工作台
+      </a>
+      <a href="07_baseline_profile.html">
+        <span class="nav-icon">&#9733;</span> 基线/画像
+      </a>
+      <a href="08_validation_compare.html">
+        <span class="nav-icon">&#9745;</span> 验证/对照
+      </a>
+      <a href="09_lac_profile.html">
+        <span class="nav-icon">&#9636;</span> LAC 画像
+      </a>
+      <a href="10_bs_profile.html">
+        <span class="nav-icon">&#9635;</span> BS 画像
+      </a>
+      <a href="11_cell_profile.html">
+        <span class="nav-icon">&#9632;</span> Cell 画像
+      </a>
+      <a href="12_initialization.html">
+        <span class="nav-icon">&#9654;</span> 初始化数据
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-title">异常工作台</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        正常运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Section 1: 汇总条 — 同时展示两类异常统计 -->
+      <div class="section">
+        <div class="summary-bar">
+          <!-- Row 1: 对象级异常汇总 -->
+          <div class="summary-row">
+            <div class="summary-item">
+              <span class="summary-label">对象级异常</span>
+              <span class="summary-big">47</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">本批</span>
+              <span style="font-weight:600; color:var(--c-gray-800)">+2</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-delta red">较上批 +2 &#8593;</span>
+            </div>
+            <div class="summary-divider"></div>
+            <span class="summary-chip red">碰撞嫌疑 12</span>
+            <span class="summary-chip red">碰撞确认 3</span>
+            <span class="summary-chip blue">动态 8</span>
+            <span class="summary-chip purple">迁移嫌疑 5</span>
+            <span class="summary-chip orange">GPS偏差 19</span>
+            <div class="summary-divider"></div>
+            <span class="summary-chip gray">禁锚 38</span>
+            <span class="summary-chip gray">禁基线 42</span>
+          </div>
+          <!-- Row 2: 记录级异常汇总 -->
+          <div class="summary-row" style="border-top:1px solid var(--c-gray-100); padding-top:12px;">
+            <div class="summary-item">
+              <span class="summary-label">记录级异常</span>
+              <span class="summary-big" style="font-size:20px;">7,007</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">本批新增</span>
+              <span style="font-weight:600; color:var(--c-gray-800)">+1,227</span>
+            </div>
+            <div class="summary-divider"></div>
+            <span class="summary-chip yellow">GPS噪声 1,234</span>
+            <span class="summary-chip orange">面积大 456</span>
+            <span class="summary-chip gray">结构不合规 903</span>
+            <span class="summary-chip blue">GPS缺失回填 2,847</span>
+            <span class="summary-chip purple">donor补齐 1,567</span>
+          </div>
+          <!-- Row 3: 下游影响汇总 -->
+          <div class="summary-row" style="border-top:1px solid var(--c-gray-100); padding-top:12px;">
+            <div class="summary-item">
+              <span class="summary-label">对象异常影响下游:</span>
+              <span style="font-weight:700; color:var(--c-red-600)">156</span>
+              <span class="summary-label">BS/LAC</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">记录进入 fact_rejected:</span>
+              <span style="font-weight:700; color:var(--c-red-600)">903</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">记录进入 fact_governed（条件性）:</span>
+              <span style="font-weight:700; color:var(--c-orange-600)">6,104</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: 双视角 Tab -->
+      <div class="section">
+
+        <!-- 一级视角 Tab -->
+        <div class="view-tabs" id="viewTabs">
+          <div class="view-tab active" onclick="switchView('object')">
+            &#9888; 对象级异常
+            <span class="view-tab-count">47 个对象</span>
+          </div>
+          <div class="view-tab" onclick="switchView('record')">
+            &#9638; 记录级异常 / 结构不合规
+            <span class="view-tab-count">7,007 条记录</span>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- 视角 A: 对象级异常 -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="view-panel active" id="viewObject">
+
+          <div class="section-title">对象级异常列表</div>
+
+          <!-- Sub Tabs -->
+          <div class="tabs-bar">
+            <div class="tab-item active">全部<span class="tab-count">47</span></div>
+            <div class="tab-item">碰撞嫌疑<span class="tab-count">12</span></div>
+            <div class="tab-item">碰撞确认<span class="tab-count">3</span></div>
+            <div class="tab-item">动态<span class="tab-count">8</span></div>
+            <div class="tab-item">迁移嫌疑<span class="tab-count">5</span></div>
+            <div class="tab-item">GPS偏差<span class="tab-count">19</span></div>
+          </div>
+
+          <!-- Filters -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <span class="filter-label">严重度</span>
+              <button class="filter-btn active">全部</button>
+              <button class="filter-btn">高</button>
+              <button class="filter-btn">中</button>
+              <button class="filter-btn">低</button>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-group">
+              <span class="filter-label">锚点</span>
+              <button class="filter-btn active">全部</button>
+              <button class="filter-btn">禁锚</button>
+              <button class="filter-btn">可锚</button>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-group">
+              <span class="filter-label">趋势</span>
+              <button class="filter-btn active">全部</button>
+              <button class="filter-btn">恶化</button>
+              <button class="filter-btn">稳定</button>
+              <button class="filter-btn">改善</button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="workspace-body">
+
+            <!-- 统计卡片行 -->
+            <div class="stats-row">
+              <div class="panel-card">
+                <div class="panel-card-title">异常类型分布</div>
+                <div class="mini-bar-row">
+                  <span class="mini-bar-label">GPS偏差</span>
+                  <div class="mini-bar-track"><div class="mini-bar-fill" style="width:40.4%; background:var(--c-orange-600);"></div></div>
+                  <span class="mini-bar-value">19</span>
+                </div>
+                <div class="mini-bar-row">
+                  <span class="mini-bar-label">碰撞嫌疑</span>
+                  <div class="mini-bar-track"><div class="mini-bar-fill" style="width:25.5%; background:var(--c-orange-600);"></div></div>
+                  <span class="mini-bar-value">12</span>
+                </div>
+                <div class="mini-bar-row">
+                  <span class="mini-bar-label">动态</span>
+                  <div class="mini-bar-track"><div class="mini-bar-fill" style="width:17%; background:var(--c-blue-600);"></div></div>
+                  <span class="mini-bar-value">8</span>
+                </div>
+                <div class="mini-bar-row">
+                  <span class="mini-bar-label">迁移嫌疑</span>
+                  <div class="mini-bar-track"><div class="mini-bar-fill" style="width:10.6%; background:var(--c-purple-600);"></div></div>
+                  <span class="mini-bar-value">5</span>
+                </div>
+                <div class="mini-bar-row">
+                  <span class="mini-bar-label">碰撞确认</span>
+                  <div class="mini-bar-track"><div class="mini-bar-fill" style="width:6.4%; background:var(--c-red-600);"></div></div>
+                  <span class="mini-bar-value">3</span>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <div class="panel-card-title">近 6 批趋势</div>
+                <div class="sparkline-placeholder">趋势线: 38 &rarr; 40 &rarr; 42 &rarr; 43 &rarr; 45 &rarr; 47</div>
+                <div class="stat-row">
+                  <span class="stat-label">本批新增</span>
+                  <span class="stat-value red">+4</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">本批解除</span>
+                  <span class="stat-value green">-2</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">净增</span>
+                  <span class="stat-value red">+2</span>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <div class="panel-card-title">新增 / 解除</div>
+                <div class="stat-row">
+                  <span class="stat-label">BATCH-14</span>
+                  <span><span class="stat-value red">+4</span> / <span class="stat-value green">-2</span></span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">BATCH-12</span>
+                  <span><span class="stat-value red">+3</span> / <span class="stat-value green">-1</span></span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">BATCH-10</span>
+                  <span><span class="stat-value red">+2</span> / <span class="stat-value green">-1</span></span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">BATCH-08</span>
+                  <span><span class="stat-value red">+3</span> / <span class="stat-value green">-2</span></span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">BATCH-06</span>
+                  <span><span class="stat-value red">+2</span> / <span class="stat-value green">-2</span></span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">BATCH-04</span>
+                  <span><span class="stat-value red">+1</span> / <span class="stat-value green">-1</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 表格区域 -->
+            <div class="workspace-table-area">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>对象主键</th>
+                    <th>异常类型</th>
+                    <th>严重度</th>
+                    <th>发现批次</th>
+                    <th>事实去向</th>
+                    <th>是否禁锚</th>
+                    <th>是否禁基线</th>
+                    <th>证据趋势</th>
+                    <th>下游影响</th>
+                    <th>建议动作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Row 1 — with expand toggle -->
+                  <tr style="background: var(--c-indigo-50);">
+                    <td style="font-size:11px; color:var(--c-indigo-500); cursor:pointer; font-weight:700;">&#9660;</td>
+                    <td class="mono link-cell">BS-46000-12849</td>
+                    <td><span class="badge red">碰撞确认</span></td>
+                    <td><span class="badge red">高</span></td>
+                    <td class="mono text-sm">BATCH-10</td>
+                    <td><span class="fact-dest"><span class="badge gray">fact_pending_issue</span></span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge gray">稳定 &#8594;</span></td>
+                    <td><span class="badge red">影响 6 Cell</span></td>
+                    <td class="text-sm">需人工复核</td>
+                  </tr>
+                  <!-- Row 1 expanded detail -->
+                  <tr class="expanded-row">
+                    <td colspan="11">
+                      <div class="expanded-detail">
+                        <div class="expanded-grid">
+                          <!-- Left: collision group -->
+                          <div class="expanded-block">
+                            <div class="expanded-section-title">碰撞对象组</div>
+                            <div class="expanded-kv">
+                              <span class="k">碰撞对:</span>
+                              <span class="v">BS-46000-12849 &#8596; BS-46000-12850</span>
+                            </div>
+                            <div class="expanded-kv">
+                              <span class="k">距离:</span>
+                              <span class="v">45m</span>
+                            </div>
+                            <div class="expanded-kv">
+                              <span class="k">共享小区:</span>
+                              <span class="v">3 个</span>
+                            </div>
+                            <div class="expanded-section-title" style="margin-top:10px;">受影响小区</div>
+                            <div style="font-size:12px; font-family:'SF Mono','JetBrains Mono',monospace; color:var(--c-gray-700); line-height:1.8;">
+                              Cell-46000-12849-1, Cell-46000-12849-2, Cell-46000-12849-3,<br>
+                              Cell-46000-12850-1, Cell-46000-12850-2, Cell-46000-12850-3
+                            </div>
+                          </div>
+                          <!-- Right: impact + timeline -->
+                          <div class="expanded-block">
+                            <div class="expanded-section-title">基线影响</div>
+                            <div class="expanded-kv">
+                              <span class="k">影响范围:</span>
+                              <span class="v">6 小区不再参与 v48 候选</span>
+                            </div>
+                            <div class="expanded-kv">
+                              <span class="k">事实去向:</span>
+                              <span class="v">fact_pending_issue（等待人工处置）</span>
+                            </div>
+                            <div class="expanded-section-title" style="margin-top:14px;">证据时间线</div>
+                            <div class="timeline">
+                              <div class="timeline-step">
+                                <div class="timeline-dot" style="background:var(--c-orange-600);"></div>
+                                <div class="timeline-label">BATCH-10<br>发现嫌疑</div>
+                              </div>
+                              <div class="timeline-line"></div>
+                              <div class="timeline-step">
+                                <div class="timeline-dot" style="background:var(--c-red-600);"></div>
+                                <div class="timeline-label">BATCH-12<br>确认碰撞</div>
+                              </div>
+                              <div class="timeline-line"></div>
+                              <div class="timeline-step">
+                                <div class="timeline-dot" style="background:var(--c-red-600);"></div>
+                                <div class="timeline-label">BATCH-14<br>持续确认</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Row 2 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">BS-46001-8834</td>
+                    <td><span class="badge red">碰撞确认</span></td>
+                    <td><span class="badge red">高</span></td>
+                    <td class="mono text-sm">BATCH-08</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge red">恶化 &#8593;</span></td>
+                    <td><span class="badge red">影响 4 Cell</span></td>
+                    <td class="text-sm">需人工复核</td>
+                  </tr>
+
+                  <!-- Row 3 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">BS-46000-7723</td>
+                    <td><span class="badge red">碰撞确认</span></td>
+                    <td><span class="badge red">高</span></td>
+                    <td class="mono text-sm">BATCH-06</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge gray">稳定 &#8594;</span></td>
+                    <td><span class="badge red">影响 3 Cell</span></td>
+                    <td class="text-sm">需人工复核</td>
+                  </tr>
+
+                  <!-- Row 4 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">BS-46000-15501</td>
+                    <td><span class="badge orange">碰撞嫌疑</span></td>
+                    <td><span class="badge orange">中</span></td>
+                    <td class="mono text-sm">BATCH-14</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge blue">新发现</span></td>
+                    <td><span class="badge orange">影响 5 Cell</span></td>
+                    <td class="text-sm">继续观察</td>
+                  </tr>
+
+                  <!-- Row 5 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">BS-46001-15502</td>
+                    <td><span class="badge orange">碰撞嫌疑</span></td>
+                    <td><span class="badge orange">中</span></td>
+                    <td class="mono text-sm">BATCH-14</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge blue">新发现</span></td>
+                    <td><span class="badge orange">影响 3 Cell</span></td>
+                    <td class="text-sm">继续观察</td>
+                  </tr>
+
+                  <!-- Row 6 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">Cell-46000-7723-4</td>
+                    <td><span class="badge orange">碰撞嫌疑</span></td>
+                    <td><span class="badge orange">中</span></td>
+                    <td class="mono text-sm">BATCH-12</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge gray">稳定 &#8594;</span></td>
+                    <td class="text-muted">&mdash;</td>
+                    <td class="text-sm">继续观察</td>
+                  </tr>
+
+                  <!-- Row 7 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">Cell-46001-6612-8</td>
+                    <td><span class="badge blue">动态</span></td>
+                    <td><span class="badge orange">中</span></td>
+                    <td class="mono text-sm">BATCH-08</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge gray">稳定 &#8594;</span></td>
+                    <td class="text-muted">&mdash;</td>
+                    <td class="text-sm">低精度画像</td>
+                  </tr>
+
+                  <!-- Row 8 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">Cell-46000-5501-3</td>
+                    <td><span class="badge purple">迁移嫌疑</span></td>
+                    <td><span class="badge orange">中</span></td>
+                    <td class="mono text-sm">BATCH-10</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge red">恶化 &#8593;</span></td>
+                    <td><span class="badge purple">影响 BS 关系</span></td>
+                    <td class="text-sm">确认迁移</td>
+                  </tr>
+
+                  <!-- Row 9 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">Cell-46000-12848-1</td>
+                    <td><span class="badge orange">GPS偏差</span></td>
+                    <td><span class="badge yellow">低</span></td>
+                    <td class="mono text-sm">BATCH-14</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge blue">新发现</span></td>
+                    <td class="text-muted">&mdash;</td>
+                    <td class="text-sm">检查 GPS</td>
+                  </tr>
+
+                  <!-- Row 10 -->
+                  <tr>
+                    <td style="font-size:11px; color:var(--c-gray-400); cursor:pointer;">&#9654;</td>
+                    <td class="mono link-cell">Cell-46001-9921-5</td>
+                    <td><span class="badge orange">GPS偏差</span></td>
+                    <td><span class="badge yellow">低</span></td>
+                    <td class="mono text-sm">BATCH-12</td>
+                    <td><span class="badge gray">fact_pending_issue</span></td>
+                    <td class="disqualified">&#10007; 禁锚</td>
+                    <td class="disqualified">&#10007; 禁基线</td>
+                    <td><span class="badge green">改善 &#8595;</span></td>
+                    <td class="text-muted">&mdash;</td>
+                    <td class="text-sm">继续观察</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div><!-- /viewObject -->
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- 视角 B: 记录级异常 / 结构不合规 -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="view-panel" id="viewRecord">
+
+          <div class="section-title">记录级异常 / 结构不合规</div>
+          <p style="font-size:13px; color:var(--c-gray-500); margin-bottom:16px; line-height:1.6;">
+            记录级异常不直接改变对象状态，但影响事实去向和资格判断。每类异常按照规则标注来源、降低精度等级或直接拒绝，确保下游画像和基线的数据质量。
+          </p>
+
+          <!-- 记录级统计卡片行 -->
+          <div class="stats-row" style="margin-bottom:20px;">
+            <div class="panel-card">
+              <div class="panel-card-title">记录级异常类型分布</div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">GPS缺失回填</span>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:40.6%; background:var(--c-blue-600);"></div></div>
+                <span class="mini-bar-value">2,847</span>
+              </div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">donor信号补齐</span>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:22.4%; background:var(--c-purple-600);"></div></div>
+                <span class="mini-bar-value">1,567</span>
+              </div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">GPS噪声</span>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:17.6%; background:var(--c-yellow-600);"></div></div>
+                <span class="mini-bar-value">1,234</span>
+              </div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">结构不合规</span>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:12.9%; background:var(--c-gray-500);"></div></div>
+                <span class="mini-bar-value">903</span>
+              </div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">面积大</span>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:6.5%; background:var(--c-orange-600);"></div></div>
+                <span class="mini-bar-value">456</span>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-card-title">事实去向分布</div>
+              <div class="stat-row">
+                <span class="stat-label">fact_governed（条件性）</span>
+                <span class="stat-value">6,104</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">fact_rejected</span>
+                <span class="stat-value red">903</span>
+              </div>
+              <div class="stat-row" style="border-top:1px solid var(--c-gray-200); margin-top:8px; padding-top:8px;">
+                <span class="stat-label">总计</span>
+                <span class="stat-value">7,007</span>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-card-title">本批新增分布</div>
+              <div class="stat-row">
+                <span class="stat-label">结构不合规</span>
+                <span class="stat-value red">+903</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">GPS缺失回填</span>
+                <span class="stat-value">+134</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">GPS噪声</span>
+                <span class="stat-value">+89</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">donor信号补齐</span>
+                <span class="stat-value">+78</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">面积大</span>
+                <span class="stat-value">+23</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 记录级异常表格 -->
+          <div class="workspace-table-area">
+            <table class="data-table record-table">
+              <thead>
+                <tr>
+                  <th>异常类型</th>
+                  <th>数量</th>
+                  <th>本批新增</th>
+                  <th>事实去向</th>
+                  <th>是否影响锚点</th>
+                  <th>是否影响基线</th>
+                  <th>处理说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- normal_spread -->
+                <tr>
+                  <td><span class="badge yellow">normal_spread（GPS 噪声）</span></td>
+                  <td class="mono" style="font-weight:600;">1,234</td>
+                  <td><span class="summary-delta red">+89</span></td>
+                  <td>
+                    <span class="badge green">fact_governed</span>
+                    <span class="record-note">（降低精度等级）</span>
+                  </td>
+                  <td><span class="badge green">不影响</span></td>
+                  <td><span class="badge green">不影响</span></td>
+                  <td class="record-note">画像降低 GPS 精度等级</td>
+                </tr>
+
+                <!-- single_large -->
+                <tr>
+                  <td><span class="badge orange">single_large（面积大）</span></td>
+                  <td class="mono" style="font-weight:600;">456</td>
+                  <td><span class="summary-delta red">+23</span></td>
+                  <td>
+                    <span class="badge green">fact_governed</span>
+                    <span class="record-note">（条件性）</span>
+                  </td>
+                  <td><span class="badge orange">有条件影响</span></td>
+                  <td><span class="badge orange">有条件影响</span></td>
+                  <td class="record-note">依赖 GPS 可信度策略判定</td>
+                </tr>
+
+                <!-- 结构不合规 -->
+                <tr>
+                  <td><span class="badge gray">结构不合规</span></td>
+                  <td class="mono" style="font-weight:600;">903</td>
+                  <td><span class="summary-delta red">+903</span></td>
+                  <td>
+                    <span class="badge red">fact_rejected</span>
+                  </td>
+                  <td><span class="badge gray">不参与</span></td>
+                  <td><span class="badge gray">不参与</span></td>
+                  <td class="record-note">留痕后结束，不进入后续流程</td>
+                </tr>
+
+                <!-- GPS 缺失回填 -->
+                <tr>
+                  <td><span class="badge blue">GPS 缺失回填</span></td>
+                  <td class="mono" style="font-weight:600;">2,847</td>
+                  <td><span class="summary-delta red">+134</span></td>
+                  <td>
+                    <span class="badge green">fact_governed</span>
+                    <span class="record-note">（标注来源）</span>
+                  </td>
+                  <td><span class="badge green">不影响锚点判断</span></td>
+                  <td><span class="badge orange">由标签决定</span></td>
+                  <td class="record-note">gps_source 标注为 bs_center</td>
+                </tr>
+
+                <!-- donor 信号补齐 -->
+                <tr>
+                  <td><span class="badge purple">donor 信号补齐</span></td>
+                  <td class="mono" style="font-weight:600;">1,567</td>
+                  <td><span class="summary-delta red">+78</span></td>
+                  <td>
+                    <span class="badge green">fact_governed</span>
+                    <span class="record-note">（标注来源）</span>
+                  </td>
+                  <td><span class="badge green">不影响</span></td>
+                  <td><span class="badge orange">由标签决定</span></td>
+                  <td class="record-note">signal_source 标注为 cell_fill</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 补充说明 -->
+          <div class="panel-card" style="margin-top:20px;">
+            <div class="panel-card-title">记录级异常处理规则说明</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+              <div>
+                <div class="expanded-section-title">进入 fact_governed 的条件</div>
+                <div class="expanded-kv">
+                  <span class="k">GPS 噪声:</span>
+                  <span class="v">normal_spread 标记，精度等级降低</span>
+                </div>
+                <div class="expanded-kv">
+                  <span class="k">面积大:</span>
+                  <span class="v">single_large 标记，需 GPS 可信度达标</span>
+                </div>
+                <div class="expanded-kv">
+                  <span class="k">GPS 回填:</span>
+                  <span class="v">gps_source=bs_center，基线参与由标签策略决定</span>
+                </div>
+                <div class="expanded-kv">
+                  <span class="k">donor 补齐:</span>
+                  <span class="v">signal_source=cell_fill，基线参与由标签策略决定</span>
+                </div>
+              </div>
+              <div>
+                <div class="expanded-section-title">进入 fact_rejected 的条件</div>
+                <div class="expanded-kv">
+                  <span class="k">结构不合规:</span>
+                  <span class="v">缺少必填字段或格式不符，直接拒绝</span>
+                </div>
+                <div style="margin-top:14px;">
+                  <div class="expanded-section-title">关键区别</div>
+                  <div style="font-size:12px; color:var(--c-gray-600); line-height:1.8;">
+                    记录级异常与对象级异常的核心区别：<br>
+                    &bull; 对象级异常改变对象状态（禁锚/禁基线），影响全局<br>
+                    &bull; 记录级异常仅影响单条事实的去向和标签，不改变对象状态
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /viewRecord -->
+
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+function switchView(view) {
+  // Update tabs
+  var tabs = document.querySelectorAll('.view-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+
+  // Update panels
+  var panels = document.querySelectorAll('.view-panel');
+  panels.forEach(function(p) { p.classList.remove('active'); });
+
+  if (view === 'object') {
+    tabs[0].classList.add('active');
+    document.getElementById('viewObject').classList.add('active');
+  } else {
+    tabs[1].classList.add('active');
+    document.getElementById('viewRecord').classList.add('active');
+  }
+}
+</script>
+</body>
+</html>

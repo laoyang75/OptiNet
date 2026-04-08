@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>rebuild3 启动器</title>
+  <style>
+    /* ── Design Tokens ── */
+    :root {
+      --color-primary: #4F46E5;
+      --color-primary-light: #6366F1;
+      --color-primary-surface: #EEF2FF;
+      --color-green-500: #22C55E;
+      --color-green-100: #DCFCE7;
+      --color-red-500: #EF4444;
+      --color-red-100: #FEE2E2;
+      --color-amber-500: #F59E0B;
+      --color-amber-100: #FEF3C7;
+      --color-gray-50: #F9FAFB;
+      --color-gray-100: #F3F4F6;
+      --color-gray-200: #E5E7EB;
+      --color-gray-300: #D1D5DB;
+      --color-gray-400: #9CA3AF;
+      --color-gray-500: #6B7280;
+      --color-gray-600: #4B5563;
+      --color-gray-700: #374151;
+      --color-gray-800: #1F2937;
+      --color-gray-900: #111827;
+      --color-surface: #FFFFFF;
+      --color-bg: #F8FAFC;
+      --color-log-bg: #1E1E2E;
+      --color-log-text: #CDD6F4;
+      --color-log-info: #89B4FA;
+      --color-log-warn: #F9E2AF;
+      --color-log-error: #F38BA8;
+      --color-log-time: #6C7086;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+      --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, "Courier New", monospace;
+    }
+
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-gray-800);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Layout Shell ── */
+    .launcher {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--color-primary);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-gray-900);
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: var(--color-gray-400);
+      margin-left: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #FFF;
+      border-color: var(--color-primary);
+    }
+    .btn-primary:hover { background: var(--color-primary-light); }
+
+    .btn-outline {
+      background: var(--color-surface);
+      color: var(--color-gray-700);
+      border-color: var(--color-gray-200);
+    }
+    .btn-outline:hover { background: var(--color-gray-50); border-color: var(--color-gray-300); }
+
+    .btn-danger-outline {
+      background: var(--color-surface);
+      color: var(--color-red-500);
+      border: 1.5px dashed var(--color-red-500);
+    }
+    .btn-danger-outline:hover { background: var(--color-red-100); }
+
+    .btn-danger {
+      background: var(--color-red-500);
+      color: #FFF;
+      border-color: var(--color-red-500);
+    }
+    .btn-danger:hover { background: #DC2626; }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-gray-500);
+      border-color: transparent;
+      padding: 5px 8px;
+    }
+    .btn-ghost:hover { background: var(--color-gray-100); color: var(--color-gray-700); }
+
+    /* ── Service Cards Grid ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .service-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: box-shadow 0.2s ease;
+    }
+    .service-card:hover { box-shadow: var(--shadow-card-hover); }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-gray-900);
+    }
+
+    .card-tech {
+      font-size: 12px;
+      color: var(--color-gray-400);
+      margin-top: 2px;
+    }
+
+    /* ── Status Badge ── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-running .status-dot {
+      background: var(--color-green-500);
+      animation: pulse-green 2s infinite;
+    }
+    .status-running {
+      background: var(--color-green-100);
+      color: #166534;
+    }
+
+    .status-stopped .status-dot {
+      background: var(--color-red-500);
+    }
+    .status-stopped {
+      background: var(--color-red-100);
+      color: #991B1B;
+    }
+
+    .status-starting .status-dot {
+      background: var(--color-amber-500);
+      animation: pulse-amber 1s infinite;
+    }
+    .status-starting {
+      background: var(--color-amber-100);
+      color: #92400E;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+      50% { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+
+    @keyframes pulse-amber {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Card Meta ── */
+    .card-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+
+    .meta-item {
+      text-align: center;
+      padding: 6px 0;
+      background: var(--color-gray-50);
+      border-radius: var(--radius-sm);
+    }
+
+    .meta-label {
+      font-size: 11px;
+      color: var(--color-gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-gray-800);
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
+
+    .meta-value.meta-na {
+      color: var(--color-gray-300);
+      font-weight: 400;
+    }
+
+    /* ── Card Actions ── */
+    .card-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: auto;
+    }
+
+    .card-actions .btn {
+      justify-content: center;
+      padding: 6px 4px;
+      font-size: 12px;
+    }
+
+    /* ── Log Viewer ── */
+    .log-viewer {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+
+    .log-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--color-gray-200);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .log-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .log-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--color-gray-100);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    .tab {
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-gray-500);
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .tab:hover { color: var(--color-gray-700); }
+    .tab.active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    /* ── Filter Pills ── */
+    .filter-pills {
+      display: flex;
+      gap: 4px;
+    }
+
+    .pill {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 99px;
+      border: 1px solid var(--color-gray-200);
+      background: var(--color-surface);
+      color: var(--color-gray-500);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      letter-spacing: 0.3px;
+    }
+
+    .pill:hover { border-color: var(--color-gray-300); color: var(--color-gray-700); }
+    .pill.active { background: var(--color-primary-surface); color: var(--color-primary); border-color: var(--color-primary-light); }
+    .pill.pill-info.active { background: #DBEAFE; color: #1D4ED8; border-color: #93C5FD; }
+    .pill.pill-warn.active { background: var(--color-amber-100); color: #92400E; border-color: #FCD34D; }
+    .pill.pill-error.active { background: var(--color-red-100); color: #991B1B; border-color: #FCA5A5; }
+
+    /* ── Toggle ── */
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-gray-500);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-track {
+      width: 32px;
+      height: 18px;
+      background: var(--color-gray-300);
+      border-radius: 99px;
+      position: relative;
+      transition: background 0.2s ease;
+    }
+
+    .toggle-track.on { background: var(--color-primary); }
+
+    .toggle-thumb {
+      width: 14px;
+      height: 14px;
+      background: #FFF;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .toggle-track.on .toggle-thumb { transform: translateX(14px); }
+
+    /* ── Log Content ── */
+    .log-content {
+      background: var(--color-log-bg);
+      padding: 16px 20px;
+      min-height: 280px;
+      max-height: 380px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.8;
+    }
+
+    .log-line {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-line .ts { color: var(--color-log-time); }
+    .log-line .level-info { color: var(--color-log-info); font-weight: 600; }
+    .log-line .level-warn { color: var(--color-log-warn); font-weight: 600; }
+    .log-line .level-error { color: var(--color-log-error); font-weight: 600; }
+    .log-line .msg { color: var(--color-log-text); }
+
+    /* ── Scrollbar (log area) ── */
+    .log-content::-webkit-scrollbar { width: 6px; }
+    .log-content::-webkit-scrollbar-track { background: transparent; }
+    .log-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+    .log-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Responsive ── */
+    @media (max-width: 820px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (max-width: 600px) {
+      .launcher { padding: 16px 12px; }
+      .card-actions { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="launcher">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">R3</div>
+      <div>
+        <div class="header-title">rebuild3 启动器</div>
+        <div class="header-subtitle">服务控制面板</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" onclick="actionAll('start')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        一键启动全部
+      </button>
+      <button class="btn btn-outline" onclick="actionAll('stop')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+        一键停止全部
+      </button>
+      <button class="btn btn-outline" onclick="actionAll('restart')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        一键重启全部
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Service Cards ── -->
+  <section class="cards-grid">
+
+    <!-- Card: 后端 API -->
+    <div class="service-card" id="card-backend">
+      <div class="card-header">
+        <div>
+          <div class="card-name">后端 API</div>
+          <div class="card-tech">FastAPI &middot; Python</div>
+        </div>
+        <span class="status-badge status-running">
+          <span class="status-dot"></span>运行中
+        </span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">
+          <div class="meta-label">进程号</div>
+          <div class="meta-value">12847</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">端口</div>
+          <div class="meta-value">:8000</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">运行时长</div>
+          <div class="meta-value">2h 15m</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="action('backend','start')">启动</button>
+        <button class="btn btn-outline btn-sm" onclick="action('backend','stop')">停止</button>
+        <button class="btn btn-outline btn-sm" onclick="action('backend','restart')">重启</button>
+        <button class="btn btn-danger-outline btn-sm" onclick="killPort('backend', 8000)">杀掉端口</button>
+      </div>
+    </div>
+
+    <!-- Card: 前端开发服务 -->
+    <div class="service-card" id="card-frontend">
+      <div class="card-header">
+        <div>
+          <div class="card-name">前端开发服务</div>
+          <div class="card-tech">Vite &middot; Vue 3</div>
+        </div>
+        <span class="status-badge status-stopped">
+          <span class="status-dot"></span>已停止
+        </span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">
+          <div class="meta-label">进程号</div>
+          <div class="meta-value meta-na">&mdash;</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">端口</div>
+          <div class="meta-value">:5173</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">运行时长</div>
+          <div class="meta-value meta-na">&mdash;</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="action('frontend','start')">启动</button>
+        <button class="btn btn-outline btn-sm" onclick="action('frontend','stop')">停止</button>
+        <button class="btn btn-outline btn-sm" onclick="action('frontend','restart')">重启</button>
+        <button class="btn btn-danger-outline btn-sm" onclick="killPort('frontend', 5173)">杀掉端口</button>
+      </div>
+    </div>
+
+    <!-- Card: 数据库 -->
+    <div class="service-card" id="card-database">
+      <div class="card-header">
+        <div>
+          <div class="card-name">数据库</div>
+          <div class="card-tech">PostgreSQL 17</div>
+        </div>
+        <span class="status-badge status-running">
+          <span class="status-dot"></span>运行中
+        </span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">
+          <div class="meta-label">进程号</div>
+          <div class="meta-value">8832</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">端口</div>
+          <div class="meta-value">:5432</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">运行时长</div>
+          <div class="meta-value">14h 32m</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="action('database','start')">启动</button>
+        <button class="btn btn-outline btn-sm" onclick="action('database','stop')">停止</button>
+        <button class="btn btn-outline btn-sm" onclick="action('database','restart')">重启</button>
+        <button class="btn btn-danger-outline btn-sm" onclick="killPort('database', 5432)">杀掉端口</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Log Viewer ── -->
+  <section class="log-viewer">
+    <div class="log-toolbar">
+      <div class="log-toolbar-left">
+        <div class="tabs" id="log-tabs">
+          <button class="tab active" data-service="backend" onclick="switchLogTab(this)">后端 API</button>
+          <button class="tab" data-service="frontend" onclick="switchLogTab(this)">前端</button>
+          <button class="tab" data-service="database" onclick="switchLogTab(this)">数据库</button>
+        </div>
+        <div class="filter-pills" id="log-filters">
+          <button class="pill active" data-level="all" onclick="filterLog(this)">全部</button>
+          <button class="pill pill-info" data-level="info" onclick="filterLog(this)">信息</button>
+          <button class="pill pill-warn" data-level="warn" onclick="filterLog(this)">警告</button>
+          <button class="pill pill-error" data-level="error" onclick="filterLog(this)">错误</button>
+        </div>
+      </div>
+      <div class="log-toolbar-right">
+        <label class="toggle-label" onclick="toggleAutoScroll()">
+          <div class="toggle-track on" id="auto-scroll-toggle">
+            <div class="toggle-thumb"></div>
+          </div>
+          自动滚动
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="clearLog()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          清除日志
+        </button>
+      </div>
+    </div>
+
+    <div class="log-content" id="log-content">
+      <!-- Log lines injected by JS -->
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // ── Mock Log Data ──
+  const logData = {
+    backend: [
+      { ts: '2026-04-03 14:30:01', level: 'info',  msg: 'Starting Uvicorn with reload enabled' },
+      { ts: '2026-04-03 14:30:03', level: 'info',  msg: 'Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)' },
+      { ts: '2026-04-03 14:30:03', level: 'info',  msg: 'Started reloader process [12847] using StatReload' },
+      { ts: '2026-04-03 14:30:04', level: 'info',  msg: 'Started server process [12849]' },
+      { ts: '2026-04-03 14:30:04', level: 'info',  msg: 'Application startup complete' },
+      { ts: '2026-04-03 14:31:12', level: 'info',  msg: 'GET /api/flow-overview 200 OK (42ms)' },
+      { ts: '2026-04-03 14:31:15', level: 'info',  msg: 'GET /api/batches?run_id=r_20260403 200 OK (38ms)' },
+      { ts: '2026-04-03 14:32:15', level: 'info',  msg: 'POST /api/pipeline/trigger batch_id=b_20260403_14 202 Accepted' },
+      { ts: '2026-04-03 14:33:08', level: 'info',  msg: 'GET /api/objects?type=cell&lifecycle=active 200 OK (156ms)' },
+      { ts: '2026-04-03 14:35:22', level: 'warn',  msg: 'Slow query detected: 2.3s on obj_cell (SELECT with full scan)' },
+      { ts: '2026-04-03 14:35:23', level: 'warn',  msg: 'Consider adding index on obj_cell(lifecycle_state, health_state)' },
+      { ts: '2026-04-03 14:36:01', level: 'error', msg: 'Connection pool exhausted, retrying... (attempt 1/3)' },
+      { ts: '2026-04-03 14:36:03', level: 'info',  msg: 'Connection pool recovered, 5/20 connections available' },
+      { ts: '2026-04-03 14:37:44', level: 'info',  msg: 'GET /api/anomaly-workspace 200 OK (89ms)' },
+      { ts: '2026-04-03 14:38:10', level: 'info',  msg: 'Batch b_20260403_14 pipeline completed: governed=1247 pending=83 issue=12 rejected=4' },
+      { ts: '2026-04-03 14:39:55', level: 'warn',  msg: 'WebSocket client disconnected unexpectedly (client_id=ws_3f8a)' },
+    ],
+    frontend: [
+      { ts: '2026-04-03 10:15:02', level: 'info',  msg: 'Vite dev server stopped' },
+      { ts: '2026-04-03 10:15:02', level: 'info',  msg: 'Service exited with code 0' },
+    ],
+    database: [
+      { ts: '2026-04-03 00:00:01', level: 'info',  msg: 'PostgreSQL 17.2 on aarch64-apple-darwin, compiled by Apple clang 16.0' },
+      { ts: '2026-04-03 00:00:01', level: 'info',  msg: 'listening on IPv4 address "0.0.0.0", port 5432' },
+      { ts: '2026-04-03 00:00:01', level: 'info',  msg: 'database system is ready to accept connections' },
+      { ts: '2026-04-03 00:00:02', level: 'info',  msg: 'autovacuum launcher started' },
+      { ts: '2026-04-03 08:12:33', level: 'info',  msg: 'checkpoint starting: time' },
+      { ts: '2026-04-03 08:12:41', level: 'info',  msg: 'checkpoint complete: wrote 284 buffers (1.7%)' },
+      { ts: '2026-04-03 12:45:01', level: 'warn',  msg: 'checkpoints are occurring too frequently (28 second)' },
+      { ts: '2026-04-03 12:45:01', level: 'warn',  msg: 'Consider increasing max_wal_size' },
+      { ts: '2026-04-03 14:20:11', level: 'info',  msg: 'automatic analyze of table "rebuild3.public.obj_cell"' },
+      { ts: '2026-04-03 14:36:01', level: 'error', msg: 'remaining connection slots are reserved for superuser and replication connections' },
+      { ts: '2026-04-03 14:36:03', level: 'info',  msg: 'connection slots freed after idle timeout (5 released)' },
+    ]
+  };
+
+  let currentService = 'backend';
+  let currentLevel = 'all';
+  let autoScroll = true;
+
+  function renderLog() {
+    const container = document.getElementById('log-content');
+    const lines = logData[currentService] || [];
+    const filtered = currentLevel === 'all'
+      ? lines
+      : lines.filter(l => l.level === currentLevel);
+
+    container.innerHTML = filtered.map(l => {
+      const levelClass = 'level-' + l.level;
+      const levelTag = l.level.toUpperCase().padEnd(5);
+      return `<div class="log-line"><span class="ts">[${l.ts}]</span> <span class="${levelClass}">${levelTag}</span> <span class="msg">${escapeHtml(l.msg)}</span></div>`;
+    }).join('');
+
+    if (autoScroll) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+  }
+
+  function switchLogTab(el) {
+    document.querySelectorAll('#log-tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    currentService = el.dataset.service;
+    renderLog();
+  }
+
+  function filterLog(el) {
+    document.querySelectorAll('#log-filters .pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    currentLevel = el.dataset.level;
+    renderLog();
+  }
+
+  function toggleAutoScroll() {
+    autoScroll = !autoScroll;
+    const track = document.getElementById('auto-scroll-toggle');
+    track.classList.toggle('on', autoScroll);
+    if (autoScroll) {
+      const c = document.getElementById('log-content');
+      c.scrollTop = c.scrollHeight;
+    }
+  }
+
+  function clearLog() {
+    logData[currentService] = [];
+    renderLog();
+  }
+
+  // ── Service Actions (mock) ──
+
+  function action(service, act) {
+    console.log(`[Launcher] ${act} → ${service}`);
+    alert(`${act} → ${service}\n\n(此为静态原型，实际操作需连接后端 API)`);
+  }
+
+  function actionAll(act) {
+    console.log(`[Launcher] ${act} → ALL`);
+    alert(`${act} → 全部服务\n\n(此为静态原型，实际操作需连接后端 API)`);
+  }
+
+  function killPort(service, port) {
+    const confirmed = confirm(`确认要强制杀掉端口 :${port} 上的进程吗？\n\n这是危险操作，可能导致数据丢失。`);
+    if (confirmed) {
+      console.log(`[Launcher] kill-port :${port} (${service})`);
+      alert(`kill-port :${port}\n\n(此为静态原型，实际操作需连接后端 API)`);
+    }
+  }
+
+  // ── Init ──
+  renderLog();
+</script>
+
+</body>
+</html>

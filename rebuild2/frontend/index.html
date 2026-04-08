@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>望优数仓工作台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="context-bar">
+      <div class="context-left">
+        <div class="brand-kicker">望优数仓工作台</div>
+        <h1>数据驱动的网优数仓重构</h1>
+        <p>先看数据，再建结构；每建一层，可视化确认一层。</p>
+      </div>
+      <div class="context-right">
+        <div class="tag-grid" id="ctx-tags">
+          <span class="tag tag-blue" id="ctx-layer">当前层: 原始数据 · 字段挑选</span>
+          <span class="tag tag-gray" id="ctx-table">数据表: —</span>
+          <span class="tag tag-green" id="ctx-status">状态: 就绪</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="nav-section">
+          <div class="nav-title">数仓层级</div>
+          <a class="nav-item active" data-page="raw" href="#raw">
+            <span class="step-dot dot-red"></span>
+            <span>原始数据 · 字段挑选</span>
+          </a>
+          <a class="nav-item" data-page="audit" href="#audit">
+            <span class="step-dot dot-blue"></span>
+            <span>L0 字段审计</span>
+          </a>
+          <a class="nav-item" data-page="l0data" href="#l0data">
+            <span class="step-dot dot-green"></span>
+            <span>L0 数据概览</span>
+          </a>
+          <a class="nav-item" data-page="ods" href="#ods">
+            <span class="step-dot dot-blue"></span>
+            <span>L1 ODS 清洗规则</span>
+          </a>
+          <a class="nav-item" data-page="trusted" href="#trusted">
+            <span class="step-dot dot-blue"></span>
+            <span>L2 可信库</span>
+          </a>
+          <a class="nav-item" data-page="bs-gps" href="#bs-gps">
+            <span class="step-dot dot-blue"></span>
+            <span>L3 BS+GPS+信号</span>
+          </a>
+          <a class="nav-item" data-page="anomaly" href="#anomaly">
+            <span class="step-dot dot-orange"></span>
+            <span>L3 问题数据研究</span>
+          </a>
+          <a class="nav-item" data-page="profile" href="#profile">
+            <span class="step-dot dot-gray"></span>
+            <span>L4 LAC 画像</span>
+          </a>
+          <a class="nav-item" data-page="profile-bs" href="#profile-bs">
+            <span class="step-dot dot-gray"></span>
+            <span>L4 BS 画像</span>
+          </a>
+          <a class="nav-item" data-page="profile-cell" href="#profile-cell">
+            <span class="step-dot dot-gray"></span>
+            <span>L4 Cell 画像</span>
+          </a>
+        </div>
+      </aside>
+
+      <main class="main-content" id="main-content">
+        <div class="loading">初始化工作台...</div>
+      </main>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop hidden" id="drawer-backdrop"></div>
+  <aside class="drawer hidden" id="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-kicker" id="drawer-kicker">详情</div>
+        <h2 id="drawer-title">字段详情</h2>
+      </div>
+      <button class="btn btn-ghost" id="drawer-close">关闭</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

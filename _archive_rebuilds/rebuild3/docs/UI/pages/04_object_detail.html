@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对象详情 — rebuild3</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.3px;
+  }
+  .sidebar-nav { flex: 1; padding: 4px 8px; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background .15s, color .15s;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active { background: #6366f1; color: #fff; }
+  .sidebar-nav a .icon { width: 18px; text-align: center; font-size: 15px; }
+
+  /* ── Main area ── */
+  .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+
+  /* ── Top bar ── */
+  .topbar {
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; }
+  .topbar-run { font-size: 12px; color: #9ca3af; }
+
+  /* ── Split layout: list + drawer ── */
+  .split-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── Dimmed list (left) ── */
+  .list-pane {
+    width: 40%;
+    opacity: 0.45;
+    pointer-events: none;
+    overflow: hidden;
+    border-right: 1px solid #e5e7eb;
+    background: #f9fafb;
+    padding: 20px 16px;
+  }
+  .list-pane .mini-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #4b5563;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .list-pane .mini-row.selected {
+    background: #eef2ff;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #4f46e5;
+  }
+  .list-pane .mini-pk { font-family: 'SF Mono', Menlo, monospace; font-size: 11px; }
+  .mini-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .mini-green { background: #ecfdf5; color: #059669; }
+  .mini-amber { background: #fffbeb; color: #d97706; }
+
+  /* ── Detail drawer (right) ── */
+  .detail-drawer {
+    width: 60%;
+    background: #fff;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* ── Drawer header ── */
+  .drawer-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+  }
+  .drawer-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    border: none;
+    background: #f3f4f6;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .12s;
+  }
+  .drawer-close:hover { background: #e5e7eb; }
+  .drawer-pk {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .drawer-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .badge-green  { background: #ecfdf5; color: #059669; }
+  .badge-green::before { background: #22c55e; }
+  .type-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .type-cell { background: #eff6ff; color: #2563eb; }
+  .qual-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #bbf7d0;
+  }
+
+  /* ── Tabs ── */
+  .drawer-tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 24px;
+    gap: 0;
+  }
+  .drawer-tabs button {
+    border: none;
+    background: transparent;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #9ca3af;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    font-weight: 500;
+  }
+  .drawer-tabs button:hover { color: #4b5563; }
+  .drawer-tabs button.active {
+    color: #6366f1;
+    border-bottom-color: #6366f1;
+  }
+
+  /* ── Drawer content ── */
+  .drawer-content {
+    padding: 20px 24px 32px;
+    flex: 1;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 12px;
+    margin-top: 20px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── Info table ── */
+  .info-table {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .info-table tr { border-bottom: 1px solid #f3f4f6; }
+  .info-table tr:last-child { border-bottom: none; }
+  .info-table th {
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    background: #fafafa;
+    width: 130px;
+    white-space: nowrap;
+  }
+  .info-table td {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #111827;
+  }
+  .info-link { color: #6366f1; text-decoration: none; }
+  .info-link:hover { text-decoration: underline; }
+
+  /* ── Mini metric cards ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .metric-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .metric-label {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+  }
+  .metric-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .metric-unit {
+    font-size: 12px;
+    font-weight: 400;
+    color: #9ca3af;
+    margin-left: 2px;
+  }
+
+  /* ── Qualification detail ── */
+  .qual-list {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .qual-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+  }
+  .qual-item:last-child { border-bottom: none; }
+  .qual-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .qual-icon-pass { background: #ecfdf5; color: #059669; }
+  .qual-title { font-weight: 600; color: #111827; }
+  .qual-desc { color: #4b5563; margin-top: 2px; font-size: 12px; }
+
+  /* ── Anomaly empty ── */
+  .anomaly-empty {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    background: #fafafa;
+  }
+
+  /* ── History placeholder ── */
+  .tab-placeholder {
+    display: none;
+    padding: 40px 20px;
+    text-align: center;
+    color: #9ca3af;
+  }
+
+  .text-muted { color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="#"><span class="icon">📊</span> 仪表盘</a>
+    <a href="#"><span class="icon">▶</span> 运行中心</a>
+    <a href="#" class="active"><span class="icon">🗂</span> 对象浏览</a>
+    <a href="#"><span class="icon">⏳</span> 等待池</a>
+    <a href="#"><span class="icon">⚠</span> 异常看板</a>
+    <a href="#"><span class="icon">📋</span> 批次审查</a>
+    <a href="#"><span class="icon">📐</span> 基线管理</a>
+    <a href="#"><span class="icon">🔄</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-title">对象浏览</div>
+    <div class="topbar-run">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</div>
+  </header>
+
+  <!-- Split layout -->
+  <div class="split-layout">
+
+    <!-- Dimmed list pane -->
+    <div class="list-pane">
+      <div class="mini-row selected">
+        <span class="mini-pk">46000-4G-12345-67890</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">46001-4G-12346-67891</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">46000-4G-12347-67892</span>
+        <span class="mini-badge mini-amber">observing</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">46001-4G-12348-67893</span>
+        <span class="mini-badge mini-amber">waiting</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">BS-460001234</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">BS-460001235</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">BS-460001236</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">BS-460001237</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">LAC-46000-12345</span>
+        <span class="mini-badge mini-green">active</span>
+      </div>
+      <div class="mini-row">
+        <span class="mini-pk">46000-5G-22345-88890</span>
+        <span class="mini-badge" style="background:#fef2f2;color:#dc2626;">rejected</span>
+      </div>
+    </div>
+
+    <!-- Detail drawer -->
+    <div class="detail-drawer">
+
+      <!-- Header -->
+      <div class="drawer-header">
+        <button class="drawer-close">✕</button>
+        <div class="drawer-pk">46000-4G-12345-67890</div>
+        <div class="drawer-meta">
+          <span class="type-badge type-cell">Cell</span>
+          <span class="badge badge-green">active</span>
+          <span style="font-size:12px; color:#059669;">✓ healthy</span>
+          <span class="qual-tag">可锚定 ✓</span>
+          <span class="qual-tag">可进基线 ✓</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="drawer-tabs">
+        <button class="active">概览</button>
+        <button>画像</button>
+        <button>历史</button>
+        <button>关系</button>
+        <button>事实</button>
+      </div>
+
+      <!-- Content: 概览 tab -->
+      <div class="drawer-content">
+
+        <div class="section-title">基本信息</div>
+        <table class="info-table">
+          <tr><th>运营商</th><td>中国移动 (46000)</td></tr>
+          <tr><th>制式</th><td>4G LTE</td></tr>
+          <tr><th>LAC</th><td>12345</td></tr>
+          <tr><th>Cell ID</th><td>67890</td></tr>
+          <tr><th>所属 BS</th><td><a href="#" class="info-link">BS-460001234</a></td></tr>
+          <tr><th>首次发现</th><td>2026-03-01</td></tr>
+          <tr><th>最后活跃</th><td>2026-04-03 10:00</td></tr>
+        </table>
+
+        <div class="section-title">关键指标</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-label">GPS 有效点数</div>
+            <div class="metric-value">2,341</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">独立设备数</div>
+            <div class="metric-value">47</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">活跃天数</div>
+            <div class="metric-value">32</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">质心半径 P90</div>
+            <div class="metric-value">380<span class="metric-unit">m</span></div>
+          </div>
+        </div>
+
+        <div class="section-title">资格详情</div>
+        <div class="qual-list">
+          <div class="qual-item">
+            <div class="qual-icon qual-icon-pass">✓</div>
+            <div>
+              <div class="qual-title">存在资格</div>
+              <div class="qual-desc">已通过 — 首次注册 2026-03-01</div>
+            </div>
+          </div>
+          <div class="qual-item">
+            <div class="qual-icon qual-icon-pass">✓</div>
+            <div>
+              <div class="qual-title">锚点资格</div>
+              <div class="qual-desc">GPS点 2,341 ≥ 10 &nbsp;|&nbsp; 设备 47 ≥ 2 &nbsp;|&nbsp; P90 380m &lt; 1500m &nbsp;|&nbsp; 跨度 32天 ≥ 1天 &nbsp;|&nbsp; 无禁用异常</div>
+            </div>
+          </div>
+          <div class="qual-item">
+            <div class="qual-icon qual-icon-pass">✓</div>
+            <div>
+              <div class="qual-title">基线资格</div>
+              <div class="qual-desc">样本量充足 &nbsp;|&nbsp; 活跃天数充足 &nbsp;|&nbsp; 信号稳定</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">最近异常</div>
+        <div class="anomaly-empty">
+          暂无异常记录
+        </div>
+
+      </div>
+      <!-- end drawer-content -->
+
+    </div>
+    <!-- end detail-drawer -->
+
+  </div>
+  <!-- end split-layout -->
+
+</div>
+<!-- end main -->
+
+</body>
+</html>

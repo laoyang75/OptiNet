@@ -1,0 +1,283 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]: rebuild3
+    - navigation [ref=e5]:
+      - link "◎ 流转总览" [ref=e6] [cursor=pointer]:
+        - /url: 01_flow_overview.html
+        - generic [ref=e7]: ◎
+        - text: 流转总览
+      - link "⏲ 流转快照" [ref=e8] [cursor=pointer]:
+        - /url: 01_flow_overview_timeline.html
+        - generic [ref=e9]: ⏲
+        - text: 流转快照
+      - link "⚙ 运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: 02_run_batch_center.html
+        - generic [ref=e11]: ⚙
+        - text: 运行/批次中心
+      - link "◼ 对象浏览" [ref=e12] [cursor=pointer]:
+        - /url: 03_objects.html
+        - generic [ref=e13]: ◼
+        - text: 对象浏览
+      - link "⏱ 等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: 05_observation_workspace.html
+        - generic [ref=e15]: ⏱
+        - text: 等待/观察工作台
+      - link "⚠ 异常工作台" [ref=e16] [cursor=pointer]:
+        - /url: 06_anomaly_workspace.html
+        - generic [ref=e17]: ⚠
+        - text: 异常工作台
+      - link "★ 基线/画像" [ref=e18] [cursor=pointer]:
+        - /url: 07_baseline_profile.html
+        - generic [ref=e19]: ★
+        - text: 基线/画像
+      - link "▤ LAC 画像" [ref=e21] [cursor=pointer]:
+        - /url: 09_lac_profile.html
+        - generic [ref=e22]: ▤
+        - text: LAC 画像
+      - link "▣ BS 画像" [ref=e23] [cursor=pointer]:
+        - /url: 10_bs_profile.html
+        - generic [ref=e24]: ▣
+        - text: BS 画像
+      - link "■ Cell 画像" [ref=e25] [cursor=pointer]:
+        - /url: 11_cell_profile.html
+        - generic [ref=e26]: ■
+        - text: Cell 画像
+      - link "☰ 基础数据治理" [ref=e28] [cursor=pointer]:
+        - /url: 13_data_governance.html
+        - generic [ref=e29]: ☰
+        - text: 基础数据治理
+      - link "☑ 验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: 08_validation_compare.html
+        - generic [ref=e31]: ☑
+        - text: 验证/对照
+      - link "▶ 初始化数据" [ref=e32] [cursor=pointer]:
+        - /url: 12_initialization.html
+        - generic [ref=e33]: ▶
+        - text: 初始化数据
+  - generic [ref=e34]:
+    - banner [ref=e35]:
+      - generic [ref=e36]: rebuild3 流式治理工作台
+      - generic [ref=e37]: 正常运行中 · 上次刷新 14:32:07
+    - generic [ref=e39]:
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - button "Cell" [ref=e43] [cursor=pointer]
+          - button "BS" [ref=e44] [cursor=pointer]
+          - button "LAC" [ref=e45] [cursor=pointer]
+        - combobox [ref=e47] [cursor=pointer]:
+          - 'option "生命周期: 全部" [selected]'
+          - option "等待 (waiting)"
+          - option "观察 (observing)"
+          - option "活跃 (active)"
+          - option "休眠 (dormant)"
+          - option "退役 (retired)"
+          - option "拒收 (rejected)"
+        - combobox [ref=e48] [cursor=pointer]:
+          - 'option "健康状态: 全部" [selected]'
+          - option "健康 (healthy)"
+          - option "数据不足 (insufficient)"
+          - option "碰撞嫌疑 (collision_suspect)"
+          - option "碰撞确认 (collision_confirmed)"
+          - option "动态 (dynamic)"
+          - option "迁移嫌疑 (migration_suspect)"
+          - option "GPS偏差 (gps_bias)"
+        - combobox [ref=e49] [cursor=pointer]:
+          - 'option "资格: 全部" [selected]'
+          - option "锚点可用"
+          - option "锚点禁用"
+          - option "基线可用"
+          - option "基线禁用"
+        - textbox "按主键搜索..." [ref=e51]
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]: 总计
+          - generic [ref=e56]: 15,069
+        - generic [ref=e57]: 本批 +18
+        - generic [ref=e58]: 较上批 +6 ↑
+        - generic [ref=e60]:
+          - generic [ref=e61]: 活跃
+          - generic [ref=e62]: 12,847
+          - generic [ref=e63]: (85.2%)
+        - generic [ref=e65]:
+          - generic [ref=e66]: 等待
+          - generic [ref=e67]: 1,283
+        - generic [ref=e69]:
+          - generic [ref=e70]: 观察
+          - generic [ref=e71]: "892"
+        - generic [ref=e73]:
+          - generic [ref=e74]: 问题
+          - generic [ref=e75]: "47"
+      - generic [ref=e77]:
+        - table [ref=e78]:
+          - rowgroup [ref=e79]:
+            - row "主键 生命周期 健康状态 锚点 基线 样本数 设备数 活跃天数 最近活跃 异常标签" [ref=e80]:
+              - columnheader "主键" [ref=e81]
+              - columnheader "生命周期" [ref=e82]
+              - columnheader "健康状态" [ref=e83]
+              - columnheader "锚点" [ref=e84]
+              - columnheader "基线" [ref=e85]
+              - columnheader "样本数" [ref=e86]
+              - columnheader "设备数" [ref=e87]
+              - columnheader "活跃天数" [ref=e88]
+              - columnheader "最近活跃" [ref=e89]
+              - columnheader "异常标签" [ref=e90]
+          - rowgroup [ref=e91]:
+            - row "46000-LTE-12847-3 活跃 ✓ 健康 ✓ ✓ 2,847 15 45 2h前 —" [ref=e92] [cursor=pointer]:
+              - cell "46000-LTE-12847-3" [ref=e93]
+              - cell "活跃" [ref=e94]:
+                - generic [ref=e95]: 活跃
+              - cell "✓ 健康" [ref=e96]
+              - cell "✓" [ref=e97]
+              - cell "✓" [ref=e98]
+              - cell "2,847" [ref=e99]
+              - cell "15" [ref=e100]
+              - cell "45" [ref=e101]
+              - cell "2h前" [ref=e102]
+              - cell "—" [ref=e103]
+            - row "46000-LTE-12848-1 活跃 ⊕ GPS偏差 ✗ ✗ 1,203 8 32 2h前 WATCH" [ref=e104] [cursor=pointer]:
+              - cell "46000-LTE-12848-1" [ref=e105]
+              - cell "活跃" [ref=e106]:
+                - generic [ref=e107]: 活跃
+              - cell "⊕ GPS偏差" [ref=e108]
+              - cell "✗" [ref=e109]
+              - cell "✗" [ref=e110]
+              - cell "1,203" [ref=e111]
+              - cell "8" [ref=e112]
+              - cell "32" [ref=e113]
+              - cell "2h前" [ref=e114]
+              - cell "WATCH" [ref=e115]:
+                - generic [ref=e116]: WATCH
+            - row "46001-LTE-9921-5 活跃 △ 碰撞嫌疑 ✗ ✗ 956 6 28 4h前 WATCH" [ref=e117] [cursor=pointer]:
+              - cell "46001-LTE-9921-5" [ref=e118]
+              - cell "活跃" [ref=e119]:
+                - generic [ref=e120]: 活跃
+              - cell "△ 碰撞嫌疑" [ref=e121]
+              - cell "✗" [ref=e122]
+              - cell "✗" [ref=e123]
+              - cell "956" [ref=e124]
+              - cell "6" [ref=e125]
+              - cell "28" [ref=e126]
+              - cell "4h前" [ref=e127]
+              - cell "WATCH" [ref=e128]:
+                - generic [ref=e129]: WATCH
+            - row "46000-LTE-15432-2 观察 ✓ 健康 ✗ ✗ 87 3 5 2h前 —" [ref=e130] [cursor=pointer]:
+              - cell "46000-LTE-15432-2" [ref=e131]
+              - cell "观察" [ref=e132]:
+                - generic [ref=e133]: 观察
+              - cell "✓ 健康" [ref=e134]
+              - cell "✗" [ref=e135]
+              - cell "✗" [ref=e136]
+              - cell "87" [ref=e137]
+              - cell "3" [ref=e138]
+              - cell "5" [ref=e139]
+              - cell "2h前" [ref=e140]
+              - cell "—" [ref=e141]
+            - row "46001-LTE-8834-7 等待 ? 数据不足 ✗ ✗ 12 1 2 6h前 —" [ref=e142] [cursor=pointer]:
+              - cell "46001-LTE-8834-7" [ref=e143]
+              - cell "等待" [ref=e144]:
+                - generic [ref=e145]: 等待
+              - cell "? 数据不足" [ref=e146]
+              - cell "✗" [ref=e147]
+              - cell "✗" [ref=e148]
+              - cell "12" [ref=e149]
+              - cell "1" [ref=e150]
+              - cell "2" [ref=e151]
+              - cell "6h前" [ref=e152]
+              - cell "—" [ref=e153]
+            - row "46000-LTE-7723-4 活跃 ⊘ 碰撞确认 ✗ ✗ 3,421 12 60 2h前 WATCH" [ref=e154] [cursor=pointer]:
+              - cell "46000-LTE-7723-4" [ref=e155]
+              - cell "活跃" [ref=e156]:
+                - generic [ref=e157]: 活跃
+              - cell "⊘ 碰撞确认" [ref=e158]
+              - cell "✗" [ref=e159]
+              - cell "✗" [ref=e160]
+              - cell "3,421" [ref=e161]
+              - cell "12" [ref=e162]
+              - cell "60" [ref=e163]
+              - cell "2h前" [ref=e164]
+              - cell "WATCH" [ref=e165]:
+                - generic [ref=e166]: WATCH
+            - row "46001-LTE-6612-8 活跃 → 动态 ✗ ✗ 567 4 15 2h前 WATCH" [ref=e167] [cursor=pointer]:
+              - cell "46001-LTE-6612-8" [ref=e168]
+              - cell "活跃" [ref=e169]:
+                - generic [ref=e170]: 活跃
+              - cell "→ 动态" [ref=e171]
+              - cell "✗" [ref=e172]
+              - cell "✗" [ref=e173]
+              - cell "567" [ref=e174]
+              - cell "4" [ref=e175]
+              - cell "15" [ref=e176]
+              - cell "2h前" [ref=e177]
+              - cell "WATCH" [ref=e178]:
+                - generic [ref=e179]: WATCH
+            - row "46000-LTE-5501-3 活跃 ⇢ 迁移嫌疑 ✗ ✗ 1,892 9 40 4h前 WATCH" [ref=e180] [cursor=pointer]:
+              - cell "46000-LTE-5501-3" [ref=e181]
+              - cell "活跃" [ref=e182]:
+                - generic [ref=e183]: 活跃
+              - cell "⇢ 迁移嫌疑" [ref=e184]
+              - cell "✗" [ref=e185]
+              - cell "✗" [ref=e186]
+              - cell "1,892" [ref=e187]
+              - cell "9" [ref=e188]
+              - cell "40" [ref=e189]
+              - cell "4h前" [ref=e190]
+              - cell "WATCH" [ref=e191]:
+                - generic [ref=e192]: WATCH
+            - row "46000-LTE-4490-6 休眠 ✓ 健康 ✗ ✗ 423 3 12 7d前 —" [ref=e193] [cursor=pointer]:
+              - cell "46000-LTE-4490-6" [ref=e194]
+              - cell "休眠" [ref=e195]:
+                - generic [ref=e196]: 休眠
+              - cell "✓ 健康" [ref=e197]
+              - cell "✗" [ref=e198]
+              - cell "✗" [ref=e199]
+              - cell "423" [ref=e200]
+              - cell "3" [ref=e201]
+              - cell "12" [ref=e202]
+              - cell "7d前" [ref=e203]
+              - cell "—" [ref=e204]
+            - row "46001-LTE-3379-2 退役 — ✗ ✗ 89 1 3 30d前 —" [ref=e205] [cursor=pointer]:
+              - cell "46001-LTE-3379-2" [ref=e206]
+              - cell "退役" [ref=e207]:
+                - generic [ref=e208]: 退役
+              - cell "—" [ref=e209]
+              - cell "✗" [ref=e210]
+              - cell "✗" [ref=e211]
+              - cell "89" [ref=e212]
+              - cell "1" [ref=e213]
+              - cell "3" [ref=e214]
+              - cell "30d前" [ref=e215]
+              - cell "—" [ref=e216]
+            - row "46000-LTE-2268-9 拒收 — ✗ ✗ 2 1 1 14d前 结构不合规" [ref=e217] [cursor=pointer]:
+              - cell "46000-LTE-2268-9" [ref=e218]
+              - cell "拒收" [ref=e219]:
+                - generic [ref=e220]: 拒收
+              - cell "—" [ref=e221]
+              - cell "✗" [ref=e222]
+              - cell "✗" [ref=e223]
+              - cell "2" [ref=e224]
+              - cell "1" [ref=e225]
+              - cell "1" [ref=e226]
+              - cell "14d前" [ref=e227]
+              - cell "结构不合规" [ref=e228]
+            - row "46001-LTE-1157-4 观察 ✓ 健康 ✗ ✗ 65 2 4 2h前 —" [ref=e229] [cursor=pointer]:
+              - cell "46001-LTE-1157-4" [ref=e230]
+              - cell "观察" [ref=e231]:
+                - generic [ref=e232]: 观察
+              - cell "✓ 健康" [ref=e233]
+              - cell "✗" [ref=e234]
+              - cell "✗" [ref=e235]
+              - cell "65" [ref=e236]
+              - cell "2" [ref=e237]
+              - cell "4" [ref=e238]
+              - cell "2h前" [ref=e239]
+              - cell "—" [ref=e240]
+        - generic [ref=e241]:
+          - generic [ref=e242]: 第 1 页 / 共 126 页，共 15,069 条记录
+          - generic [ref=e243]:
+            - button "« 上一页" [disabled] [ref=e244]
+            - button "1" [ref=e245] [cursor=pointer]
+            - button "2" [ref=e246] [cursor=pointer]
+            - button "3" [ref=e247] [cursor=pointer]
+            - generic [ref=e248]: ...
+            - button "126" [ref=e249] [cursor=pointer]
+            - button "下一页 »" [ref=e250] [cursor=pointer]

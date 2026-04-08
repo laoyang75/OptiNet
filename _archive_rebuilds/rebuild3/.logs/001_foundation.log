@@ -1,0 +1,62 @@
+SET
+psql:rebuild3/backend/sql/schema/001_foundation.sql:3: NOTICE:  schema "rebuild3" already exists, skipping
+CREATE SCHEMA
+psql:rebuild3/backend/sql/schema/001_foundation.sql:4: NOTICE:  schema "rebuild3_meta" already exists, skipping
+CREATE SCHEMA
+psql:rebuild3/backend/sql/schema/001_foundation.sql:5: NOTICE:  schema "rebuild3_sample" already exists, skipping
+CREATE SCHEMA
+psql:rebuild3/backend/sql/schema/001_foundation.sql:6: NOTICE:  schema "rebuild3_sample_meta" already exists, skipping
+CREATE SCHEMA
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_standardized" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_governed" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_pending_observation" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_pending_issue" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_rejected" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_cell" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_bs" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_lac" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_state_history" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_relation_history" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_cell" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_bs" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_lac" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_standardized" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_governed" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_pending_observation" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_pending_issue" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "fact_rejected" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_cell" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_bs" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_lac" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_state_history" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "obj_relation_history" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_cell" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_bs" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_lac" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "run" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_version" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_snapshot" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_flow_summary" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_decision_summary" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_anomaly_summary" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_baseline_refresh_log" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_table_catalog" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_field_catalog" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_usage_map" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_migration_decision" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "compare_result" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "run" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "baseline_version" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_snapshot" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_flow_summary" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_decision_summary" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_anomaly_summary" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "batch_baseline_refresh_log" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_table_catalog" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_field_catalog" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_usage_map" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "asset_migration_decision" already exists, skipping
+psql:rebuild3/backend/sql/schema/001_foundation.sql:504: NOTICE:  relation "compare_result" already exists, skipping
+DO

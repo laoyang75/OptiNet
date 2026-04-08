@@ -1,0 +1,96 @@
+/* ── P3 字段治理 ─────────────────────────────────── */
+
+.scope-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.scope-source {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+.scope-pipeline {
+  background: var(--green-soft, rgba(63, 124, 71, 0.12));
+  color: var(--green);
+}
+
+.compliance-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 90px;
+}
+.compliance-bar > div {
+  height: 6px;
+  border-radius: 3px;
+  flex: 0 0 60px;
+}
+.compliance-bar > span {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.compliance-na {
+  color: var(--text-dim);
+}
+
+.field-governance-table tbody tr.field-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.field-governance-table tbody tr.field-row:hover {
+  background: var(--blue-soft);
+}
+.field-governance-table tbody tr.field-row.expanded {
+  background: var(--surface-muted);
+  font-weight: 500;
+}
+
+.field-expansion-row td {
+  padding: 0 !important;
+}
+.field-expansion {
+  padding: 16px 20px;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.expansion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.expansion-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+.expansion-section p {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.step-link {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--surface-muted);
+  color: var(--blue);
+  font-size: 12px;
+  text-decoration: none;
+  margin-right: 4px;
+}
+.step-link:hover {
+  background: var(--blue-soft);
+}
+
+.diff-arrow {
+  color: var(--orange);
+  font-weight: 600;
+  margin: 0 2px;
+}

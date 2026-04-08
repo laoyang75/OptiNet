@@ -1,0 +1,6 @@
+contract_version: rebuild3-contract-v1
+rule_set_version: rebuild3-rule-set-v1
+sample_run_id: RUN-SAMPLE-20251201-20251207-V1
+sample_batch_id: BATCH-SAMPLE-20251201-20251207-V1
+sample_baseline_version: BASELINE-SAMPLE-V1
+compare_rule_version: compare-rules-v1

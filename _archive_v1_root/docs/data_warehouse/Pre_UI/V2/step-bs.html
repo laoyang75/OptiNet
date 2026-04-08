@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>步骤工作台：可信 BS - 工作台</title>
+<link rel="stylesheet" href="wb.css"/>
+</head>
+<body>
+
+<!-- 顶部上下文条 -->
+<div class="ctx-bar">
+  <span>Run: <strong>#0037</strong></span>
+  <span>Compare: <strong>#0034</strong></span>
+  <span>参数集: <strong>P-003</strong></span>
+  <span>规则集: <strong>R2</strong></span>
+  <span>SQL: <strong>S-005</strong></span>
+  <span>契约: <strong>C1</strong></span>
+  <span>当前步骤: <strong>可信 BS</strong></span>
+  <span class="spacer"></span>
+  <button class="ctx-btn" onclick="openDrawer('version')">版本抽屉</button>
+</div>
+
+<!-- 侧栏 -->
+<nav class="sidebar">
+  <div class="group-label">治理链路</div>
+  <a href="index.html"><span class="step-status done"></span><span>链路总览</span></a>
+  <a href="step-lac.html"><span class="step-status done"></span><span>可信 LAC</span><span class="step-count">45</span></a>
+  <a href="step-cell.html"><span class="step-status done"></span><span>Cell 统计</span><span class="step-count">9,654</span></a>
+  <a href="step-bs.html" class="active"><span class="step-status done"></span><span>可信 BS</span><span class="step-count">3,218</span></a>
+  <a href="step-gps.html"><span class="step-status done"></span><span>GPS 修正</span><span class="step-count">22%</span></a>
+  <a href="#"><span class="step-status done"></span><span>信号补齐</span><span class="step-count">8%</span></a>
+  <a href="#"><span class="step-status done"></span><span>完整回归</span><span class="step-count">10.8M</span></a>
+  <a href="#"><span class="step-status done"></span><span>画像/基线</span><span class="step-count">B1</span></a>
+  <a href="#"><span class="step-status pending"></span><span>伪日更</span><span class="step-count">—</span></a>
+  <div class="sep"></div>
+  <div class="group-label">辅助页面</div>
+  <a href="fields.html"><span>字段治理</span></a>
+  <a href="samples.html"><span>样本研究</span></a>
+</nav>
+
+<div class="main">
+  <div class="crumb"><a href="index.html">链路总览</a> / 步骤工作台：可信 BS</div>
+
+  <!-- A. 步骤说明 -->
+  <div class="card">
+    <h3>A. 步骤说明</h3>
+    <dl class="detail-grid">
+      <dt>步骤名称</dt><dd>可信 BS</dd>
+      <dt>业务目的</dt><dd>基于可信 Cell 聚合出空间锚点 BS，计算中心点、覆盖半径、碰撞检测</dd>
+      <dt>上游步骤</dt><dd><a class="link" href="step-cell.html">Cell 统计</a></dd>
+      <dt>下游步骤</dt><dd><a class="link" href="step-gps.html">GPS 修正</a></dd>
+      <dt>当前状态</dt><dd><span class="tag ok">已完成</span></dd>
+      <dt>当前库映射</dt><dd>Y_codex_Layer3_Step30 &rarr; dim_bs_trusted</dd>
+    </dl>
+  </div>
+
+  <!-- B. 输入/输出 -->
+  <div class="card">
+    <h3>B. 输入 / 输出</h3>
+    <table>
+      <thead><tr><th></th><th>输入</th><th>输出</th></tr></thead>
+      <tbody>
+        <tr><td><strong>库名</strong></td><td>dim_cell_stats</td><td>dim_bs_trusted</td></tr>
+        <tr><td><strong>行数</strong></td><td>9,654</td><td>3,218</td></tr>
+        <tr><td><strong>主键</strong></td><td>cell_id + lac</td><td>bs_id + lac</td></tr>
+        <tr><td><strong>维度</strong></td><td>Cell 级</td><td>BS 级</td></tr>
+        <tr><td><strong>vs #0034</strong></td><td>9,201 (+453)</td><td>3,105 <span class="tag diff-new">+113 (+3.6%)</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- C. 规则区 -->
+  <div class="card">
+    <h3>C. 规则</h3>
+    <table>
+      <thead><tr><th>规则名称</th><th>目的</th><th>关键参数</th><th>命中数</th><th>影响范围</th><th></th></tr></thead>
+      <tbody>
+        <tr>
+          <td>BS 聚合规则</td>
+          <td>Cell &rarr; BS 聚合</td>
+          <td>4G: cell_id&divide;256, 5G: cell_id&divide;4096</td>
+          <td>3,218</td>
+          <td>全部 BS</td>
+          <td><a class="link" onclick="toggleExpand('rule-agg')">展开</a></td>
+        </tr>
+        <tr>
+          <td>中心点计算</td>
+          <td>GPS 中位数锚点</td>
+          <td>method: median</td>
+          <td>3,218</td>
+          <td>全部 BS</td>
+          <td><a class="link">展开</a></td>
+        </tr>
+        <tr>
+          <td>覆盖半径计算</td>
+          <td>P50 / P90</td>
+          <td>percentile: 50, 90</td>
+          <td>3,218</td>
+          <td>全部 BS</td>
+          <td><a class="link">展开</a></td>
+        </tr>
+        <tr style="background:#fffaf5">
+          <td><strong>碰撞检测</strong></td>
+          <td>簇间距判定</td>
+          <td><strong>threshold: 1.5km</strong> <span class="tag warn" style="font-size:10px">改</span></td>
+          <td><strong>12</strong></td>
+          <td>碰撞 BS</td>
+          <td><a class="link" onclick="toggleExpand('rule-collision')">展开</a></td>
+        </tr>
+        <tr>
+          <td>风险等级标注</td>
+          <td>正常/碰撞/异常</td>
+          <td>—</td>
+          <td>3,218</td>
+          <td>全部 BS</td>
+          <td><a class="link">展开</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 规则展开：碰撞检测 -->
+    <div class="expand-zone" id="rule-collision" style="display:none">
+      <h4>碰撞检测规则详情</h4>
+      <dl class="detail-grid">
+        <dt>规则说明</dt><dd>当 BS 下属 Cell 的 GPS 聚落形成 &ge;2 个不连通簇，且簇间距 > threshold 时，标记为碰撞 BS</dd>
+        <dt>聚类方法</dt><dd>DBSCAN (eps=0.01, minpoints=2)</dd>
+        <dt>碰撞阈值</dt><dd><strong>1.5km</strong>（上次 P-002: 2.0km）<span class="tag warn" style="font-size:10px;margin-left:4px">已调整</span></dd>
+        <dt>命中数</dt><dd>12 个 BS（vs #0034: 8 个，<span class="tag diff-new" style="font-size:10px">+4</span>）</dd>
+        <dt>影响 Cell</dt><dd>36 个</dd>
+        <dt>影响记录</dt><dd>4,800 条</dd>
+      </dl>
+      <p style="font-size:12px;color:#888;margin-top:8px">新增命中的 4 个 BS 簇间距在 1.5km~2.0km 之间，属于阈值下调新覆盖的范围。<a class="link" href="samples.html">查看样本 &rarr;</a></p>
+    </div>
+  </div>
+
+  <!-- D. 参数区 -->
+  <div class="card">
+    <h3>D. 参数</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">参数集: P-003（vs 对比 P-002）</p>
+    <table>
+      <thead><tr><th>参数名</th><th>当前值 (P-003)</th><th>上次值 (P-002)</th><th>变化</th></tr></thead>
+      <tbody>
+        <tr style="background:#fffaf5">
+          <td><strong>collision_threshold</strong></td>
+          <td><strong>1.5 km</strong></td>
+          <td>2.0 km</td>
+          <td><span class="tag warn">&#9660; 调低</span></td>
+        </tr>
+        <tr>
+          <td>min_cell_count</td>
+          <td>2</td>
+          <td>2</td>
+          <td><span class="tag muted">—</span></td>
+        </tr>
+        <tr>
+          <td>center_method</td>
+          <td>median</td>
+          <td>median</td>
+          <td><span class="tag muted">—</span></td>
+        </tr>
+        <tr>
+          <td>coverage_percentiles</td>
+          <td>50, 90</td>
+          <td>50, 90</td>
+          <td><span class="tag muted">—</span></td>
+        </tr>
+        <tr>
+          <td>dbscan_eps</td>
+          <td>0.01</td>
+          <td>0.015</td>
+          <td><span class="tag warn">&#9660;</span></td>
+        </tr>
+        <tr>
+          <td>dbscan_minpoints</td>
+          <td>2</td>
+          <td>2</td>
+          <td><span class="tag muted">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- E. SQL 区 -->
+  <div class="card">
+    <h3>E. SQL</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">SQL 版本: S-005 &middot; 本步骤 SQL 共 4 条</p>
+    <table>
+      <thead><tr><th>序号</th><th>SQL 名称</th><th>用途</th><th>版本</th><th></th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td><td>agg_cell_to_bs.sql</td><td>Cell&rarr;BS 聚合</td><td>S-005</td>
+          <td><a class="link" onclick="openDrawer('sql')">展开 SQL</a></td>
+        </tr>
+        <tr>
+          <td>2</td><td>calc_bs_center.sql</td><td>中心点计算</td><td>S-005</td>
+          <td><a class="link" onclick="openDrawer('sql')">展开 SQL</a></td>
+        </tr>
+        <tr>
+          <td>3</td><td>calc_bs_coverage.sql</td><td>覆盖半径</td><td>S-005</td>
+          <td><a class="link" onclick="openDrawer('sql')">展开 SQL</a></td>
+        </tr>
+        <tr>
+          <td>4</td><td>detect_collision.sql</td><td>碰撞检测</td><td>S-005</td>
+          <td><a class="link" onclick="openDrawer('sql')">展开 SQL</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- F. 数据变化区 -->
+  <div class="card">
+    <h3>F. 数据变化（本次 Run#0037）</h3>
+    <div class="metric-row">
+      <div class="metric-card"><div class="num">3,218</div><div class="lbl">总 BS 数</div></div>
+      <div class="metric-card"><div class="num" style="color:#1a9a5a">3,172</div><div class="lbl">正常 BS (98.6%)</div></div>
+      <div class="metric-card"><div class="num" style="color:#c73939">12</div><div class="lbl">碰撞 BS (0.37%)</div></div>
+      <div class="metric-card"><div class="num" style="color:#c48800">34</div><div class="lbl">含移动Cell BS</div></div>
+    </div>
+    <table>
+      <thead><tr><th>指标</th><th>值</th></tr></thead>
+      <tbody>
+        <tr><td>覆盖半径 P50 中位</td><td>320m</td></tr>
+        <tr><td>覆盖半径 P90 中位</td><td>680m</td></tr>
+        <tr><td>平均下属 Cell 数</td><td>3.0</td></tr>
+        <tr><td>共享运营商 BS</td><td>0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- G. 差异区 -->
+  <div class="card">
+    <h3>G. 差异（Run#0037 vs Run#0034）</h3>
+    <table>
+      <thead><tr><th>指标</th><th>#0037</th><th>#0034</th><th>差异</th></tr></thead>
+      <tbody>
+        <tr><td>总 BS 数</td><td>3,218</td><td>3,105</td><td><span class="tag diff-new">+113 (+3.6%)</span></td></tr>
+        <tr style="background:#fffaf5"><td><strong>碰撞 BS 数</strong></td><td><strong>12</strong></td><td>8</td><td><span class="tag diff-up">+4 (新增)</span></td></tr>
+        <tr><td>覆盖 P50 中位</td><td>320m</td><td>325m</td><td><span class="tag diff-down">-5m</span></td></tr>
+        <tr><td>覆盖 P90 中位</td><td>680m</td><td>720m</td><td><span class="tag diff-down">-40m (改善)</span></td></tr>
+        <tr><td>含移动Cell BS</td><td>34</td><td>31</td><td>+3</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:13px">
+      <strong>对象变化明细：</strong>
+      新增BS: <span class="tag diff-new">113个</span> &middot;
+      消失BS: 0个 &middot;
+      碰撞状态变化: <span class="tag diff-up">4个</span>
+    </div>
+  </div>
+
+  <!-- H. 样本区 -->
+  <div class="card">
+    <h3>H. 样本</h3>
+    <table>
+      <thead><tr><th>分类</th><th>数量</th><th>代表样本</th><th></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag ok">典型正常</span></td>
+          <td>3,172</td>
+          <td>BS-1234 中心(116.39,39.90) P50:320m 3Cell</td>
+          <td><a class="link" onclick="openDrawer('sample')">详情</a></td>
+        </tr>
+        <tr style="background:#fffaf5">
+          <td><span class="tag err">碰撞 BS</span></td>
+          <td>12</td>
+          <td>BS-2345 2簇 间距1.7km 影响3Cell</td>
+          <td><a class="link" onclick="openDrawer('sample')">详情</a></td>
+        </tr>
+        <tr>
+          <td><span class="tag warn">边界样本</span></td>
+          <td>4</td>
+          <td>BS-5678 2簇 间距1.5km（恰好命中阈值）</td>
+          <td><a class="link" onclick="openDrawer('sample')">详情</a></td>
+        </tr>
+        <tr>
+          <td><span class="tag info">新增碰撞</span></td>
+          <td>4</td>
+          <td>BS-3456 3簇 间距1.6km（#0034未识别）</td>
+          <td><a class="link" onclick="openDrawer('sample')">详情</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px"><a class="link" href="samples.html">在样本研究页查看完整样本 &rarr;</a></div>
+  </div>
+
+  <!-- 操作区 -->
+  <div class="card" style="display:flex;gap:10px">
+    <button class="btn btn-primary">从此步骤开始重跑</button>
+    <button class="btn btn-ghost">仅重跑此步骤</button>
+    <button class="btn btn-ghost">样本重跑（选择样本集）</button>
+  </div>
+</div>
+
+<!-- SQL 抽屉 -->
+<div class="drawer-overlay" id="overlay-sql" onclick="closeDrawer('sql')"></div>
+<div class="drawer" id="drawer-sql">
+  <button class="close" onclick="closeDrawer('sql')">&times;</button>
+  <h2>SQL 查看</h2>
+  <div class="card">
+    <h3>detect_collision.sql</h3>
+    <dl class="detail-grid">
+      <dt>版本</dt><dd>S-005</dd>
+      <dt>步骤</dt><dd>可信 BS</dd>
+      <dt>用途</dt><dd>碰撞检测</dd>
+    </dl>
+  </div>
+  <div class="card" style="padding:0">
+    <div class="sql-block"><span class="kw">WITH</span> cell_clusters <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> bs_id, lac, cell_id,
+    ST_ClusterDBSCAN(
+      ST_SetSRID(ST_MakePoint(lon, lat), 4326),
+      eps := <span class="param">:dbscan_eps</span>,
+      minpoints := <span class="param">:dbscan_minpoints</span>
+    ) <span class="kw">OVER</span> (
+      <span class="kw">PARTITION BY</span> bs_id, lac
+    ) <span class="kw">AS</span> cluster_id
+  <span class="kw">FROM</span> dim_cell_stats
+  <span class="kw">WHERE</span> is_trusted = <span class="kw">true</span>
+),
+cluster_centers <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> bs_id, lac, cluster_id,
+    ST_Centroid(ST_Collect(geom)) <span class="kw">AS</span> center,
+    count(*) <span class="kw">AS</span> cell_count
+  <span class="kw">FROM</span> cell_clusters
+  <span class="kw">GROUP BY</span> bs_id, lac, cluster_id
+),
+cluster_distances <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> a.bs_id, a.lac,
+    ST_Distance(a.center::geography,
+                b.center::geography) / 1000.0
+    <span class="kw">AS</span> dist_km
+  <span class="kw">FROM</span> cluster_centers a
+  <span class="kw">JOIN</span> cluster_centers b
+    <span class="kw">ON</span> a.bs_id = b.bs_id
+    <span class="kw">AND</span> a.cluster_id &lt; b.cluster_id
+)
+<span class="kw">SELECT</span> bs_id, lac,
+  max(dist_km) <span class="kw">AS</span> max_cluster_dist,
+  count(<span class="kw">DISTINCT</span> cluster_id) <span class="kw">AS</span> cluster_count
+<span class="kw">FROM</span> cluster_distances
+<span class="kw">WHERE</span> max(dist_km) > <span class="param">:collision_threshold</span>
+<span class="kw">GROUP BY</span> bs_id, lac;</div>
+  </div>
+  <div class="card">
+    <h3>参数替换</h3>
+    <table>
+      <tbody>
+        <tr><td><code>:dbscan_eps</code></td><td>&rarr; 0.01</td></tr>
+        <tr><td><code>:dbscan_minpoints</code></td><td>&rarr; 2</td></tr>
+        <tr><td><code>:collision_threshold</code></td><td>&rarr; 1.5 (km)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>与上版本 (S-004) 差异</h3>
+    <p style="font-size:12px;color:#888">L4: <code>eps := 0.015</code> &rarr; <code>eps := 0.01</code></p>
+    <p style="font-size:11px;color:#aaa;margin-top:6px">SQL diff 可在 1.1 版本增强</p>
+  </div>
+</div>
+
+<!-- 样本详情抽屉 -->
+<div class="drawer-overlay" id="overlay-sample" onclick="closeDrawer('sample')"></div>
+<div class="drawer" id="drawer-sample">
+  <button class="close" onclick="closeDrawer('sample')">&times;</button>
+  <h2>对象详情</h2>
+  <div class="card">
+    <h3>BS-2345 (移动 4G LAC:9501)</h3>
+    <dl class="detail-grid">
+      <dt>bs_id</dt><dd>2345</dd>
+      <dt>lac</dt><dd>9501</dd>
+      <dt>运营商</dt><dd>移动</dd>
+      <dt>制式</dt><dd>4G</dd>
+      <dt>下属Cell</dt><dd>3</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h3>原始值</h3>
+    <table>
+      <thead><tr><th>Cell</th><th>Lat</th><th>Lon</th></tr></thead>
+      <tbody>
+        <tr><td>Cell-A</td><td>39.9000</td><td>116.3200</td></tr>
+        <tr><td>Cell-B</td><td>39.9200</td><td>116.3500</td></tr>
+        <tr><td>Cell-C</td><td>39.9300</td><td>116.4100</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>处理后</h3>
+    <dl class="detail-grid">
+      <dt>识别簇数</dt><dd>2</dd>
+      <dt>簇A</dt><dd>Cell-A, Cell-B &middot; 中心(116.335, 39.91)</dd>
+      <dt>簇B</dt><dd>Cell-C &middot; 中心(116.41, 39.93)</dd>
+      <dt>簇间距</dt><dd><strong>1.7km</strong></dd>
+      <dt>判定</dt><dd><span class="tag err">碰撞BS</span></dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h3>命中规则</h3>
+    <p style="font-size:13px">碰撞检测（阈值 1.5km，实际 1.7km &gt; 1.5km）</p>
+  </div>
+  <div class="card">
+    <h3>对比 Run#0034</h3>
+    <p style="font-size:13px;color:#888">未识别碰撞（当时阈值 2.0km，1.7km &lt; 2.0km）</p>
+  </div>
+  <div style="margin-top:10px">
+    <a class="link" href="samples.html">在样本研究页查看 &rarr;</a>
+  </div>
+</div>
+
+<!-- 版本抽屉 -->
+<div class="drawer-overlay" id="overlay-version" onclick="closeDrawer('version')"></div>
+<div class="drawer" id="drawer-version">
+  <button class="close" onclick="closeDrawer('version')">&times;</button>
+  <h2>版本与运行</h2>
+  <div class="card">
+    <h3>当前版本体系</h3>
+    <dl class="detail-grid">
+      <dt>run_id</dt><dd>#0037</dd>
+      <dt>parameter_set</dt><dd>P-003</dd>
+      <dt>rule_set</dt><dd>R2</dd>
+      <dt>sql_bundle</dt><dd>S-005</dd>
+      <dt>contract</dt><dd>C1</dd>
+      <dt>baseline</dt><dd>B1</dd>
+    </dl>
+  </div>
+</div>
+
+<script>
+function openDrawer(n){document.getElementById('drawer-'+n).classList.add('open');document.getElementById('overlay-'+n).classList.add('open')}
+function closeDrawer(n){document.getElementById('drawer-'+n).classList.remove('open');document.getElementById('overlay-'+n).classList.remove('open')}
+function toggleExpand(id){var el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none'}
+</script>
+</body>
+</html>

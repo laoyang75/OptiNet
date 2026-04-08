@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>望优数据治理工作台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="context-bar">
+      <div class="context-left">
+        <div class="brand-kicker">望优数据治理工作台</div>
+        <h1>治理链路调试与验证工作台</h1>
+        <p>以批次、步骤、字段和样本四条视角统一查看链路状态。</p>
+      </div>
+      <div class="context-right">
+        <div class="tag-grid" id="ctx-tags">
+          <span class="tag tag-blue" id="ctx-run">当前批次: —</span>
+          <span class="tag tag-gray" id="ctx-compare">对比批次: —</span>
+          <span class="tag tag-gray" id="ctx-params">参数集: —</span>
+          <span class="tag tag-gray" id="ctx-rules">规则集: —</span>
+          <span class="tag tag-gray" id="ctx-sql">SQL包: —</span>
+          <span class="tag tag-gray" id="ctx-contract">契约: —</span>
+          <span class="tag tag-gray" id="ctx-baseline">基线: —</span>
+          <span class="tag tag-green" id="ctx-refresh">刷新: —</span>
+        </div>
+        <div class="context-actions">
+          <button class="btn btn-ghost" id="btn-version-drawer">版本抽屉</button>
+          <button class="btn btn-secondary" id="btn-refresh">刷新缓存</button>
+          <button class="btn btn-primary" id="btn-force-refresh">强制重算</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="nav-section">
+          <div class="nav-title">工作台页面</div>
+          <a class="nav-item" data-page="overview" href="#overview">
+            <span class="step-dot dot-blue"></span>
+            <span>P1 链路总览</span>
+          </a>
+          <a class="nav-item" data-page="fields" href="#fields">
+            <span class="step-dot dot-green"></span>
+            <span>P3 字段治理</span>
+          </a>
+          <a class="nav-item" data-page="samples" href="#samples">
+            <span class="step-dot dot-orange"></span>
+            <span>P4 样本研究</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-title">治理链路</div>
+          <div id="nav-steps"></div>
+        </div>
+      </aside>
+
+      <main class="main-content" id="main-content">
+        <div class="loading">初始化工作台...</div>
+      </main>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop hidden" id="drawer-backdrop"></div>
+  <aside class="drawer hidden" id="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-kicker" id="drawer-kicker">详情</div>
+        <h2 id="drawer-title">工作台抽屉</h2>
+      </div>
+      <button class="btn btn-ghost" id="drawer-close">关闭</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

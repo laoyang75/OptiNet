@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对象浏览 — rebuild3</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.3px;
+  }
+  .sidebar-nav { flex: 1; padding: 4px 8px; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background .15s, color .15s;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active { background: #6366f1; color: #fff; }
+  .sidebar-nav a .icon { width: 18px; text-align: center; font-size: 15px; }
+
+  /* ── Main ── */
+  .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+
+  /* ── Top bar ── */
+  .topbar {
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; }
+  .topbar-run { font-size: 12px; color: #9ca3af; }
+
+  /* ── Content ── */
+  .content { padding: 20px 24px 32px; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .type-tabs {
+    display: flex;
+    background: #f3f4f6;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .type-tabs button {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .type-tabs button:hover { background: #e5e7eb; }
+  .type-tabs button.active { background: #6366f1; color: #fff; }
+  .filter-select {
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: #111827;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+  }
+  .filter-select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .filter-search {
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 6px 10px 6px 30px;
+    font-size: 13px;
+    color: #111827;
+    width: 200px;
+    outline: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='6' cy='6' r='4.5'/%3E%3Cline x1='9.5' y1='9.5' x2='13' y2='13'/%3E%3C/svg%3E") 9px center no-repeat;
+  }
+  .filter-search:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .view-toggle {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+  .view-toggle button {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    padding: 5px 9px;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 14px;
+    transition: background .15s, color .15s;
+  }
+  .view-toggle button:first-child { border-radius: 5px 0 0 5px; }
+  .view-toggle button:last-child { border-radius: 0 5px 5px 0; }
+  .view-toggle button.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+  /* ── Table ── */
+  .table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  tbody tr:hover { background: #f9fafb; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td {
+    padding: 10px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    color: #111827;
+  }
+
+  /* ── Row variants ── */
+  tr.watch { border-left: 3px solid #f97316; }
+  tr.watch td:first-child { padding-left: 11px; }
+  tr.rejected td { color: #9ca3af; text-decoration: line-through; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .badge-green  { background: #ecfdf5; color: #059669; }
+  .badge-amber  { background: #fffbeb; color: #d97706; }
+  .badge-orange { background: #fff7ed; color: #ea580c; }
+  .badge-red    { background: #fef2f2; color: #dc2626; }
+  .badge-gray   { background: #f3f4f6; color: #6b7280; }
+  .badge-blue   { background: #eff6ff; color: #2563eb; }
+  .badge-purple { background: #f5f3ff; color: #7c3aed; }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .badge-green::before  { background: #22c55e; }
+  .badge-amber::before  { background: #fbbf24; }
+  .badge-orange::before { background: #f97316; }
+  .badge-red::before    { background: #ef4444; }
+  .badge-gray::before   { background: #9ca3af; }
+  .badge-blue::before   { background: #60a5fa; }
+  .badge-purple::before { background: #a78bfa; }
+
+  .icon-check { color: #22c55e; }
+  .icon-lock  { color: #ef4444; }
+  .icon-gray  { color: #9ca3af; }
+  .icon-warn  { color: #f97316; }
+  .icon-deny  { color: #ef4444; }
+
+  .type-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .type-cell { background: #eff6ff; color: #2563eb; }
+  .type-bs   { background: #f5f3ff; color: #7c3aed; }
+  .type-lac  { background: #ecfdf5; color: #059669; }
+
+  .watch-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    background: #fff7ed;
+    color: #ea580c;
+    margin-left: 6px;
+  }
+
+  .pk-link {
+    color: #6366f1;
+    font-weight: 500;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Cascadia Code', 'Menlo', monospace;
+  }
+  .pk-link:hover { text-decoration: underline; }
+
+  /* ── Pagination ── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 13px;
+    color: #4b5563;
+  }
+  .pagination .pages { display: flex; gap: 4px; }
+  .pagination .pages button {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #4b5563;
+    transition: background .12s;
+  }
+  .pagination .pages button:hover { background: #f3f4f6; }
+  .pagination .pages button.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+  .pagination .pages button:disabled { opacity: 0.4; cursor: default; }
+
+  .text-muted { color: #9ca3af; }
+  .text-secondary { color: #4b5563; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="#"><span class="icon">📊</span> 仪表盘</a>
+    <a href="#"><span class="icon">▶</span> 运行中心</a>
+    <a href="#" class="active"><span class="icon">🗂</span> 对象浏览</a>
+    <a href="#"><span class="icon">⏳</span> 等待池</a>
+    <a href="#"><span class="icon">⚠</span> 异常看板</a>
+    <a href="#"><span class="icon">📋</span> 批次审查</a>
+    <a href="#"><span class="icon">📐</span> 基线管理</a>
+    <a href="#"><span class="icon">🔄</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-title">对象浏览</div>
+    <div class="topbar-run">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="type-tabs">
+        <button class="active">全部</button>
+        <button>Cell (8,432)</button>
+        <button>BS (3,215)</button>
+        <button>LAC (1,200)</button>
+      </div>
+
+      <select class="filter-select">
+        <option>生命周期: 全部</option>
+        <option>active</option>
+        <option>waiting</option>
+        <option>observing</option>
+        <option>dormant</option>
+        <option>retired</option>
+        <option>rejected</option>
+      </select>
+
+      <select class="filter-select">
+        <option>健康状态: 全部</option>
+        <option>healthy</option>
+        <option>insufficient</option>
+        <option>gps_bias</option>
+        <option>collision_suspect</option>
+        <option>collision_confirmed</option>
+        <option>dynamic</option>
+        <option>migration_suspect</option>
+      </select>
+
+      <select class="filter-select">
+        <option>资格: 全部</option>
+        <option>可锚定</option>
+        <option>锚点禁用</option>
+        <option>可进基线</option>
+        <option>基线禁用</option>
+      </select>
+
+      <input type="text" class="filter-search" placeholder="搜索对象主键...">
+
+      <div class="view-toggle">
+        <button class="active" title="表格视图">☰</button>
+        <button title="卡片视图">▦</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>对象主键</th>
+            <th>类型</th>
+            <th>生命周期</th>
+            <th>健康状态</th>
+            <th>锚点</th>
+            <th>基线</th>
+            <th>样本数</th>
+            <th>设备数</th>
+            <th>活跃天数</th>
+            <th>最后活跃</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row 1 -->
+          <tr>
+            <td><span class="pk-link">46000-4G-12345-67890</span></td>
+            <td><span class="type-badge type-cell">Cell</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="icon-check">✓</span> healthy</td>
+            <td><span class="icon-check">✓</span></td>
+            <td><span class="icon-check">✓</span></td>
+            <td>2,341</td>
+            <td>47</td>
+            <td>32</td>
+            <td class="text-secondary">2h前</td>
+          </tr>
+          <!-- Row 2 — WATCH -->
+          <tr class="watch">
+            <td><span class="pk-link">46001-4G-12346-67891</span><span class="watch-tag">WATCH</span></td>
+            <td><span class="type-badge type-cell">Cell</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="icon-warn">⚠</span> collision_suspect</td>
+            <td><span class="icon-lock">🔒</span></td>
+            <td><span class="icon-deny">✗</span></td>
+            <td>1,892</td>
+            <td>38</td>
+            <td>28</td>
+            <td class="text-secondary">2h前</td>
+          </tr>
+          <!-- Row 3 -->
+          <tr>
+            <td><span class="pk-link">46000-4G-12347-67892</span></td>
+            <td><span class="type-badge type-cell">Cell</span></td>
+            <td><span class="badge badge-amber">observing</span></td>
+            <td><span class="icon-check">✓</span> healthy</td>
+            <td><span class="icon-gray">✗</span></td>
+            <td><span class="icon-gray">✗</span></td>
+            <td>45</td>
+            <td>3</td>
+            <td>2</td>
+            <td class="text-secondary">4h前</td>
+          </tr>
+          <!-- Row 4 -->
+          <tr>
+            <td><span class="pk-link">46001-4G-12348-67893</span></td>
+            <td><span class="type-badge type-cell">Cell</span></td>
+            <td><span class="badge badge-amber">waiting</span></td>
+            <td><span class="icon-gray">?</span> <span class="text-muted">insufficient</span></td>
+            <td><span class="icon-gray">✗</span></td>
+            <td><span class="icon-gray">✗</span></td>
+            <td>8</td>
+            <td>1</td>
+            <td>1</td>
+            <td class="text-secondary">6h前</td>
+          </tr>
+          <!-- Row 5 -->
+          <tr>
+            <td><span class="pk-link">BS-460001234</span></td>
+            <td><span class="type-badge type-bs">BS</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="icon-check">✓</span> healthy</td>
+            <td><span class="icon-check">✓</span></td>
+            <td><span class="icon-check">✓</span></td>
+            <td>15,432</td>
+            <td>312</td>
+            <td>45</td>
+            <td class="text-secondary">1h前</td>
+          </tr>
+          <!-- Row 6 — WATCH -->
+          <tr class="watch">
+            <td><span class="pk-link">BS-460001235</span><span class="watch-tag">WATCH</span></td>
+            <td><span class="type-badge type-bs">BS</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="icon-warn">⚠</span> gps_bias</td>
+            <td><span class="icon-lock">🔒</span></td>
+            <td><span class="icon-deny">✗</span></td>
+            <td>8,721</td>
+            <td>156</td>
+            <td>30</td>
+            <td class="text-secondary">2h前</td>
+          </tr>
+          <!-- Row 7 — WATCH -->
+          <tr class="watch">
+            <td><span class="pk-link">BS-460001236</span><span class="watch-tag">WATCH</span></td>
+            <td><span class="type-badge type-bs">BS</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="icon-deny">⊘</span> collision_confirmed</td>
+            <td><span class="icon-lock">🔒</span></td>
+            <td><span class="icon-deny">✗</span></td>
+            <td>12,100</td>
+            <td>245</td>
+            <td>40</td>
+            <td class="text-secondary">3h前</td>
+          </tr>
+          <!-- Row 8 -->
+          <tr>
+            <td><span class="pk-link">BS-460001237</span></td>
+            <td><span class="type-badge type-bs">BS</span></td>
+            <td><span class="badge badge-gray">dormant</span></td>
+            <td><span class="icon-check">✓</span> healthy</td>
+            <td><span class="icon-gray">✗</span></td>
+            <td><span class="icon-gray">✗</span></td>
+            <td>3,200</td>
+            <td>64</td>
+            <td>15</td>
+            <td class="text-muted">7d前</td>
+          </tr>
+          <!-- Row 9 -->
+          <tr>
+            <td><span class="pk-link">LAC-46000-12345</span></td>
+            <td><span class="type-badge type-lac">LAC</span></td>
+            <td><span class="badge badge-green">active</span></td>
+            <td><span class="icon-check">✓</span> healthy</td>
+            <td><span class="text-muted">—</span></td>
+            <td><span class="icon-check">✓</span></td>
+            <td><span class="text-muted">—</span></td>
+            <td><span class="text-muted">—</span></td>
+            <td>45</td>
+            <td class="text-secondary">1h前</td>
+          </tr>
+          <!-- Row 10 — rejected -->
+          <tr class="rejected">
+            <td><span class="pk-link" style="color:#9ca3af;">46000-5G-22345-88890</span></td>
+            <td><span class="type-badge type-cell" style="opacity:0.5;">Cell</span></td>
+            <td><span class="badge badge-red">rejected</span></td>
+            <td><span class="text-muted">—</span></td>
+            <td><span class="icon-gray">✗</span></td>
+            <td><span class="icon-gray">✗</span></td>
+            <td>2</td>
+            <td>1</td>
+            <td>0</td>
+            <td class="text-muted">30d前</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <span>共 <strong>12,847</strong> 个对象 &nbsp;|&nbsp; 每页 10 条</span>
+        <div class="pages">
+          <button disabled>&laquo;</button>
+          <button class="active">1</button>
+          <button>2</button>
+          <button>3</button>
+          <button>4</button>
+          <button>5</button>
+          <span style="padding:4px 6px;color:#9ca3af;">...</span>
+          <button>128</button>
+          <button>&raquo;</button>
+        </div>
+        <span class="text-muted">第 1 / 128 页</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

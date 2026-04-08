@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>对象中心 - 治理观察台</title>
+<link rel="stylesheet" href="wireframe.css"/>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo"><span>治理观察台</span></div>
+  <a href="index.html"><span>首页</span></a>
+  <a href="runs.html"><span>运行中心</span></a>
+  <a href="daily-review.html"><span>日更审查</span></a>
+  <a href="objects.html" class="active"><span>对象中心</span></a>
+  <a href="issues.html"><span>问题中心</span></a>
+  <a href="fields.html"><span>字段治理</span></a>
+  <div class="sep"></div>
+  <a href="experiments.html"><span>规则实验</span></a>
+</nav>
+
+<div class="main">
+  <div class="crumb"><a href="index.html">首页</a> / 对象中心</div>
+  <div class="page-header"><h1>对象中心</h1></div>
+
+  <!-- 搜索与快捷入口 -->
+  <div class="global-filter">
+    <input type="text" placeholder="搜索对象 ID（如 BS-1234、Cell-8821）" style="flex:1"/>
+    <select><option>全部类型</option><option>LAC</option><option>BS</option><option>Cell</option></select>
+    <select><option>全部状态</option><option>trusted</option><option>observe</option><option>changed</option><option>anomaly</option></select>
+    <button class="btn btn-primary">搜索</button>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn btn-ghost" onclick="filterTag('collision')">碰撞BS (12)</button>
+    <button class="btn btn-ghost" onclick="filterTag('mobile')">移动Cell (34)</button>
+    <button class="btn btn-ghost" onclick="filterTag('pool')">观察池对象 (56)</button>
+    <button class="btn btn-ghost" onclick="filterTag('changed')">最近变化 (23)</button>
+  </div>
+
+  <!-- 对象列表 -->
+  <div class="card">
+    <h3>对象列表</h3>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>类型</th><th>状态</th><th>运营商</th><th>制式</th><th>LAC</th><th>问题数</th><th>最后更新</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr onclick="showObjDetail()" style="cursor:pointer">
+          <td><strong>BS-1234</strong></td>
+          <td><span class="tag info">BS</span></td>
+          <td><span class="tag ok">trusted</span></td>
+          <td>移动</td><td>4G</td><td>9501</td>
+          <td>2</td><td>3/15</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>Cell-8821</strong></td>
+          <td><span class="tag info">Cell</span></td>
+          <td><span class="tag warn">observe</span></td>
+          <td>联通</td><td>5G</td><td>2201</td>
+          <td>0</td><td>3/15</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>LAC-9501</strong></td>
+          <td><span class="tag muted">LAC</span></td>
+          <td><span class="tag ok">trusted</span></td>
+          <td>移动</td><td>4G</td><td>9501</td>
+          <td>0</td><td>3/14</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>BS-2345</strong></td>
+          <td><span class="tag info">BS</span></td>
+          <td><span class="tag err">anomaly</span></td>
+          <td>移动</td><td>4G</td><td>9501</td>
+          <td>1</td><td>3/15</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>Cell-3302</strong></td>
+          <td><span class="tag info">Cell</span></td>
+          <td><span class="tag ok">trusted</span></td>
+          <td>电信</td><td>5G</td><td>3301</td>
+          <td>0</td><td>3/14</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px;font-size:12px;color:#888">显示 1-5 / 共 12,917 个对象</div>
+  </div>
+
+  <!-- 对象详情区（展开示意） -->
+  <div id="obj-detail" style="display:none">
+    <div class="crumb" style="margin-top:16px"><a href="objects.html">对象中心</a> / BS-1234 (移动 4G LAC:9501)</div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>对象基本信息</h3>
+        <dl class="detail-grid">
+          <dt>类型</dt><dd>BS</dd>
+          <dt>运营商</dt><dd>移动</dd>
+          <dt>制式</dt><dd>4G</dd>
+          <dt>LAC</dt><dd>9501</dd>
+          <dt>下属Cell</dt><dd>3</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>当前状态</h3>
+        <dl class="detail-grid">
+          <dt>状态</dt><dd><span class="tag ok">trusted</span></dd>
+          <dt>版本归属</dt><dd>B1 / R2</dd>
+          <dt>最后更新</dt><dd>2026-03-15</dd>
+          <dt>信任来源</dt><dd><a class="link" href="runs.html">冷启动 Run#0037</a></dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- 画像摘要 = 基线区块 -->
+    <div class="card">
+      <h3>画像摘要（基线 B1）</h3>
+      <div class="two-col">
+        <div>
+          <dl class="detail-grid">
+            <dt>GPS中心</dt><dd>(116.3970, 39.9080)</dd>
+            <dt>覆盖P50</dt><dd>320m</dd>
+            <dt>覆盖P90</dt><dd>680m</dd>
+            <dt>碰撞标记</dt><dd>否</dd>
+          </dl>
+        </div>
+        <div>
+          <dl class="detail-grid">
+            <dt>移动Cell</dt><dd>0</dd>
+            <dt>共享运营商</dt><dd>否</dd>
+            <dt>RSRP中位</dt><dd>-85 dBm</dd>
+            <dt>活跃天数</dt><dd>14/14</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- 关联问题 -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>关联问题</h3>
+        <a class="link" href="issues.html">在问题中心查看 &rarr;</a>
+      </div>
+      <table>
+        <thead><tr><th>问题ID</th><th>分类</th><th>状态</th><th>描述</th></tr></thead>
+        <tbody>
+          <tr><td><a class="link" href="issues.html">#P001</a></td><td>GPS漂移率偏高</td><td><span class="tag muted">已关闭</span></td><td>漂移率22%</td></tr>
+          <tr><td><a class="link" href="issues.html">#P002</a></td><td>覆盖半径异常</td><td><span class="tag warn">待审查</span></td><td>P90 扩大至 1200m</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 沉淀记录 -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>最近沉淀与日更记录</h3>
+        <a class="link" href="daily-review.html">在日更审查查看 &rarr;</a>
+      </div>
+      <table>
+        <thead><tr><th>日期</th><th>分流结果</th><th>记录数</th><th>处理</th></tr></thead>
+        <tbody>
+          <tr><td>3/15</td><td><span class="tag ok">范围内</span></td><td>1,234</td><td>已沉淀</td></tr>
+          <tr><td>3/14</td><td><span class="tag ok">范围内</span></td><td>1,198</td><td>已沉淀</td></tr>
+          <tr><td>3/13</td><td><span class="tag warn">漂移待审</span></td><td>856</td><td>人工确认后沉淀</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 下属对象 -->
+    <div class="card">
+      <h3>下属 Cell 列表</h3>
+      <table>
+        <thead><tr><th>Cell ID</th><th>状态</th><th>RSRP中位</th><th>活跃天数</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Cell-8821</td><td><span class="tag ok">trusted</span></td><td>-83 dBm</td><td>14</td><td><a class="link">查看 &rarr;</a></td></tr>
+          <tr><td>Cell-8822</td><td><span class="tag ok">trusted</span></td><td>-87 dBm</td><td>14</td><td><a class="link">查看 &rarr;</a></td></tr>
+          <tr><td>Cell-8823</td><td><span class="tag warn">observe</span></td><td>-91 dBm</td><td>8</td><td><a class="link">查看 &rarr;</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function showObjDetail() { document.getElementById('obj-detail').style.display='block'; window.scrollTo({top:400,behavior:'smooth'}); }
+function filterTag(t) { /* 草图示意 */ }
+</script>
+</body>
+</html>

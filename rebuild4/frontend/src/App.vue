@@ -11,26 +11,32 @@ const foundationOpen = ref(false)
       <div class="sidebar-logo">rebuild4 流式治理工作台</div>
 
       <div class="sidebar-group">
-        <div class="sidebar-group-title">主流程层</div>
+        <div class="sidebar-group-title">Streaming 流转</div>
         <RouterLink to="/flow-overview" class="sidebar-link">流转总览</RouterLink>
         <RouterLink to="/flow-snapshot" class="sidebar-link">流转快照</RouterLink>
-        <RouterLink to="/runs" class="sidebar-link">运行/批次中心</RouterLink>
+        <RouterLink to="/observation-workspace" class="sidebar-link">观察工作台</RouterLink>
       </div>
 
       <div class="sidebar-group">
-        <div class="sidebar-group-title">画像视角层</div>
-        <RouterLink to="/objects" class="sidebar-link">对象浏览</RouterLink>
-        <RouterLink to="/observation-workspace" class="sidebar-link">等待/观察工作台</RouterLink>
-        <RouterLink to="/anomaly-workspace" class="sidebar-link">异常工作台</RouterLink>
-        <RouterLink to="/baseline" class="sidebar-link">基线/画像</RouterLink>
-        <RouterLink to="/profiles/lac" class="sidebar-link">LAC 画像</RouterLink>
-        <RouterLink to="/profiles/bs" class="sidebar-link">BS 画像</RouterLink>
+        <div class="sidebar-group-title">画像</div>
         <RouterLink to="/profiles/cell" class="sidebar-link">Cell 画像</RouterLink>
+        <RouterLink to="/profiles/bs" class="sidebar-link">BS 画像</RouterLink>
+        <RouterLink to="/profiles/lac" class="sidebar-link">LAC 画像</RouterLink>
       </div>
 
       <div class="sidebar-group">
-        <div class="sidebar-group-title">支撑治理层</div>
-        <RouterLink to="/initialization" class="sidebar-link">初始化</RouterLink>
+        <div class="sidebar-group-title">对象浏览</div>
+        <RouterLink to="/objects" class="sidebar-link">对象浏览</RouterLink>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">版本管理</div>
+        <RouterLink to="/runs" class="sidebar-link">画像运行中心</RouterLink>
+        <RouterLink to="/baseline" class="sidebar-link">版本基线</RouterLink>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">治理</div>
         <RouterLink to="/governance" class="sidebar-link">基础数据治理</RouterLink>
       </div>
 
@@ -48,10 +54,6 @@ const foundationOpen = ref(false)
         </div>
       </div>
 
-      <div class="sidebar-group">
-        <div class="sidebar-group-title">辅助验证</div>
-        <RouterLink to="/validation/compare" class="sidebar-link">验证/对照</RouterLink>
-      </div>
     </nav>
 
     <div class="main-area">

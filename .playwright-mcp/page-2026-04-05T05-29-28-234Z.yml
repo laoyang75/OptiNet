@@ -1,0 +1,108 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - paragraph [ref=e6]: rebuild3
+      - heading "流式治理工作台" [level=1] [ref=e7]
+      - paragraph [ref=e8]: 精准 · 专业 · 可控
+    - navigation [ref=e9]:
+      - generic [ref=e10]:
+        - paragraph [ref=e11]: 主流程层
+        - link "流转总览 flow" [ref=e12] [cursor=pointer]:
+          - /url: /flow/overview
+          - generic [ref=e13]: 流转总览
+          - generic [ref=e14]: flow
+        - link "运行 / 批次中心 batch" [ref=e15] [cursor=pointer]:
+          - /url: /runs
+          - generic [ref=e16]: 运行 / 批次中心
+          - generic [ref=e17]: batch
+        - link "对象浏览 objects" [ref=e18] [cursor=pointer]:
+          - /url: /objects
+          - generic [ref=e19]: 对象浏览
+          - generic [ref=e20]: objects
+        - link "等待 / 观察工作台 watch" [ref=e21] [cursor=pointer]:
+          - /url: /observation
+          - generic [ref=e22]: 等待 / 观察工作台
+          - generic [ref=e23]: watch
+        - link "异常工作台 issues" [ref=e24] [cursor=pointer]:
+          - /url: /anomalies
+          - generic [ref=e25]: 异常工作台
+          - generic [ref=e26]: issues
+        - link "基线 / 画像 baseline" [ref=e27] [cursor=pointer]:
+          - /url: /baseline
+          - generic [ref=e28]: 基线 / 画像
+          - generic [ref=e29]: baseline
+      - generic [ref=e30]:
+        - paragraph [ref=e31]: 画像视角层
+        - link "LAC 画像 lac" [ref=e32] [cursor=pointer]:
+          - /url: /profiles/lac
+          - generic [ref=e33]: LAC 画像
+          - generic [ref=e34]: lac
+        - link "BS 画像 bs" [ref=e35] [cursor=pointer]:
+          - /url: /profiles/bs
+          - generic [ref=e36]: BS 画像
+          - generic [ref=e37]: bs
+        - link "Cell 画像 cell" [ref=e38] [cursor=pointer]:
+          - /url: /profiles/cell
+          - generic [ref=e39]: Cell 画像
+          - generic [ref=e40]: cell
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: 支撑治理层
+        - link "基础数据治理 catalog" [ref=e43] [cursor=pointer]:
+          - /url: /governance
+          - generic [ref=e44]: 基础数据治理
+          - generic [ref=e45]: catalog
+        - link "验证 / 对照 compare" [ref=e46] [cursor=pointer]:
+          - /url: /compare
+          - generic [ref=e47]: 验证 / 对照
+          - generic [ref=e48]: compare
+        - link "初始化数据 init" [ref=e49] [cursor=pointer]:
+          - /url: /initialization
+          - generic [ref=e50]: 初始化数据
+          - generic [ref=e51]: init
+    - generic [ref=e52]:
+      - paragraph [ref=e53]: 基线原则
+      - strong [ref=e54]: 上一版冻结 baseline 是唯一参考
+      - paragraph [ref=e55]: 当前批次只读上一版冻结 baseline。
+  - generic [ref=e56]:
+    - banner [ref=e57]:
+      - generic [ref=e58]:
+        - paragraph [ref=e59]: 支撑治理层
+        - heading "初始化数据" [level=2] [ref=e60]
+        - paragraph [ref=e61]: 冷启动 11 步流程与首版 baseline 说明。
+      - generic [ref=e62]:
+        - generic [ref=e63]: UI_v2 基线
+        - generic [ref=e64]: 上下文加载中
+    - generic [ref=e65]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: 版本上下文
+          - heading "未加载运行上下文" [level=2] [ref=e69]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e72]: 批次 ID
+            - strong [ref=e73]: "--"
+          - generic [ref=e74]:
+            - generic [ref=e75]: 合约版本
+            - strong [ref=e76]: "--"
+          - generic [ref=e77]:
+            - generic [ref=e78]: 规则集版本
+            - strong [ref=e79]: "--"
+          - generic [ref=e80]:
+            - generic [ref=e81]: 基线版本
+            - strong [ref=e82]: "--"
+      - generic [ref=e83]:
+        - generic [ref=e84]: 正式批次
+        - paragraph
+    - main [ref=e85]:
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - paragraph [ref=e89]: 初始化
+            - heading "初始化数据" [level=3] [ref=e90]
+            - paragraph [ref=e91]: 当前页连接 sample validation 结果，用于解释冷启动 11 步流程与首版 baseline 的起始状态。
+          - generic [ref=e92]:
+            - link "启动器" [ref=e93] [cursor=pointer]:
+              - /url: http://127.0.0.1:47120
+            - link "流转总览" [ref=e94] [cursor=pointer]:
+              - /url: /flow/overview
+        - generic [ref=e95]: 正在加载初始化数据...

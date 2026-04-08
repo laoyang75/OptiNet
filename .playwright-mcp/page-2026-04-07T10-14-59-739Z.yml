@@ -1,0 +1,240 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: rebuild4 流式治理工作台
+    - generic [ref=e6]:
+      - generic [ref=e7]: 主流程层
+      - link "流转总览" [ref=e8] [cursor=pointer]:
+        - /url: /flow-overview
+      - link "流转快照" [ref=e9] [cursor=pointer]:
+        - /url: /flow-snapshot
+      - link "运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: /runs
+    - generic [ref=e11]:
+      - generic [ref=e12]: 画像视角层
+      - link "对象浏览" [ref=e13] [cursor=pointer]:
+        - /url: /objects
+      - link "等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: /observation-workspace
+      - link "异常工作台" [ref=e15] [cursor=pointer]:
+        - /url: /anomaly-workspace
+      - link "基线/画像" [ref=e16] [cursor=pointer]:
+        - /url: /baseline
+      - link "LAC 画像" [ref=e17] [cursor=pointer]:
+        - /url: /profiles/lac
+      - link "BS 画像" [ref=e18] [cursor=pointer]:
+        - /url: /profiles/bs
+      - link "Cell 画像" [ref=e19] [cursor=pointer]:
+        - /url: /profiles/cell
+    - generic [ref=e20]:
+      - generic [ref=e21]: 支撑治理层
+      - link "初始化" [ref=e22] [cursor=pointer]:
+        - /url: /initialization
+      - link "基础数据治理" [ref=e23] [cursor=pointer]:
+        - /url: /governance
+    - generic [ref=e25] [cursor=pointer]:
+      - generic [ref=e26]: ETL 数据处理
+      - generic [ref=e27]: ▸
+    - generic [ref=e28]:
+      - generic [ref=e29]: 辅助验证
+      - link "验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: /validation/compare
+  - generic [ref=e31]:
+    - banner [ref=e32]:
+      - generic [ref=e33]: rebuild4 流式治理工作台
+    - main [ref=e34]:
+      - generic [ref=e35]:
+        - heading "4. 清洗" [level=2] [ref=e36]
+        - paragraph [ref=e37]: 对解析后的数据逐条执行清洗规则。无效字段置 NULL，无效 CellID 行删除。
+        - generic [ref=e38]:
+          - generic [ref=e39]: 清洗流水线
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e42]: 解析后
+              - generic [ref=e43]: 689,361
+            - generic [ref=e44]: →
+            - generic [ref=e45]:
+              - generic [ref=e46]: 清洗后
+              - generic [ref=e47]: 687,788
+            - generic [ref=e48]: 删除 1,573 条无效 CellID 行
+          - generic [ref=e49]: "scope: sample · 执行时间: 2026-04-07T10:13:55.238116+00:00"
+        - generic [ref=e50]:
+          - generic [ref=e51]: 清洗规则明细（16 条）
+          - table [ref=e52]:
+            - rowgroup [ref=e53]:
+              - row "ID 类别 规则 字段 动作 违规数 违规率" [ref=e54]:
+                - columnheader "ID" [ref=e55]
+                - columnheader "类别" [ref=e56]
+                - columnheader "规则" [ref=e57]
+                - columnheader "字段" [ref=e58]
+                - columnheader "动作" [ref=e59]
+                - columnheader "违规数" [ref=e60]
+                - columnheader "违规率" [ref=e61]
+            - rowgroup [ref=e62]:
+              - row "ODS-001 运营商 垃圾运营商编码置空 operator_code nullify 1,239 0.180%" [ref=e63]:
+                - cell "ODS-001" [ref=e64]
+                - cell "运营商" [ref=e65]:
+                  - generic [ref=e66]: 运营商
+                - cell "垃圾运营商编码置空" [ref=e67]
+                - cell "operator_code" [ref=e68]:
+                  - code [ref=e69]: operator_code
+                - cell "nullify" [ref=e70]
+                - cell "1,239" [ref=e71]
+                - cell "0.180%" [ref=e72]
+              - row "ODS-002 运营商 非白名单运营商置空 operator_code nullify 94 0.014%" [ref=e73]:
+                - cell "ODS-002" [ref=e74]
+                - cell "运营商" [ref=e75]:
+                  - generic [ref=e76]: 运营商
+                - cell "非白名单运营商置空" [ref=e77]
+                - cell "operator_code" [ref=e78]:
+                  - code [ref=e79]: operator_code
+                - cell "nullify" [ref=e80]
+                - cell "94" [ref=e81]
+                - cell "0.014%" [ref=e82]
+              - row "ODS-003 LAC LAC=0 置空 lac nullify 44 0.006%" [ref=e83]:
+                - cell "ODS-003" [ref=e84]
+                - cell "LAC" [ref=e85]:
+                  - generic [ref=e86]: LAC
+                - cell "LAC=0 置空" [ref=e87]
+                - cell "lac" [ref=e88]:
+                  - code [ref=e89]: lac
+                - cell "nullify" [ref=e90]
+                - cell "44" [ref=e91]
+                - cell "0.006%" [ref=e92]
+              - row "ODS-004 LAC 4G LAC 保留值置空 lac nullify 11 0.002%" [ref=e93]:
+                - cell "ODS-004" [ref=e94]
+                - cell "LAC" [ref=e95]:
+                  - generic [ref=e96]: LAC
+                - cell "4G LAC 保留值置空" [ref=e97]
+                - cell "lac" [ref=e98]:
+                  - code [ref=e99]: lac
+                - cell "nullify" [ref=e100]
+                - cell "11" [ref=e101]
+                - cell "0.002%" [ref=e102]
+              - row "ODS-005 LAC LAC 溢出值置空 lac nullify 0 0.000%" [ref=e103]:
+                - cell "ODS-005" [ref=e104]
+                - cell "LAC" [ref=e105]:
+                  - generic [ref=e106]: LAC
+                - cell "LAC 溢出值置空" [ref=e107]
+                - cell "lac" [ref=e108]:
+                  - code [ref=e109]: lac
+                - cell "nullify" [ref=e110]
+                - cell "0" [ref=e111]
+                - cell "0.000%" [ref=e112]
+              - row "ODS-006 CellID CellID=0 置空 cell_id nullify 1,234 0.179%" [ref=e113]:
+                - cell "ODS-006" [ref=e114]
+                - cell "CellID" [ref=e115]:
+                  - generic [ref=e116]: CellID
+                - cell "CellID=0 置空" [ref=e117]
+                - cell "cell_id" [ref=e118]:
+                  - code [ref=e119]: cell_id
+                - cell "nullify" [ref=e120]
+                - cell "1,234" [ref=e121]
+                - cell "0.179%" [ref=e122]
+              - row "ODS-007 CellID 5G CellID 溢出值置空 cell_id nullify 328 0.048%" [ref=e123]:
+                - cell "ODS-007" [ref=e124]
+                - cell "CellID" [ref=e125]:
+                  - generic [ref=e126]: CellID
+                - cell "5G CellID 溢出值置空" [ref=e127]
+                - cell "cell_id" [ref=e128]:
+                  - code [ref=e129]: cell_id
+                - cell "nullify" [ref=e130]
+                - cell "328" [ref=e131]
+                - cell "0.048%" [ref=e132]
+              - row "ODS-008 CellID 4G CellID 溢出值置空 cell_id nullify 11 0.002%" [ref=e133]:
+                - cell "ODS-008" [ref=e134]
+                - cell "CellID" [ref=e135]:
+                  - generic [ref=e136]: CellID
+                - cell "4G CellID 溢出值置空" [ref=e137]
+                - cell "cell_id" [ref=e138]:
+                  - code [ref=e139]: cell_id
+                - cell "nullify" [ref=e140]
+                - cell "11" [ref=e141]
+                - cell "0.002%" [ref=e142]
+              - row "ODS-009 信号 RSRP 越界置空 rsrp nullify 1,871 0.271%" [ref=e143]:
+                - cell "ODS-009" [ref=e144]
+                - cell "信号" [ref=e145]:
+                  - generic [ref=e146]: 信号
+                - cell "RSRP 越界置空" [ref=e147]
+                - cell "rsrp" [ref=e148]:
+                  - code [ref=e149]: rsrp
+                - cell "nullify" [ref=e150]
+                - cell "1,871" [ref=e151]
+                - cell "0.271%" [ref=e152]
+              - row "ODS-010 信号 RSRQ 越界置空 rsrq nullify 1,476 0.214%" [ref=e153]:
+                - cell "ODS-010" [ref=e154]
+                - cell "信号" [ref=e155]:
+                  - generic [ref=e156]: 信号
+                - cell "RSRQ 越界置空" [ref=e157]
+                - cell "rsrq" [ref=e158]:
+                  - code [ref=e159]: rsrq
+                - cell "nullify" [ref=e160]
+                - cell "1,476" [ref=e161]
+                - cell "0.214%" [ref=e162]
+              - row "ODS-011 信号 SINR 越界置空 sinr nullify 31,495 4.569%" [ref=e163]:
+                - cell "ODS-011" [ref=e164]
+                - cell "信号" [ref=e165]:
+                  - generic [ref=e166]: 信号
+                - cell "SINR 越界置空" [ref=e167]
+                - cell "sinr" [ref=e168]:
+                  - code [ref=e169]: sinr
+                - cell "nullify" [ref=e170]
+                - cell "31,495" [ref=e171]
+                - cell "4.569%" [ref=e172]
+              - row "ODS-012 信号 Dbm 越界置空 dbm nullify 567 0.082%" [ref=e173]:
+                - cell "ODS-012" [ref=e174]
+                - cell "信号" [ref=e175]:
+                  - generic [ref=e176]: 信号
+                - cell "Dbm 越界置空" [ref=e177]
+                - cell "dbm" [ref=e178]:
+                  - code [ref=e179]: dbm
+                - cell "nullify" [ref=e180]
+                - cell "567" [ref=e181]
+                - cell "0.082%" [ref=e182]
+              - row "ODS-013 位置 经度越界标记 gps_valid flag_gps 3 0.000%" [ref=e183]:
+                - cell "ODS-013" [ref=e184]
+                - cell "位置" [ref=e185]:
+                  - generic [ref=e186]: 位置
+                - cell "经度越界标记" [ref=e187]
+                - cell "gps_valid" [ref=e188]:
+                  - code [ref=e189]: gps_valid
+                - cell "flag_gps" [ref=e190]
+                - cell "3" [ref=e191]
+                - cell "0.000%" [ref=e192]
+              - row "ODS-014 位置 纬度越界标记 gps_valid flag_gps 0 0.000%" [ref=e193]:
+                - cell "ODS-014" [ref=e194]
+                - cell "位置" [ref=e195]:
+                  - generic [ref=e196]: 位置
+                - cell "纬度越界标记" [ref=e197]
+                - cell "gps_valid" [ref=e198]:
+                  - code [ref=e199]: gps_valid
+                - cell "flag_gps" [ref=e200]
+                - cell "0" [ref=e201]
+                - cell "0.000%" [ref=e202]
+              - row "ODS-015 WiFi 无效 WiFi 名称置空 wifi_name nullify_custom 0 0.000%" [ref=e203]:
+                - cell "ODS-015" [ref=e204]
+                - cell "WiFi" [ref=e205]:
+                  - generic [ref=e206]: WiFi
+                - cell "无效 WiFi 名称置空" [ref=e207]
+                - cell "wifi_name" [ref=e208]:
+                  - code [ref=e209]: wifi_name
+                - cell "nullify_custom" [ref=e210]
+                - cell "0" [ref=e211]
+                - cell "0.000%" [ref=e212]
+              - row "ODS-016 WiFi 无效 WiFi MAC 置空 wifi_mac nullify_custom 0 0.000%" [ref=e213]:
+                - cell "ODS-016" [ref=e214]
+                - cell "WiFi" [ref=e215]:
+                  - generic [ref=e216]: WiFi
+                - cell "无效 WiFi MAC 置空" [ref=e217]
+                - cell "wifi_mac" [ref=e218]:
+                  - code [ref=e219]: wifi_mac
+                - cell "nullify_custom" [ref=e220]
+                - cell "0" [ref=e221]
+                - cell "0.000%" [ref=e222]
+        - generic [ref=e224]: 清洗方式：字段级置 NULL（保留行），最终删除无有效 CellID 的行。 规则独立定义，可单独增删。对齐 rebuild2 exec_l0_gps.sql L217-278。
+        - generic [ref=e225]:
+          - generic [ref=e226]:
+            - generic [ref=e227]: 代码位置
+            - code [ref=e228]: rebuild4/backend/app/etl/pipeline.py → step2_clean(), ODS_RULES
+          - generic [ref=e229]:
+            - generic [ref=e230]: 说明文档
+            - code [ref=e231]: rebuild4/docs/01_etl/02_清洗.md

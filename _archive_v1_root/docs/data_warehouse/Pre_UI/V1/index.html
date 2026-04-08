@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>治理观察台 - 一期草图</title>
+<link rel="stylesheet" href="wireframe.css"/>
+<style>
+  .main { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
+  .index-hero { text-align: center; margin-bottom: 40px; }
+  .index-hero h1 { font-size: 28px; margin-bottom: 8px; }
+  .index-hero p { color: #888; font-size: 14px; }
+  .page-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; max-width: 720px; margin: 0 auto; }
+  .page-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; text-decoration: none; color: inherit; }
+  .page-card:hover { border-color: #4db8cc; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  .page-card .icon { font-size: 24px; margin-bottom: 8px; }
+  .page-card h3 { font-size: 15px; margin-bottom: 4px; }
+  .page-card p { font-size: 12px; color: #888; }
+  .note-bar { text-align: center; margin-top: 32px; font-size: 12px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo"><span>治理观察台</span></div>
+  <a href="index.html" class="active"><span>首页</span></a>
+  <a href="runs.html"><span>运行中心</span></a>
+  <a href="daily-review.html"><span>日更审查</span></a>
+  <a href="objects.html"><span>对象中心</span></a>
+  <a href="issues.html"><span>问题中心</span></a>
+  <a href="fields.html"><span>字段治理</span></a>
+  <div class="sep"></div>
+  <a href="experiments.html"><span>规则实验</span></a>
+</nav>
+
+<div class="main">
+  <div class="index-hero">
+    <h1>本地治理闭环一期</h1>
+    <p>需求对齐用草图 &mdash; 观察 / 诊断 / 审查</p>
+  </div>
+  <div class="page-grid">
+    <a class="page-card" href="runs.html">
+      <div class="icon">&#9654;</div>
+      <h3>运行中心</h3>
+      <p>Run 列表、阶段进度、版本绑定、行数瀑布</p>
+    </a>
+    <a class="page-card" href="daily-review.html">
+      <div class="icon">&#9783;</div>
+      <h3>日更审查</h3>
+      <p>四分流概览、差异钻取、入库决策</p>
+    </a>
+    <a class="page-card" href="objects.html">
+      <div class="icon">&#9673;</div>
+      <h3>对象中心</h3>
+      <p>LAC / BS / Cell 状态、画像、沉淀记录</p>
+    </a>
+    <a class="page-card" href="issues.html">
+      <div class="icon">&#9888;</div>
+      <h3>问题中心</h3>
+      <p>碰撞BS、移动Cell、GPS漂移等问题队列</p>
+    </a>
+    <a class="page-card" href="fields.html">
+      <div class="icon">&#9638;</div>
+      <h3>字段治理</h3>
+      <p>字段健康度、变更日志、下游影响</p>
+    </a>
+    <a class="page-card" href="experiments.html">
+      <div class="icon">&#9881;</div>
+      <h3>规则实验</h3>
+      <p>规则假设、重跑对比、固化决策</p>
+    </a>
+  </div>
+  <div class="note-bar">此草图仅用于一期需求对齐，非最终视觉设计 &middot; 所有数据为 mock</div>
+</div>
+
+</body>
+</html>

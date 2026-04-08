@@ -1,0 +1,167 @@
+INFO:     Started server process [57006]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8508 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57365 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57383 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [57006]
+INFO:     Started server process [57067]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8508 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57443 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57467 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57556 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57557 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57557 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57699 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57969 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57977 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57980 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58168 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58401 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58609 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58617 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58627 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54693 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54708 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54723 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54726 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54729 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54746 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54760 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54763 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54765 - "GET /api/phase1/dashboard-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54776 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54765 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54782 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54787 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55124 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55124 - "GET /api/phase1/issues?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55223 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55228 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [57067]
+INFO:     Started server process [53646]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8508 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62411 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62413 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62421 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62422 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62423 - "GET /api/phase1/dashboard-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62423 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62431 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62437 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62442 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62446 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62447 - "GET /api/phase1/layer/L4_Final?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62459 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62463 - "GET /api/phase1/issues?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62463 - "GET /api/phase1/patches?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62481 - "GET /api/phase1/dashboard-snapshot?run_id=phase1_20260226_125354 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62481 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62694 - "GET /api/phase1/layer/L4_Final?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62696 - "GET /api/phase1/layer/L5_LAC?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62718 - "GET /api/phase1/layer/L5_BS?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62718 - "GET /api/phase1/layer/L5_LAC?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62718 - "GET /api/phase1/reconciliation?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62718 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62757 - "GET /api/phase1/reconciliation?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62757 - "GET /api/phase1/layer/L4_Final?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62757 - "GET /api/phase1/layer/L5_LAC?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62757 - "GET /api/phase1/layer/L4_Final?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62760 - "GET /api/phase1/dashboard-snapshot?run_id=phase1_20260226_125354 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62760 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62777 - "GET /api/phase1/issues?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62781 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62783 - "GET /api/phase1/layer/L4_Final?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62783 - "GET /api/phase1/dashboard-snapshot?run_id=phase1_20260226_125354 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62783 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [53646]
+INFO:     Started server process [20865]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8508 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62220 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62222 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62224 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62226 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62227 - "GET /api/phase1/dashboard-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62227 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62229 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62231 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62236 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/reconciliation?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/issues?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/patches?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62248 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/dashboard-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62257 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/layer/L4_Final?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/dashboard-snapshot?run_id=phase1_20260226_125354 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62261 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62274 - "GET /api/phase1/reconciliation?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62288 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62274 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62291 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62293 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [20865]
+INFO:     Started server process [64818]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8508 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53787 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53791 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53800 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53805 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53808 - "GET /api/phase1/dashboard-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53836 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53841 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
+INFO:     Started server process [98174]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8508 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55434 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55432 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55446 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55450 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55454 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55458 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55469 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55462 - "GET /api/phase1/dashboard-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55490 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55462 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55496 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55500 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55504 - "GET /api/phase1/reconciliation?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55504 - "GET /api/phase1/dashboard-snapshot?run_id=phase1_20260226_125354 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55504 - "GET /api/phase1/trace/118519266 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55533 - "GET /api/phase1/reconciliation?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55533 - "GET /api/phase1/exposure-matrix?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55533 - "GET /api/phase1/issues?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55533 - "GET /api/phase1/patches?run_id=phase1_20260226_125354&page=1&page_size=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55549 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55558 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55563 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [98174]

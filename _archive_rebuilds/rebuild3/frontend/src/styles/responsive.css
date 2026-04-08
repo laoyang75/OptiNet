@@ -1,0 +1,149 @@
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .metric-grid,
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filters-grid,
+  .filters-grid--five {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    width: 100%;
+    min-height: auto;
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .sidebar-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px;
+  }
+
+  .sidebar-group-label,
+  .sidebar-divider {
+    display: none;
+  }
+
+  .sidebar-link {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .app-main {
+    margin-left: 0;
+  }
+
+  .app-topbar {
+    padding: 0 var(--sp-4);
+  }
+
+  .split-grid,
+  .detail-grid--two {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .page-content {
+    padding: var(--sp-4);
+  }
+
+  .app-topbar {
+    padding: 0 var(--sp-4);
+  }
+
+  .topbar-status {
+    display: none;
+  }
+
+  .metric-grid,
+  .summary-grid,
+  .filters-grid,
+  .filters-grid--five,
+  .kv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table {
+    min-width: 640px;
+  }
+
+  .flow-card {
+    padding: var(--sp-4);
+  }
+
+  .flow-stage {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-3);
+    min-height: 0;
+  }
+
+  .flow-stage::before {
+    left: 19px;
+  }
+
+  .flow-stage.branch {
+    margin-left: 18px;
+  }
+
+  .flow-stage.branch::before {
+    left: -13px;
+  }
+
+  .flow-node {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .flow-node.route {
+    width: 32px;
+    height: 32px;
+    margin: 4px;
+  }
+
+  .flow-info {
+    margin-left: 0;
+    min-width: 0;
+  }
+
+  .flow-name,
+  .flow-desc,
+  .flow-data .val,
+  .flow-data .sub,
+  .flow-data .pct {
+    overflow-wrap: anywhere;
+  }
+
+  .flow-data {
+    grid-column: 2;
+    min-width: 0;
+    text-align: left;
+    margin-top: 2px;
+  }
+
+  .flow-split {
+    margin-left: 19px;
+  }
+
+  .flow-divider {
+    margin-left: 0;
+  }
+}

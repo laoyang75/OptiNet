@@ -1,0 +1,65 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]: rebuild3
+    - navigation [ref=e6]:
+      - generic [ref=e7]: 主流程层
+      - link "◎ 流转总览" [ref=e8] [cursor=pointer]:
+        - /url: /flow/overview
+        - generic [ref=e9]: ◎
+        - generic [ref=e10]: 流转总览
+      - link "⏲ 流转快照" [ref=e11] [cursor=pointer]:
+        - /url: /flow/snapshot
+        - generic [ref=e12]: ⏲
+        - generic [ref=e13]: 流转快照
+      - link "⚙ 运行/批次中心" [ref=e14] [cursor=pointer]:
+        - /url: /runs
+        - generic [ref=e15]: ⚙
+        - generic [ref=e16]: 运行/批次中心
+      - link "◼ 对象浏览" [ref=e17] [cursor=pointer]:
+        - /url: /objects
+        - generic [ref=e18]: ◼
+        - generic [ref=e19]: 对象浏览
+      - link "⏱ 等待/观察工作台" [ref=e20] [cursor=pointer]:
+        - /url: /observation
+        - generic [ref=e21]: ⏱
+        - generic [ref=e22]: 等待/观察工作台
+      - link "⚠ 异常工作台" [ref=e23] [cursor=pointer]:
+        - /url: /anomalies
+        - generic [ref=e24]: ⚠
+        - generic [ref=e25]: 异常工作台
+      - link "★ 基线/画像" [ref=e26] [cursor=pointer]:
+        - /url: /baseline
+        - generic [ref=e27]: ★
+        - generic [ref=e28]: 基线/画像
+      - generic [ref=e30]: 画像视角层
+      - link "◔ LAC 画像" [ref=e31] [cursor=pointer]:
+        - /url: /profiles/lac
+        - generic [ref=e32]: ◔
+        - generic [ref=e33]: LAC 画像
+      - link "◓ BS 画像" [ref=e34] [cursor=pointer]:
+        - /url: /profiles/bs
+        - generic [ref=e35]: ◓
+        - generic [ref=e36]: BS 画像
+      - link "■ Cell 画像" [ref=e37] [cursor=pointer]:
+        - /url: /profiles/cell
+        - generic [ref=e38]: ■
+        - generic [ref=e39]: Cell 画像
+      - generic [ref=e41]: 支撑治理层
+      - link "☰ 基础数据治理" [ref=e42] [cursor=pointer]:
+        - /url: /governance
+        - generic [ref=e43]: ☰
+        - generic [ref=e44]: 基础数据治理
+      - link "☑ 验证/对照" [ref=e45] [cursor=pointer]:
+        - /url: /compare
+        - generic [ref=e46]: ☑
+        - generic [ref=e47]: 验证/对照
+      - link "▶ 初始化数据" [ref=e48] [cursor=pointer]:
+        - /url: /initialization
+        - generic [ref=e49]: ▶
+        - generic [ref=e50]: 初始化数据
+  - generic [ref=e51]:
+    - banner [ref=e52]:
+      - generic [ref=e53]: 基础数据治理
+      - generic [ref=e54]: 上下文异常
+    - main [ref=e57]:
+      - generic [ref=e59]: Unexpected token '<', "<!doctype "... is not valid JSON

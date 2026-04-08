@@ -1,0 +1,78 @@
+Script started on Thu Mar 19 16:53:18 2026
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+[?1034hbash-3.2$ 
+bash-3.2$ sshpass -p '111111' ssh -o StrictHostKeyChecking=no -o Co nnectTimeout=15 root@192.168.200.217 '
+> # 停掉之前可能还在跑的进程，避免冲突
+> pkill -f "finish_gps_migrate.sh" 2>/dev/null
+> pkill -f "gps_migrate.sh" 2>/dev/null  
+> pkill -f "migrate_layer0.sh" 2>/dev/null
+> sleep 2
+> 
+> # 写自修复主脚本：检查所有表，自动修复行数为 0 的表
+> cat > /data/auto_fix_migration.sh << '"'"'SCRIPT'"'"'
+> #!/bin/bash
+> # auto_fix_migration.sh - 自动检查并修复 PG17 不一致的表
+> # 在服务器本地运行，完全独立，不依赖外部 SSH 连接
+> export PGPASSWORD=123456
+> LOG=/data/auto_fix_migration.log
+> PG15="-h 127.0.0.1 -p 5432 -U postgres -d ip_loc2"
+> PG17="-h 127.0.0.1 -p 5433 -U postgres -d ip_loc2"
+> 
+> log() { echo "[$(date +"%Y-%m-%d %H:%M:%S")] $*" | tee -a $LOG; } [A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K}
+> 
+> migrate_table() {
+>   local tbl="$1"
+>   log ">>> 开始迁移: $tbl"
+>   psql $PG17 -c "DROP TABLE IF EXISTS public.\"${tbl}\";" >> $LOG  2>&1
+>   pg_dump $PG15 --no-acl --no-owner -t "public.\"${tbl}\"" \
+>     | psql $PG17 -v ON_ERROR_STOP=1 --quiet 2>&1 | tee -a $LOG
+>   PIPE_STATUS=${PIPESTATUS[1]}
+>   if [ $PIPE_STATUS -eq 0 ]; then
+>     SRC=$(psql $PG15 -t -A -c "SELECT COUNT(*) FROM public.\"${tb l}\";")
+>     DST=$(psql $PG17 -t -A -c "SELECT COUNT(*) FROM public.\"${tb l}\";")
+>     log "✅ 完成: $tbl | PG15=$SRC | PG17=$DST"
+>   else
+>     log "❌ 失败: $tbl (exit=$PIPE_STATUS)"
+>   fi
+> }
+> 
+> log "======== 开始自动检查与修复 ========"
+> 
+> # 从 PG15 获取所有目标表
+> TABLES=$(psql $PG15 -t -A -c "SELECT tablename FROM pg_tables WHE RE schemaname='"'"'public'"'"' AND (tablename LIKE '"'"'Y_codex%'"' "' OR tablename LIKE '"'"'WY_codex%'"'"') ORDER BY pg_total_relatio n_size(quote_ident(tablename));")
+> 
+> NEED_FIX=""
+> for tbl in $TABLES; do
+>   SRC_CNT=$(psql $PG15 -t -A -c "SELECT COUNT(*) FROM public.\"${ tbl}\";" 2>/dev/null || echo -1)
+>   DST_CNT=$(psql $PG17 -t -A -c "SELECT COUNT(*) FROM public.\"${ tbl}\";" 2>/dev/null || echo -1)
+>   if [ "$SRC_CNT" != "$DST_CNT" ]; then
+>     log "⚠️  不一致: $tbl | PG15=$SRC_CNT | PG17=$DST_CNT"
+>     NEED_FIX="$NEED_FIX $tbl"
+>   else
+>     log "✓ 一致: $tbl ($SRC_CNT 行)"
+>   fi
+> done
+> 
+> if [ -z "$NEED_FIX" ]; then
+>   log "🎉 全部 57 张表一致，无需修复！"
+> else
+>   log "======== 开始修复不一致的表 ========"
+>   for tbl in $NEED_FIX; do
+>     migrate_table "$tbl"
+>   done
+> fi
+> 
+> log "======== 自动修复完成 ========"
+> SCRIPT
+> 
+> chmod +x /data/auto_fix_migration.sh
+> nohup /data/auto_fix_migration.sh > /data/auto_fix_migration.log  2>&1 &
+> echo "已启动，PID: $! | 日志: /data/auto_fix_migration.log"
+> '
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+bash-3.2$ 

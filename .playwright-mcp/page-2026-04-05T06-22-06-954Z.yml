@@ -1,0 +1,263 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]: rebuild3
+    - navigation [ref=e5]:
+      - link "◎ 流转总览" [ref=e6] [cursor=pointer]:
+        - /url: 01_flow_overview.html
+        - generic [ref=e7]: ◎
+        - text: 流转总览
+      - link "⏲ 流转快照" [ref=e8] [cursor=pointer]:
+        - /url: 01_flow_overview_timeline.html
+        - generic [ref=e9]: ⏲
+        - text: 流转快照
+      - link "⚙ 运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: 02_run_batch_center.html
+        - generic [ref=e11]: ⚙
+        - text: 运行/批次中心
+      - link "◼ 对象浏览" [ref=e12] [cursor=pointer]:
+        - /url: 03_objects.html
+        - generic [ref=e13]: ◼
+        - text: 对象浏览
+      - link "⏱ 等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: 05_observation_workspace.html
+        - generic [ref=e15]: ⏱
+        - text: 等待/观察工作台
+      - link "⚠ 异常工作台" [ref=e16] [cursor=pointer]:
+        - /url: 06_anomaly_workspace.html
+        - generic [ref=e17]: ⚠
+        - text: 异常工作台
+      - link "★ 基线/画像" [ref=e18] [cursor=pointer]:
+        - /url: 07_baseline_profile.html
+        - generic [ref=e19]: ★
+        - text: 基线/画像
+      - link "▤ LAC 画像" [ref=e21] [cursor=pointer]:
+        - /url: 09_lac_profile.html
+        - generic [ref=e22]: ▤
+        - text: LAC 画像
+      - link "▣ BS 画像" [ref=e23] [cursor=pointer]:
+        - /url: 10_bs_profile.html
+        - generic [ref=e24]: ▣
+        - text: BS 画像
+      - link "■ Cell 画像" [ref=e25] [cursor=pointer]:
+        - /url: 11_cell_profile.html
+        - generic [ref=e26]: ■
+        - text: Cell 画像
+      - link "☰ 基础数据治理" [ref=e28] [cursor=pointer]:
+        - /url: 13_data_governance.html
+        - generic [ref=e29]: ☰
+        - text: 基础数据治理
+      - link "☑ 验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: 08_validation_compare.html
+        - generic [ref=e31]: ☑
+        - text: 验证/对照
+      - link "▶ 初始化数据" [ref=e32] [cursor=pointer]:
+        - /url: 12_initialization.html
+        - generic [ref=e33]: ▶
+        - text: 初始化数据
+  - generic [ref=e34]:
+    - banner [ref=e35]:
+      - generic [ref=e36]: rebuild3 流式治理工作台
+      - generic [ref=e37]: 运行中 · 上次刷新 14:32:07
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]: 当前上下文
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]: run_id
+            - generic [ref=e45]: RUN-20260403-001
+          - generic [ref=e47]:
+            - generic [ref=e48]: batch_id
+            - generic [ref=e49]: BATCH-2026040314
+          - generic [ref=e51]:
+            - generic [ref=e52]: 窗口
+            - generic [ref=e53]: 2026-04-03 14:00 ~ 16:00
+          - generic [ref=e55]:
+            - generic [ref=e56]: 基线版本
+            - generic [ref=e57]: v47
+          - generic [ref=e59]:
+            - generic [ref=e60]: 规则版本
+            - generic [ref=e61]: v3.2
+          - generic [ref=e63]:
+            - generic [ref=e64]: 契约版本
+            - generic [ref=e65]: v2.1
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - button "流程图视图" [ref=e68] [cursor=pointer]
+          - link "时间快照视图" [ref=e69] [cursor=pointer]:
+            - /url: 01_flow_overview_timeline.html
+        - generic [ref=e70]: 当前批次处理流程
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - generic [ref=e73]: 入
+            - generic [ref=e74]:
+              - generic [ref=e75]: 2小时批次进入
+              - generic [ref=e76]: 原始记录导入系统
+            - generic [ref=e77]:
+              - generic [ref=e78]: 45,231
+              - generic [ref=e79]: 条原始记录
+          - generic [ref=e80]:
+            - generic [ref=e81]: 注
+            - generic [ref=e82]:
+              - generic [ref=e83]: 注册 batch_id
+              - generic [ref=e84]: BATCH-2026040314 · 14:00~16:00
+            - generic [ref=e86]: BATCH-2026040314
+          - generic [ref=e87]:
+            - generic [ref=e88]: 标
+            - generic [ref=e89]:
+              - generic [ref=e90]: 标准化事件
+              - generic [ref=e91]: 解析为不可变标准事件 (fact_standardized)
+            - generic [ref=e92]:
+              - generic [ref=e93]: 45,140
+              - generic [ref=e94]: 通过率 99.8%
+              - generic [ref=e95]: 91 条解析失败
+          - generic [ref=e96]:
+            - generic [ref=e97]: 查
+            - generic [ref=e98]:
+              - generic [ref=e99]: 查对象注册表 + 上一版基线
+              - generic [ref=e100]: 匹配 obj_cell · 参考 baseline v47 — 当前批次只读取上一版冻结 baseline，不会边判边刷
+            - generic [ref=e101]:
+              - generic [ref=e102]: 12,847 个已知对象
+              - generic [ref=e103]: 基线 v47 · 规则 v3.2
+          - generic [ref=e105]:
+            - generic [ref=e107]: 分
+            - generic [ref=e108]:
+              - generic [ref=e109]: 四分流路由
+              - generic [ref=e110]: 事件进入哪条路径？
+            - generic [ref=e112]: 45,140 条待分流
+          - generic [ref=e113]:
+            - generic [ref=e114]: 治
+            - generic [ref=e115]:
+              - generic [ref=e116]: 已治理事实 (fact_governed)
+              - generic [ref=e117]: 已知且健康，或仅记录级异常
+            - generic [ref=e118]:
+              - generic [ref=e119]: 38,369
+              - generic [ref=e120]: 85.0%
+          - generic [ref=e121]:
+            - generic [ref=e122]: 观
+            - generic [ref=e123]:
+              - generic [ref=e124]: 观察事实 (fact_pending_observation)
+              - generic [ref=e125]: 未知但合规，证据累计中
+            - generic [ref=e126]:
+              - generic [ref=e127]: 4,514
+              - generic [ref=e128]: 10.0%
+          - generic [ref=e129]:
+            - generic [ref=e130]: 问
+            - generic [ref=e131]:
+              - generic [ref=e132]: 问题事实 (fact_pending_issue)
+              - generic [ref=e133]: 已知但对象级异常/待复核
+            - generic [ref=e134]:
+              - generic [ref=e135]: 1,354
+              - generic [ref=e136]: 3.0%
+          - generic [ref=e137]:
+            - generic [ref=e138]: 拒
+            - generic [ref=e139]:
+              - generic [ref=e140]: 拒收事实 (fact_rejected)
+              - generic [ref=e141]: 结构不合规 → 留痕后结束
+            - generic [ref=e142]:
+              - generic [ref=e143]: "903"
+              - generic [ref=e144]: 2.0%
+          - generic [ref=e146]:
+            - generic [ref=e147]: 累
+            - generic [ref=e148]:
+              - generic [ref=e149]: 累计对象证据
+              - generic [ref=e150]: governed + pending_observation + pending_issue → 对象证据更新
+            - generic [ref=e151]:
+              - generic [ref=e152]: 12,850
+              - generic [ref=e153]: 个对象更新证据 (+6)
+          - generic [ref=e156]: 批末统一决策
+          - generic [ref=e158]:
+            - generic [ref=e159]: 升
+            - generic [ref=e160]:
+              - generic [ref=e161]: 批末晋升 Cell
+              - generic [ref=e162]: waiting → observing → active / active → dormant
+            - generic [ref=e163]:
+              - generic [ref=e164]: 晋升 +5
+              - generic [ref=e165]: 降级 -2
+          - generic [ref=e166]:
+            - generic [ref=e167]: 联
+            - generic [ref=e168]:
+              - generic [ref=e169]: 级联更新 BS 和 LAC
+              - generic [ref=e170]: 由 active Cell 派生更新
+            - generic [ref=e171]:
+              - generic [ref=e172]: +5 BS · +1 LAC
+              - generic [ref=e173]: 共 12 个级联变化
+          - generic [ref=e174]:
+            - generic [ref=e175]: 异
+            - generic [ref=e176]:
+              - generic [ref=e177]: 批末异常检测与状态转移
+              - generic [ref=e178]: 碰撞 / 动态 / 迁移 / GPS偏差
+            - generic [ref=e179]:
+              - generic [ref=e180]: 47 个异常
+              - generic [ref=e181]: 本批新增 +2
+          - generic [ref=e182]:
+            - generic [ref=e183]: 基
+            - generic [ref=e184]:
+              - generic [ref=e185]: 按触发条件刷新基线
+              - generic [ref=e186]: 批末统一判断，新基线仅供下一批次使用
+            - generic [ref=e187]:
+              - generic [ref=e188]: 未触发刷新
+              - generic [ref=e189]: 当前 v47 继续使用
+      - generic [ref=e190]:
+        - generic [ref=e191]: 当前累计状态（本批次后）
+        - generic [ref=e192]:
+          - generic [ref=e193] [cursor=pointer]:
+            - generic [ref=e194]: 活跃对象
+            - generic [ref=e195]: 12,847
+            - generic [ref=e196]:
+              - generic [ref=e197]: 本批 +3
+              - generic [ref=e198]: 较上批 +1 ↑
+          - generic [ref=e199] [cursor=pointer]:
+            - generic [ref=e200]: 等待 + 观察中
+            - generic [ref=e201]: 2,175
+            - generic [ref=e202]:
+              - generic [ref=e203]: 本批 +23
+              - generic [ref=e204]: 较上批 -3 ↓
+          - generic [ref=e205] [cursor=pointer]:
+            - generic [ref=e206]: 异常对象
+            - generic [ref=e207]: "47"
+            - generic [ref=e208]:
+              - generic [ref=e209]: 本批 +2
+              - generic [ref=e210]: 较上批 +2 ↑
+          - generic [ref=e211] [cursor=pointer]:
+            - generic [ref=e212]: 锚点可用
+            - generic [ref=e213]: 11,234
+            - generic [ref=e214]:
+              - generic [ref=e215]: 本批 +2
+              - generic [ref=e216]: 较上批 -5 ↓
+          - generic [ref=e217] [cursor=pointer]:
+            - generic [ref=e218]: 基线可用
+            - generic [ref=e219]: 10,891
+            - generic [ref=e220]:
+              - generic [ref=e221]: 本批 +1
+              - generic [ref=e222]: 较上批 -3 ↓
+          - generic [ref=e223] [cursor=pointer]:
+            - generic [ref=e224]: 健康异常比例
+            - generic [ref=e225]: 3.2%
+            - generic [ref=e227]: 较上批 +0.1% ↑
+          - generic [ref=e228] [cursor=pointer]:
+            - generic [ref=e229]: BS 覆盖
+            - generic [ref=e230]: 3,421
+            - generic [ref=e232]: 本批 +5
+          - generic [ref=e233] [cursor=pointer]:
+            - generic [ref=e234]: LAC 覆盖
+            - generic [ref=e235]: "156"
+            - generic [ref=e237]: 本批 +1
+      - generic [ref=e238]:
+        - generic [ref=e239]: 问题入口
+        - generic [ref=e240]:
+          - link "碰撞嫌疑 BS 新增 2 个（BATCH-2026040314 发现） 异常工作台 →" [ref=e241] [cursor=pointer]:
+            - /url: 06_anomaly_workspace.html
+            - generic [ref=e243]: 碰撞嫌疑 BS 新增 2 个（BATCH-2026040314 发现）
+            - generic [ref=e244]: 异常工作台 →
+          - link "等待池堆积：连续 3 批 waiting 数量增长 等待/观察工作台 →" [ref=e245] [cursor=pointer]:
+            - /url: 05_observation_workspace.html
+            - generic [ref=e247]: 等待池堆积：连续 3 批 waiting 数量增长
+            - generic [ref=e248]: 等待/观察工作台 →
+          - link "锚点资格失效 5 个对象（GPS 偏差超过阈值） 对象浏览 →" [ref=e249] [cursor=pointer]:
+            - /url: 03_objects.html
+            - generic [ref=e251]: 锚点资格失效 5 个对象（GPS 偏差超过阈值）
+            - generic [ref=e252]: 对象浏览 →
+          - link "本批次 fact_pending_issue 占比上升 0.3% 批次中心 →" [ref=e253] [cursor=pointer]:
+            - /url: 02_run_batch_center.html
+            - generic [ref=e255]: 本批次 fact_pending_issue 占比上升 0.3%
+            - generic [ref=e256]: 批次中心 →

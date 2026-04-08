@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 — 运行中心</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+    border-left-color: #6366f1;
+  }
+  .sidebar-nav a .icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 90;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .topbar-context { font-size: 12px; color: #9ca3af; letter-spacing: 0.02em; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    margin-top: 52px;
+    padding: 24px 28px 40px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .card-header {
+    padding: 14px 18px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .card-body { padding: 18px; }
+
+  /* ── Current Run Summary ── */
+  .run-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .run-summary-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 18px 20px;
+    transition: box-shadow 0.2s;
+  }
+  .run-summary-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  .run-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .run-id {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #111827;
+  }
+  .run-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #16a34a;
+    background: #f0fdf4;
+    padding: 4px 12px;
+    border-radius: 12px;
+  }
+  .run-status .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+  }
+
+  .run-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px 24px;
+    margin-bottom: 18px;
+  }
+  .run-meta-item {}
+  .run-meta-label { font-size: 11.5px; color: #9ca3af; font-weight: 500; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .run-meta-value { font-size: 14px; color: #111827; font-weight: 500; }
+  .run-meta-value a { color: #6366f1; text-decoration: none; }
+  .run-meta-value a:hover { color: #4f46e5; text-decoration: underline; }
+
+  /* Progress bar */
+  .progress-section { margin-top: 4px; }
+  .progress-label { font-size: 12px; color: #4b5563; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-bar-bg {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  /* ── Batch Table ── */
+  .batch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .batch-table th {
+    text-align: left;
+    padding: 10px 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  .batch-table td {
+    padding: 10px 10px;
+    color: #4b5563;
+    border-bottom: 1px solid #f3f4f6;
+    white-space: nowrap;
+  }
+  .batch-table tbody tr { transition: background 0.12s; }
+  .batch-table tbody tr:hover { background: #f9fafb; }
+  .batch-table tbody tr.running { background: #fffbeb; }
+  .batch-table tbody tr.running:hover { background: #fef3c7; }
+  .batch-table .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+  .batch-table .muted { color: #9ca3af; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .status-badge.green  { background: #f0fdf4; color: #16a34a; }
+  .status-badge.amber  { background: #fffbeb; color: #d97706; }
+  .status-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .status-badge.green .dot { background: #22c55e; }
+  .status-badge.amber .dot { background: #fbbf24; animation: pulse 1.5s ease-in-out infinite; }
+
+  /* ── Bottom Grid ── */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  /* Compact List */
+  .compact-list { list-style: none; }
+  .compact-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+  }
+  .compact-list li:last-child { border-bottom: none; }
+  .compact-list .item-main { display: flex; align-items: center; gap: 10px; }
+  .compact-list .item-version {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .compact-list .item-tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 8px;
+    border-radius: 8px;
+  }
+  .compact-list .item-tag.active { background: #f0fdf4; color: #16a34a; }
+  .compact-list .item-tag.archived { background: #f3f4f6; color: #9ca3af; }
+  .compact-list .item-tag.running { background: #fffbeb; color: #d97706; }
+  .compact-list .item-tag.done { background: #f0fdf4; color: #16a34a; }
+  .compact-list .item-detail { color: #9ca3af; font-size: 12px; text-align: right; line-height: 1.5; }
+
+  /* Animation */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card, .run-summary-card { animation: fadeInUp 0.35s ease both; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="01_dashboard.html"><span class="icon">⊞</span> 仪表盘</a>
+    <a href="02_run_center.html" class="active"><span class="icon">▶</span> 运行中心</a>
+    <a href="#"><span class="icon">⊟</span> 对象浏览</a>
+    <a href="#"><span class="icon">◎</span> 等待池</a>
+    <a href="#"><span class="icon">⚠</span> 异常看板</a>
+    <a href="#"><span class="icon">☑</span> 批次审查</a>
+    <a href="#"><span class="icon">◈</span> 基线管理</a>
+    <a href="#"><span class="icon">⇄</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <div class="topbar-title">运行中心</div>
+  <div class="topbar-context">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</div>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- Top: Current Run Summary -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">当前运行</div>
+    <div class="card-body">
+      <div class="run-header">
+        <div class="run-id">R-20260403</div>
+        <div class="run-status"><span class="pulse-dot"></span>运行中</div>
+      </div>
+      <div class="run-meta">
+        <div class="run-meta-item">
+          <div class="run-meta-label">运行类型</div>
+          <div class="run-meta-value">增量运行</div>
+        </div>
+        <div class="run-meta-item">
+          <div class="run-meta-label">开始时间</div>
+          <div class="run-meta-value">2026-04-03 00:00</div>
+        </div>
+        <div class="run-meta-item">
+          <div class="run-meta-label">Baseline</div>
+          <div class="run-meta-value"><a href="#">v12</a></div>
+        </div>
+        <div class="run-meta-item">
+          <div class="run-meta-label">Contract / Rules</div>
+          <div class="run-meta-value">v3.1 / v2.4</div>
+        </div>
+      </div>
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>批次进度</span>
+          <span>5 / 12 批次 (42%)</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width: 42%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle: Batch Timeline -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">批次列表</div>
+    <div class="card-body" style="padding: 0;">
+      <table class="batch-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>批次ID</th>
+            <th>时间窗口</th>
+            <th>状态</th>
+            <th>输入</th>
+            <th>governed</th>
+            <th>pending_obs</th>
+            <th>pending_issue</th>
+            <th>rejected</th>
+            <th>晋升</th>
+            <th>降级</th>
+            <th>耗时</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="running">
+            <td>5</td>
+            <td class="mono">B-0403-05</td>
+            <td>08:00 – 10:00</td>
+            <td><span class="status-badge amber"><span class="dot"></span>运行中</span></td>
+            <td>34,521</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td>12m</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td class="mono">B-0403-04</td>
+            <td>06:00 – 08:00</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+            <td>31,208</td>
+            <td>28,397</td>
+            <td>1,248</td>
+            <td>936</td>
+            <td>627</td>
+            <td>2</td>
+            <td>0</td>
+            <td>8m</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td class="mono">B-0403-03</td>
+            <td>04:00 – 06:00</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+            <td>28,776</td>
+            <td>25,898</td>
+            <td>1,439</td>
+            <td>864</td>
+            <td>575</td>
+            <td>1</td>
+            <td>0</td>
+            <td>7m</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td class="mono">B-0403-02</td>
+            <td>02:00 – 04:00</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+            <td>25,432</td>
+            <td>23,389</td>
+            <td>1,017</td>
+            <td>508</td>
+            <td>518</td>
+            <td>0</td>
+            <td>0</td>
+            <td>6m</td>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td class="mono">B-0403-01</td>
+            <td>00:00 – 02:00</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+            <td>22,198</td>
+            <td>20,178</td>
+            <td>1,110</td>
+            <td>444</td>
+            <td>466</td>
+            <td>1</td>
+            <td>1</td>
+            <td>7m</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom: Baseline History + Run History -->
+  <div class="bottom-grid">
+
+    <!-- Baseline History -->
+    <div class="card">
+      <div class="card-header">Baseline 历史</div>
+      <div class="card-body" style="padding: 10px 18px;">
+        <ul class="compact-list">
+          <li>
+            <div class="item-main">
+              <span class="item-version">v12</span>
+              <span class="item-tag active">current</span>
+            </div>
+            <div class="item-detail">2026-04-02 22:00<br>12,847 objects</div>
+          </li>
+          <li>
+            <div class="item-main">
+              <span class="item-version">v11</span>
+              <span class="item-tag archived">archived</span>
+            </div>
+            <div class="item-detail">2026-04-01 22:00<br>12,702 objects</div>
+          </li>
+          <li>
+            <div class="item-main">
+              <span class="item-version">v10</span>
+              <span class="item-tag archived">archived</span>
+            </div>
+            <div class="item-detail">2026-03-31 22:00<br>12,634 objects</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Run History -->
+    <div class="card">
+      <div class="card-header">运行历史</div>
+      <div class="card-body" style="padding: 10px 18px;">
+        <ul class="compact-list">
+          <li>
+            <div class="item-main">
+              <span class="item-version">R-20260403</span>
+              <span class="item-tag running">运行中</span>
+            </div>
+            <div class="item-detail">增量<br>5/12 batches</div>
+          </li>
+          <li>
+            <div class="item-main">
+              <span class="item-version">R-20260402</span>
+              <span class="item-tag done">已完成</span>
+            </div>
+            <div class="item-detail">增量<br>12/12 batches</div>
+          </li>
+          <li>
+            <div class="item-main">
+              <span class="item-version">R-20260401</span>
+              <span class="item-tag done">已完成</span>
+            </div>
+            <div class="item-detail">初始化<br>1/1 batch</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+</body>
+</html>

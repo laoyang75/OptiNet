@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cell 画像 — rebuild3</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-200:#C7D2FE;
+    --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA;
+    --c-indigo-900:#312E81; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-500:#3B82F6; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB;
+    --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280;
+    --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --sidebar-w:240px; --topbar-h:56px; --radius:12px;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover:0 4px 12px rgba(0,0,0,.08);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;color:var(--c-gray-800);background:var(--c-gray-50);min-width:1100px;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--c-indigo-950);color:var(--c-indigo-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-brand{height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;font-size:15px;font-weight:600;color:var(--c-white);border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-nav{padding:12px 8px;flex:1}
+  .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--c-indigo-200);transition:background .15s,color .15s;margin-bottom:2px}
+  .sidebar-nav a:hover{background:rgba(255,255,255,.08);color:var(--c-white)}
+  .sidebar-nav a.active{background:var(--c-indigo-600);color:var(--c-white);font-weight:500}
+  .sidebar-nav .ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+  .topbar{height:var(--topbar-h);background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:16px;font-weight:600;color:var(--c-gray-900)}
+  .topbar-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-gray-500)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-green-600);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  .content{padding:24px 32px 48px}
+  .section-title{font-size:15px;font-weight:600;color:var(--c-gray-900);margin-bottom:12px}
+  .section+.section{margin-top:28px}
+
+  .search-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .search-input{flex:1;max-width:480px;height:40px;padding:0 16px;border:1px solid var(--c-gray-300);border-radius:8px;font-size:14px;color:var(--c-gray-800);background:var(--c-white);outline:none;transition:border-color .15s}
+  .search-input:focus{border-color:var(--c-indigo-500)}
+  .search-input::placeholder{color:var(--c-gray-400)}
+  .search-btn{height:40px;padding:0 20px;border:none;border-radius:8px;background:var(--c-indigo-600);color:var(--c-white);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s}
+  .search-btn:hover{background:var(--c-indigo-700)}
+
+  .filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+  .filter-select{height:36px;padding:0 12px;border:1px solid var(--c-gray-300);border-radius:6px;font-size:13px;color:var(--c-gray-700);background:var(--c-white);cursor:pointer;outline:none}
+  .filter-select:focus{border-color:var(--c-indigo-500)}
+  .filter-label{font-size:12px;color:var(--c-gray-500);margin-right:-4px}
+
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:24px}
+  .summary-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card)}
+  .summary-card .label{font-size:12px;color:var(--c-gray-500);margin-bottom:4px}
+  .summary-card .value{font-size:24px;font-weight:700;color:var(--c-gray-900)}
+  .summary-card .meta{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--c-gray-500);flex-wrap:wrap}
+  .meta-tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+  .tag-green{background:var(--c-green-50);color:var(--c-green-600)}
+  .tag-orange{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .tag-red{background:var(--c-red-50);color:var(--c-red-600)}
+  .tag-blue{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .tag-gray{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .tag-amber{background:var(--c-amber-50);color:var(--c-amber-500)}
+  .tag-purple{background:var(--c-purple-50);color:var(--c-purple-600)}
+
+  .table-wrap{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:780px}
+  thead{background:var(--c-gray-50)}
+  th{padding:6px 8px;text-align:left;font-size:11px;font-weight:600;color:var(--c-gray-500);border-bottom:1px solid var(--c-gray-200);white-space:nowrap;cursor:pointer;user-select:none;transition:color .12s}
+  th:hover{color:var(--c-indigo-600)}
+  th .sort-icon{font-size:10px;margin-left:2px;opacity:.4}
+  td{padding:6px 8px;font-size:12px;color:var(--c-gray-700);border-bottom:1px solid var(--c-gray-100);white-space:nowrap}
+  td.num,th.num{white-space:nowrap}
+  tr.clickable{cursor:pointer;transition:background .12s}
+  tr.clickable:hover{background:var(--c-indigo-50)}
+  .mono{font-family:"SF Mono","JetBrains Mono",monospace;font-size:11px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+  .badge-active{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-waiting{background:var(--c-amber-50);color:var(--c-amber-500)}
+  .badge-observing{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .badge-dormant{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .badge-healthy{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-anomaly{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .badge-na{background:var(--c-gray-100);color:var(--c-gray-400)}
+  .badge-fixed{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-dynamic{background:var(--c-purple-50);color:var(--c-purple-600)}
+  .badge-trust-high{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-trust-mid{background:var(--c-amber-50);color:var(--c-amber-500)}
+  .badge-normal{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-trust-low{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .badge-trust-none{background:var(--c-gray-100);color:var(--c-gray-400)}
+  .badge-collision-suspect{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .badge-collision-confirmed{background:var(--c-red-50);color:var(--c-red-600)}
+  .badge-data-insufficient{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .badge-migration{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .badge-gps-drift{background:var(--c-amber-50);color:var(--c-amber-500)}
+  .badge-anchorable{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-not-anchorable{background:var(--c-gray-100);color:var(--c-gray-400)}
+  .badge-baseline-eligible{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-baseline-ineligible{background:var(--c-gray-100);color:var(--c-gray-400)}
+  .ref-col{color:var(--c-gray-400) !important;font-size:11px}
+  .badge-trust-none{background:var(--c-gray-100);color:var(--c-gray-400)}
+
+  .detail-panel{display:none;background:var(--c-gray-50);border-top:2px solid var(--c-indigo-200)}
+  .detail-panel.open{display:table-row}
+  .detail-panel td{padding:0}
+  .detail-content{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;max-width:100%;overflow:hidden;font-size:12px}
+  .detail-block{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:8px;padding:16px}
+  .detail-block-title{font-size:13px;font-weight:600;color:var(--c-gray-800);margin-bottom:10px}
+  .detail-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+  .detail-row .dl{color:var(--c-gray-500)}
+  .detail-row .dv{color:var(--c-gray-800);font-weight:500}
+
+  .stacked-bar{display:flex;height:16px;border-radius:4px;overflow:hidden;margin-top:4px}
+  .stacked-bar .seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--c-white);min-width:20px}
+  .seg-primary{background:var(--c-indigo-500)}
+  .seg-cell{background:var(--c-blue-500)}
+  .seg-bs{background:var(--c-purple-400)}
+  .seg-risk{background:var(--c-orange-500)}
+  .stacked-legend{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:4px;font-size:10px;color:var(--c-gray-500)}
+  .stacked-legend span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+  .leg-primary::before{background:var(--c-indigo-500)}
+  .leg-cell::before{background:var(--c-blue-500)}
+  .leg-bs::before{background:var(--c-purple-400)}
+  .leg-risk::before{background:var(--c-orange-500)}
+
+  /* 迷你条 */
+  .mini-bar{display:flex;gap:3px;margin-top:6px}
+  .mini-bar-item{flex:1;text-align:center;min-width:0}
+  .mini-bar-item .bar-val{font-size:12px;font-weight:700;color:var(--c-gray-900)}
+  .mini-bar-item .bar-label{font-size:9px;color:var(--c-gray-400);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-bar-item .bar-track{height:6px;border-radius:3px;background:var(--c-gray-100);margin-top:4px;overflow:hidden}
+  .mini-bar-item .bar-fill{height:100%;border-radius:3px}
+
+  .calibration{margin-top:12px;padding:10px 14px;background:var(--c-amber-50);border:1px solid var(--c-amber-400);border-radius:6px;font-size:11px;color:var(--c-gray-600);line-height:1.5}
+
+  .pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--c-gray-200);background:var(--c-white)}
+  .pagination-info{font-size:12px;color:var(--c-gray-500)}
+  .pagination-btns{display:flex;gap:4px}
+  .pagination-btns button{width:32px;height:32px;border:1px solid var(--c-gray-200);border-radius:6px;background:var(--c-white);font-size:13px;color:var(--c-gray-600);cursor:pointer;transition:all .12s}
+  .pagination-btns button:hover{border-color:var(--c-indigo-300);color:var(--c-indigo-600)}
+  .pagination-btns button.active{background:var(--c-indigo-600);color:var(--c-white);border-color:var(--c-indigo-600)}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <a href="01_flow_overview.html"><span class="ico">&#9678;</span> 流转总览</a>
+      <a href="01_flow_overview_timeline.html"><span class="ico">&#9202;</span> 流转快照</a>
+      <a href="02_run_batch_center.html"><span class="ico">&#9881;</span> 运行/批次中心</a>
+      <a href="03_objects.html" class="active"><span class="ico">&#9724;</span> 对象浏览</a>
+      <a href="05_observation_workspace.html"><span class="ico">&#9201;</span> 等待/观察工作台</a>
+      <a href="06_anomaly_workspace.html"><span class="ico">&#9888;</span> 异常工作台</a>
+      <a href="07_baseline_profile.html"><span class="ico">&#9733;</span> 基线/画像</a>
+      <a href="08_validation_compare.html"><span class="ico">&#9745;</span> 验证/对照</a>
+      <a href="09_lac_profile.html"><span class="ico">&#9636;</span> LAC 画像</a>
+      <a href="10_bs_profile.html"><span class="ico">&#9635;</span> BS 画像</a>
+      <a href="11_cell_profile.html" class="active"><span class="ico">&#9632;</span> Cell 画像</a>
+      <a href="12_initialization.html"><span class="ico">&#9654;</span> 初始化数据</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">Cell 画像</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 搜索栏 -->
+      <div class="section">
+        <div class="search-bar">
+          <input type="text" class="search-input" placeholder="输入 Cell ID、BS ID 或 LAC 搜索">
+          <button class="search-btn">搜索</button>
+        </div>
+        <div class="filter-bar">
+          <span class="filter-label">运营商</span>
+          <select class="filter-select">
+            <option>全部</option><option>中国移动</option><option>中国联通</option><option>中国电信</option>
+          </select>
+          <span class="filter-label">制式</span>
+          <select class="filter-select">
+            <option>全部</option><option>4G</option><option>5G</option>
+          </select>
+          <span class="filter-label">LAC</span>
+          <select class="filter-select">
+            <option>全部</option><option>12848</option><option>12849</option><option>9921</option><option>8834</option>
+          </select>
+          <span class="filter-label">BS</span>
+          <select class="filter-select">
+            <option>全部</option><option>1284801</option><option>1284815</option><option>992103</option>
+          </select>
+          <span class="filter-label">健康状态</span>
+          <select class="filter-select">
+            <option>全部</option><option>健康</option><option>数据不足</option><option>碰撞嫌疑</option><option>碰撞确认</option><option>动态</option><option>迁移嫌疑</option><option>GPS偏差</option>
+          </select>
+          <span class="filter-label">资格</span>
+          <select class="filter-select">
+            <option>全部</option><option>可锚定</option><option>不可锚定</option><option>基线合格</option><option>基线不合格</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 汇总卡片 -->
+      <div class="section">
+        <div class="section-title">Cell 总览</div>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">Cell 总数</div>
+            <div class="value">15,069</div>
+            <div class="meta">
+              <span class="meta-tag tag-green">活跃 13,821</span>
+              <span class="meta-tag tag-amber">等待中 456</span>
+              <span class="meta-tag tag-blue">观察中 312</span>
+              <span class="meta-tag tag-gray">休眠 480</span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="label">健康状态分布</div>
+            <div class="meta" style="margin-top:8px">
+              <span class="meta-tag tag-green">健康 13,521</span>
+              <span class="meta-tag tag-gray">数据不足 768</span>
+              <span class="meta-tag tag-orange">碰撞嫌疑 156</span>
+              <span class="meta-tag tag-red">碰撞确认 48</span>
+              <span class="meta-tag tag-purple">动态 234</span>
+              <span class="meta-tag tag-amber">GPS偏差 342</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主表格 -->
+      <div class="section">
+        <div class="section-title">Cell 列表</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>运营商</th>
+                <th>制式</th>
+                <th>LAC</th>
+                <th>BS ID</th>
+                <th>Cell ID <span class="sort-icon">&#9650;&#9660;</span></th>
+                <th>生命周期</th>
+                <th>健康状态</th>
+                <th>资格</th>
+                <th>记录数 <span class="sort-icon">&#9650;&#9660;</span></th>
+                <th>P90(m)</th>
+                <th>GPS 原始率</th>
+                <th>信号原始率</th>
+                <th>RSRP</th>
+                <th style="color:var(--c-gray-400)">旧分类（来自BS，参考）</th>
+                <th style="color:var(--c-gray-400)">GPS 可信度（参考）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 行 1: 正常活跃 -->
+              <tr class="clickable" onclick="toggleDetail('c1')">
+                <td>中国移动</td><td>4G</td><td class="mono">12848</td><td class="mono">1284801</td><td class="mono">128480101</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span> <span class="badge badge-baseline-eligible">基线合格</span></td>
+                <td class="mono">7,234</td>
+                <td class="mono">312</td>
+                <td class="mono">84.2%</td><td class="mono">95.1%</td><td class="mono">-91.3</td>
+                <td class="ref-col"><span class="badge badge-fixed" style="opacity:.5">固定/正常</span></td>
+                <td class="ref-col"><span class="badge badge-trust-high" style="opacity:.5">高</span></td>
+              </tr>
+              <tr class="detail-panel" id="c1">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.9215, 116.4378</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.9213, 116.4376</span></div>
+                      <div class="detail-row"><span class="dl">偏差</span><span class="dv">23 m</span></div>
+                      <div class="detail-block-title" style="margin-top:12px">空间精度</div>
+                      <div class="detail-row"><span class="dl">P50 距离</span><span class="dv">98 m</span></div>
+                      <div class="detail-row"><span class="dl">P90 距离</span><span class="dv">312 m</span></div>
+                      <div class="detail-row"><span class="dl">最大距离</span><span class="dv">487 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-green-600)">健康</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-green-600)">可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-green-600)">基线合格</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">正常</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS GPS 可信度</span><span class="dv" style="color:var(--c-gray-400)">高</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">画像质量</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:84.2%">84.2%</div>
+                        <div class="seg seg-cell" style="width:10.1%">10.1%</div>
+                        <div class="seg seg-bs" style="width:4.8%">4.8%</div>
+                        <div class="seg seg-risk" style="width:0.9%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 84.2%</span>
+                        <span class="leg-cell">Cell 补齐 10.1%</span>
+                        <span class="leg-bs">BS 补齐 4.8%</span>
+                        <span class="leg-risk">BS 风险补齐 0.9%</span>
+                      </div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin:10px 0 4px">信号来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:95.1%">95.1%</div>
+                        <div class="seg seg-cell" style="width:3.5%">3.5%</div>
+                        <div class="seg seg-bs" style="width:1.4%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 95.1%</span>
+                        <span class="leg-cell">Cell 补齐 3.5%</span>
+                        <span class="leg-bs">BS 补齐 1.4%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">312</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">42</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">8</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">5</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:1%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：GPS 中心点偏差 = 本批次原始质心与上一版基线质心的距离。P50/P90 基于本 Cell 所有 GPS 原始点到质心的距离分位数。动态/固定继承自所属 BS 的异常分类。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 2: 动态 Cell -->
+              <tr class="clickable" onclick="toggleDetail('c2')">
+                <td>中国移动</td><td>4G</td><td class="mono">12848</td><td class="mono">1284815</td><td class="mono">128481501</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-dynamic">动态</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span> <span class="badge badge-baseline-ineligible">基线不合格</span></td>
+                <td class="mono">4,567</td>
+                <td class="mono">7,234</td>
+                <td class="mono">69.2%</td><td class="mono">88.1%</td><td class="mono">-97.8</td>
+                <td class="ref-col"><span class="badge badge-dynamic" style="opacity:.5">动态BS</span></td>
+                <td class="ref-col"><span class="badge badge-trust-low" style="opacity:.5">低</span></td>
+              </tr>
+              <tr class="detail-panel" id="c2">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.8748, 116.5824</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.8512, 116.5437</span></div>
+                      <div class="detail-row"><span class="dl">偏差</span><span class="dv">4,321 m（异常）</span></div>
+                      <div class="detail-block-title" style="margin-top:12px">空间精度</div>
+                      <div class="detail-row"><span class="dl">P50 距离</span><span class="dv">1,890 m</span></div>
+                      <div class="detail-row"><span class="dl">P90 距离</span><span class="dv">7,234 m</span></div>
+                      <div class="detail-row"><span class="dl">最大距离</span><span class="dv">12,456 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-purple-600)">动态</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-gray-400)">不可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-gray-400)">基线不合格</span></div>
+                      <div class="detail-row"><span class="dl">漂移距离</span><span class="dv">4,321 m</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">动态 BS</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS GPS 可信度</span><span class="dv" style="color:var(--c-gray-400)">低</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:69.2%">69.2%</div>
+                        <div class="seg seg-cell" style="width:15.1%">15.1%</div>
+                        <div class="seg seg-bs" style="width:10.8%">10.8%</div>
+                        <div class="seg seg-risk" style="width:4.9%">4.9%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 69.2%</span>
+                        <span class="leg-cell">Cell 补齐 15.1%</span>
+                        <span class="leg-bs">BS 补齐 10.8%</span>
+                        <span class="leg-risk">BS 风险补齐 4.9%</span>
+                      </div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin:10px 0 4px">信号来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:88.1%">88.1%</div>
+                        <div class="seg seg-cell" style="width:7.4%">7.4%</div>
+                        <div class="seg seg-bs" style="width:4.5%">4.5%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 88.1%</span>
+                        <span class="leg-cell">Cell 补齐 7.4%</span>
+                        <span class="leg-bs">BS 补齐 4.5%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">187</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:95%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">12</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:6%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：该 Cell 所属 BS 为动态 BS，所有事实进入 fact_pending_issue 路径。GPS 坐标标记为不可信。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 3: 观察中 -->
+              <tr class="clickable" onclick="toggleDetail('c3')">
+                <td>中国联通</td><td>4G</td><td class="mono">9921</td><td class="mono">992118</td><td class="mono">99211801</td>
+                <td><span class="badge badge-observing">观察中</span></td>
+                <td><span class="badge badge-data-insufficient">数据不足</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span> <span class="badge badge-baseline-ineligible">基线不合格</span></td>
+                <td class="mono">1,234</td>
+                <td class="mono">423</td>
+                <td class="mono">77.5%</td><td class="mono">91.3%</td><td class="mono">-94.5</td>
+                <td class="ref-col"><span class="badge badge-fixed" style="opacity:.5">固定/正常</span></td>
+                <td class="ref-col"><span class="badge badge-trust-high" style="opacity:.5">高</span></td>
+              </tr>
+              <tr class="detail-panel" id="c3">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.9181, 116.3592</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">尚无基线</span></div>
+                      <div class="detail-block-title" style="margin-top:12px">空间精度</div>
+                      <div class="detail-row"><span class="dl">P50 距离</span><span class="dv">145 m</span></div>
+                      <div class="detail-row"><span class="dl">P90 距离</span><span class="dv">423 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">观察中</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-gray-500)">数据不足</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-gray-400)">不可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-gray-400)">基线不合格</span></div>
+                      <div class="detail-row"><span class="dl">观察进度</span><span class="dv">已累计 4 批，需 6 批晋升</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">正常</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:77.5%">77.5%</div>
+                        <div class="seg seg-cell" style="width:13.2%">13.2%</div>
+                        <div class="seg seg-bs" style="width:7.8%">7.8%</div>
+                        <div class="seg seg-risk" style="width:1.5%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 77.5%</span>
+                        <span class="leg-cell">Cell 补齐 13.2%</span>
+                        <span class="leg-bs">BS 补齐 7.8%</span>
+                        <span class="leg-risk">BS 风险补齐 1.5%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">87</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:90%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">3</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:3%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">1</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:1%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：观察中 Cell 尚未达到晋升条件（需累计 6 批次数据），事实进入 fact_pending_observation。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 4: 碰撞确认 BS 下的 Cell -->
+              <tr class="clickable" onclick="toggleDetail('c4')">
+                <td>中国联通</td><td>4G</td><td class="mono">9921</td><td class="mono">992103</td><td class="mono">99210301</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-collision-confirmed">碰撞确认</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span> <span class="badge badge-baseline-ineligible">基线不合格</span></td>
+                <td class="mono">8,912</td>
+                <td class="mono">10,234</td>
+                <td class="mono">72.1%</td><td class="mono">89.5%</td><td class="mono">-97.1</td>
+                <td class="ref-col"><span class="badge badge-collision-confirmed" style="opacity:.5">碰撞确认</span></td>
+                <td class="ref-col"><span class="badge badge-trust-none" style="opacity:.5">无</span></td>
+              </tr>
+              <tr class="detail-panel" id="c4">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.9137, 116.3675（不可信）</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.9134, 116.3672（不可信）</span></div>
+                      <div class="detail-block-title" style="margin-top:12px">空间精度</div>
+                      <div class="detail-row"><span class="dl">P50 距离</span><span class="dv">3,456 m</span></div>
+                      <div class="detail-row"><span class="dl">P90 距离</span><span class="dv">10,234 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-red-600)">碰撞确认</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-gray-400)">不可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-gray-400)">基线不合格</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">碰撞确认</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS GPS 可信度</span><span class="dv" style="color:var(--c-gray-400)">无</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">碰撞簇数</span><span class="dv" style="color:var(--c-gray-400)">3</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:72.1%">72.1%</div>
+                        <div class="seg seg-cell" style="width:14.5%">14.5%</div>
+                        <div class="seg seg-bs" style="width:9.6%">9.6%</div>
+                        <div class="seg seg-risk" style="width:3.8%">3.8%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 72.1%</span>
+                        <span class="leg-cell">Cell 补齐 14.5%</span>
+                        <span class="leg-bs">BS 补齐 9.6%</span>
+                        <span class="leg-risk">BS 风险补齐 3.8%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">234</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:98%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">5</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：该 Cell 所属 BS 为碰撞确认，GPS 坐标完全不可信，所有事实进入 fact_pending_issue。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 5: 正常 5G -->
+              <tr class="clickable" onclick="toggleDetail('c5')">
+                <td>中国移动</td><td>5G</td><td class="mono">12849</td><td class="mono">1284902</td><td class="mono">128490201</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span> <span class="badge badge-baseline-eligible">基线合格</span></td>
+                <td class="mono">5,678</td>
+                <td class="mono">245</td>
+                <td class="mono">87.3%</td><td class="mono">96.8%</td><td class="mono">-88.9</td>
+                <td class="ref-col"><span class="badge badge-fixed" style="opacity:.5">固定/正常</span></td>
+                <td class="ref-col"><span class="badge badge-trust-high" style="opacity:.5">高</span></td>
+              </tr>
+              <tr class="detail-panel" id="c5">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.9571, 116.3018</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.9569, 116.3015</span></div>
+                      <div class="detail-row"><span class="dl">偏差</span><span class="dv">31 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-green-600)">健康</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-green-600)">可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-green-600)">基线合格</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">正常</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">画像质量</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:87.3%">87.3%</div>
+                        <div class="seg seg-cell" style="width:8.2%">8.2%</div>
+                        <div class="seg seg-bs" style="width:3.9%">3.9%</div>
+                        <div class="seg seg-risk" style="width:0.6%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 87.3%</span>
+                        <span class="leg-cell">Cell 补齐 8.2%</span>
+                        <span class="leg-bs">BS 补齐 3.9%</span>
+                        <span class="leg-risk">BS 风险补齐 0.6%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">278</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:88%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">28</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:9%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">5</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">3</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:1%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：5G Cell 通常具有更高的 GPS 原始率和信号质量。偏差 31m 在正常范围内。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 6: 等待中 -->
+              <tr class="clickable" onclick="toggleDetail('c6')">
+                <td>中国电信</td><td>4G</td><td class="mono">8834</td><td class="mono">883412</td><td class="mono">88341201</td>
+                <td><span class="badge badge-waiting">等待中</span></td>
+                <td><span class="badge badge-data-insufficient">数据不足</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span> <span class="badge badge-baseline-ineligible">基线不合格</span></td>
+                <td class="mono">345</td>
+                <td class="mono">512</td>
+                <td class="mono">77.4%</td><td class="mono">89.8%</td><td class="mono">-96.2</td>
+                <td class="ref-col"><span class="badge badge-gps-drift" style="opacity:.5">面积大</span></td>
+                <td class="ref-col"><span class="badge badge-trust-mid" style="opacity:.5">中</span></td>
+              </tr>
+              <tr class="detail-panel" id="c6">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.9318, 116.4132</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">尚无基线</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">等待中</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-gray-500)">数据不足</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-gray-400)">不可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-gray-400)">基线不合格</span></div>
+                      <div class="detail-row"><span class="dl">等待进度</span><span class="dv">已累计 2 批，需 3 批转观察</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">面积大</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:77.4%">77.4%</div>
+                        <div class="seg seg-cell" style="width:12.5%">12.5%</div>
+                        <div class="seg seg-bs" style="width:8.1%">8.1%</div>
+                        <div class="seg seg-risk" style="width:2.0%">2.0%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 77.4%</span>
+                        <span class="leg-cell">Cell 补齐 12.5%</span>
+                        <span class="leg-bs">BS 补齐 8.1%</span>
+                        <span class="leg-risk">BS 风险补齐 2.0%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">34</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">4</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">2</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：等待中 Cell 尚未进入观察阶段（需累计 3 批次才可转为观察中）。GPS 可信度为中是因为所属 BS 面积大。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 7: 正常 -->
+              <tr class="clickable" onclick="toggleDetail('c7')">
+                <td>中国联通</td><td>5G</td><td class="mono">6612</td><td class="mono">661205</td><td class="mono">66120501</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span> <span class="badge badge-baseline-eligible">基线合格</span></td>
+                <td class="mono">3,456</td>
+                <td class="mono">198</td>
+                <td class="mono">89.1%</td><td class="mono">96.5%</td><td class="mono">-89.2</td>
+                <td class="ref-col"><span class="badge badge-gps-drift" style="opacity:.5">GPS噪声(BS)</span></td>
+                <td class="ref-col"><span class="badge badge-trust-high" style="opacity:.5">高(Cell独立)</span></td>
+              </tr>
+              <tr class="detail-panel" id="c7">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.9048, 116.6525</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.9046, 116.6523</span></div>
+                      <div class="detail-row"><span class="dl">偏差</span><span class="dv">18 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-green-600)">健康</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-green-600)">可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-green-600)">基线合格</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">GPS 噪声</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS GPS 可信度</span><span class="dv" style="color:var(--c-gray-400)">中</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">Cell GPS 可信度</span><span class="dv" style="color:var(--c-gray-400)">高（Cell 级覆盖 BS 噪声）</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:89.1%">89.1%</div>
+                        <div class="seg seg-cell" style="width:7.1%">7.1%</div>
+                        <div class="seg seg-bs" style="width:3.4%">3.4%</div>
+                        <div class="seg seg-risk" style="width:0.4%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 89.1%</span>
+                        <span class="leg-cell">Cell 补齐 7.1%</span>
+                        <span class="leg-bs">BS 补齐 3.4%</span>
+                        <span class="leg-risk">BS 风险补齐 0.4%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">156</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">23</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">6</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:3%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">4</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：该 Cell GPS 可信度高于所属 BS（BS 有 GPS 噪声），因为 Cell 级 P90 距离正常。Cell 可信度独立于 BS 判定。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 8 -->
+              <tr class="clickable" onclick="toggleDetail('c8')">
+                <td>中国移动</td><td>4G</td><td class="mono">7723</td><td class="mono">772308</td><td class="mono">77230801</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-collision-suspect">碰撞嫌疑</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span> <span class="badge badge-baseline-ineligible">基线不合格</span></td>
+                <td class="mono">6,789</td>
+                <td class="mono">5,678</td>
+                <td class="mono">74.8%</td><td class="mono">90.4%</td><td class="mono">-96.3</td>
+                <td class="ref-col"><span class="badge badge-collision-suspect" style="opacity:.5">碰撞嫌疑</span></td>
+                <td class="ref-col"><span class="badge badge-trust-low" style="opacity:.5">低</span></td>
+              </tr>
+              <tr class="detail-panel" id="c8">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.8459, 116.2894</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.8462, 116.2898</span></div>
+                      <div class="detail-row"><span class="dl">偏差</span><span class="dv">48 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-orange-600)">碰撞嫌疑</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-gray-400)">不可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-gray-400)">基线不合格</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">碰撞嫌疑</span></div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS GPS 可信度</span><span class="dv" style="color:var(--c-gray-400)">低</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:74.8%">74.8%</div>
+                        <div class="seg seg-cell" style="width:13.4%">13.4%</div>
+                        <div class="seg seg-bs" style="width:8.6%">8.6%</div>
+                        <div class="seg seg-risk" style="width:3.2%">3.2%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 74.8%</span>
+                        <span class="leg-cell">Cell 补齐 13.4%</span>
+                        <span class="leg-bs">BS 补齐 8.6%</span>
+                        <span class="leg-risk">BS 风险补齐 3.2%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">0</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">198</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:96%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">8</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:4%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：所属 BS 为碰撞嫌疑，事实全部进入 fact_pending_issue 路径待复核。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 9: 休眠 -->
+              <tr class="clickable" onclick="toggleDetail('c9')">
+                <td>中国移动</td><td>4G</td><td class="mono">5501</td><td class="mono">550101</td><td class="mono">55010101</td>
+                <td><span class="badge badge-dormant">休眠</span></td>
+                <td><span class="badge badge-data-insufficient">数据不足</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span> <span class="badge badge-baseline-ineligible">基线不合格</span></td>
+                <td class="mono">234</td>
+                <td class="mono">678</td>
+                <td class="mono">44.9%</td><td class="mono">78.1%</td><td class="mono">-102.3</td>
+                <td class="ref-col"><span class="badge badge-fixed" style="opacity:.5">固定/正常</span></td>
+                <td class="ref-col"><span class="badge badge-trust-mid" style="opacity:.5">中</span></td>
+              </tr>
+              <tr class="detail-panel" id="c9">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">39.7823, 116.1245</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">39.7821, 116.1243</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv" style="color:var(--c-gray-500)">休眠</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-gray-500)">数据不足</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-gray-400)">不可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-gray-400)">基线不合格</span></div>
+                      <div class="detail-row"><span class="dl">休眠原因</span><span class="dv">最近 7 天无记录</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">正常</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS / 信号来源构成</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源（历史）</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:44.9%">44.9%</div>
+                        <div class="seg seg-cell" style="width:22.3%">22.3%</div>
+                        <div class="seg seg-bs" style="width:18.7%">18.7%</div>
+                        <div class="seg seg-risk" style="width:14.1%">14.1%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 44.9%</span>
+                        <span class="leg-cell">Cell 补齐 22.3%</span>
+                        <span class="leg-bs">BS 补齐 18.7%</span>
+                        <span class="leg-risk">BS 风险补齐 14.1%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div style="font-size:12px;color:var(--c-gray-400);padding:12px 0;text-align:center">最近 7 天无新增事实</div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：休眠 Cell 历史数据仅供参考，不参与当前基线计算。GPS 原始率偏低可能与所在区域信号覆盖弱有关。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 10: 碰撞嫌疑下的动态 Cell -->
+              <tr class="clickable" onclick="toggleDetail('c10')">
+                <td>中国电信</td><td>4G</td><td class="mono">4490</td><td class="mono">449003</td><td class="mono">44900301</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span> <span class="badge badge-baseline-eligible">基线合格</span></td>
+                <td class="mono">2,123</td>
+                <td class="mono">401</td>
+                <td class="mono">63.8%</td><td class="mono">85.4%</td><td class="mono">-99.1</td>
+                <td class="ref-col"><span class="badge badge-normal" style="opacity:.5">正常</span></td>
+                <td class="ref-col"><span class="badge badge-trust-high" style="opacity:.5">高</span></td>
+              </tr>
+              <tr class="detail-panel" id="c10">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 中心点</div>
+                      <div class="detail-row"><span class="dl">原始质心</span><span class="dv">40.0726, 116.3248</span></div>
+                      <div class="detail-row"><span class="dl">基线质心</span><span class="dv">40.0724, 116.3246</span></div>
+                      <div class="detail-row"><span class="dl">偏差</span><span class="dv">27 m</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">对象状态</div>
+                      <div class="detail-row"><span class="dl">lifecycle_state</span><span class="dv">活跃</span></div>
+                      <div class="detail-row"><span class="dl">health_state</span><span class="dv" style="color:var(--c-green-600)">健康</span></div>
+                      <div class="detail-row"><span class="dl">anchorable</span><span class="dv" style="color:var(--c-green-600)">可锚定</span></div>
+                      <div class="detail-row"><span class="dl">baseline_eligible</span><span class="dv" style="color:var(--c-green-600)">基线合格</span></div>
+                      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--c-gray-200)">
+                        <div style="font-size:11px;color:var(--c-gray-400);margin-bottom:4px">旧分类（来自所属 BS，rebuild2 参考信息）</div>
+                        <div class="detail-row"><span class="dl" style="color:var(--c-gray-400)">BS 旧分类</span><span class="dv" style="color:var(--c-gray-400)">正常</span></div>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">画像质量</div>
+                      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">GPS 来源</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:63.8%">63.8%</div>
+                        <div class="seg seg-cell" style="width:17.9%">17.9%</div>
+                        <div class="seg seg-bs" style="width:12.8%">12.8%</div>
+                        <div class="seg seg-risk" style="width:5.5%">5.5%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 63.8%</span>
+                        <span class="leg-cell">Cell 补齐 17.9%</span>
+                        <span class="leg-bs">BS 补齐 12.8%</span>
+                        <span class="leg-risk">BS 风险补齐 5.5%</span>
+                      </div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">最近批次事实分布</div>
+                      <div class="mini-bar">
+                        <div class="mini-bar-item">
+                          <div class="bar-val">89</div>
+                          <div class="bar-label">fact_governed</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:78%;background:var(--c-green-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">18</div>
+                          <div class="bar-label">fact_pending_observation</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--c-amber-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">5</div>
+                          <div class="bar-label">fact_pending_issue</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:4%;background:var(--c-orange-500)"></div></div>
+                        </div>
+                        <div class="mini-bar-item">
+                          <div class="bar-val">2</div>
+                          <div class="bar-label">fact_rejected</div>
+                          <div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--c-red-500)"></div></div>
+                        </div>
+                      </div>
+                      <div class="calibration" style="margin-top:12px">
+                        口径说明：GPS 原始率偏低但空间精度正常（P50=134m），可能与所在区域 GPS 信号遮挡有关。覆盖不足区域的正常 Cell。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <!-- 分页 -->
+          <div class="pagination">
+            <div class="pagination-info">共 15,069 条，第 1 / 1,507 页</div>
+            <div class="pagination-btns">
+              <button class="active">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button>4</button>
+              <button>5</button>
+              <button>...</button>
+              <button>1507</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleDetail(id) {
+  const row = document.getElementById(id);
+  if (row) row.classList.toggle('open');
+}
+</script>
+</body>
+</html>

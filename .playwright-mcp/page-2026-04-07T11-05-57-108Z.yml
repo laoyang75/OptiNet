@@ -1,0 +1,457 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: rebuild4 流式治理工作台
+    - generic [ref=e6]:
+      - generic [ref=e7]: 主流程层
+      - link "流转总览" [ref=e8] [cursor=pointer]:
+        - /url: /flow-overview
+      - link "流转快照" [ref=e9] [cursor=pointer]:
+        - /url: /flow-snapshot
+      - link "运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: /runs
+    - generic [ref=e11]:
+      - generic [ref=e12]: 画像视角层
+      - link "对象浏览" [ref=e13] [cursor=pointer]:
+        - /url: /objects
+      - link "等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: /observation-workspace
+      - link "异常工作台" [ref=e15] [cursor=pointer]:
+        - /url: /anomaly-workspace
+      - link "基线/画像" [ref=e16] [cursor=pointer]:
+        - /url: /baseline
+      - link "LAC 画像" [ref=e17] [cursor=pointer]:
+        - /url: /profiles/lac
+      - link "BS 画像" [ref=e18] [cursor=pointer]:
+        - /url: /profiles/bs
+      - link "Cell 画像" [ref=e19] [cursor=pointer]:
+        - /url: /profiles/cell
+    - generic [ref=e20]:
+      - generic [ref=e21]: 支撑治理层
+      - link "初始化" [ref=e22] [cursor=pointer]:
+        - /url: /initialization
+      - link "基础数据治理" [ref=e23] [cursor=pointer]:
+        - /url: /governance
+    - generic [ref=e25] [cursor=pointer]:
+      - generic [ref=e26]: ETL 数据处理
+      - generic [ref=e27]: ▸
+    - generic [ref=e28]:
+      - generic [ref=e29]: 辅助验证
+      - link "验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: /validation/compare
+  - generic [ref=e31]:
+    - banner [ref=e32]:
+      - generic [ref=e33]: rebuild4 流式治理工作台
+    - main [ref=e34]:
+      - generic [ref=e35]:
+        - heading "Cell 画像" [level=2] [ref=e36]
+        - paragraph [ref=e37]: "数据来源: etl_filled 聚合 | 共 21,897 个 Cell"
+        - generic [ref=e38]:
+          - combobox [ref=e39]:
+            - option "全部运营商" [selected]
+            - option "移动"
+            - option "联通"
+            - option "电信"
+          - combobox [ref=e40]:
+            - option "全部制式" [selected]
+            - option "4G"
+            - option "5G"
+            - option "2G"
+            - option "3G"
+          - textbox "LAC" [ref=e41]
+          - textbox "BS ID" [ref=e42]
+          - combobox [ref=e43]:
+            - option "全部生命周期" [selected]
+            - option "active"
+            - option "observing"
+            - option "waiting"
+          - combobox [ref=e44]:
+            - option "全部GPS状态" [selected]
+            - option "异常"
+            - option "正常"
+        - generic [ref=e45]:
+          - button "筛选" [ref=e46] [cursor=pointer]
+          - button "重置" [ref=e47] [cursor=pointer]
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: 总数
+            - generic [ref=e52]: 21,897
+          - generic [ref=e53]:
+            - generic [ref=e54]: Active
+            - generic [ref=e55]: 5,553
+          - generic [ref=e56]:
+            - generic [ref=e57]: Observing
+            - generic [ref=e58]: "544"
+          - generic [ref=e59]:
+            - generic [ref=e60]: Waiting
+            - generic [ref=e61]: 15,800
+          - generic [ref=e62]:
+            - generic [ref=e63]: Anchorable
+            - generic [ref=e64]: 5,553
+          - generic [ref=e65]:
+            - generic [ref=e66]: GPS 异常
+            - generic [ref=e67]: 1,390
+        - table [ref=e69]:
+          - rowgroup [ref=e70]:
+            - row "运营商 制式 LAC BS Cell ID 生命周期 记录数 GPS点数 设备数 P90(m) RSRP GPS异常" [ref=e71]:
+              - columnheader [ref=e72]
+              - columnheader "运营商" [ref=e73]
+              - columnheader "制式" [ref=e74]
+              - columnheader "LAC" [ref=e75]
+              - columnheader "BS" [ref=e76]
+              - columnheader "Cell ID" [ref=e77]
+              - columnheader "生命周期" [ref=e78]
+              - columnheader "记录数" [ref=e79]
+              - columnheader "GPS点数" [ref=e80]
+              - columnheader "设备数" [ref=e81]
+              - columnheader "P90(m)" [ref=e82]
+              - columnheader "RSRP" [ref=e83]
+              - columnheader "GPS异常" [ref=e84]
+          - rowgroup [ref=e85]:
+            - row "▾ 电信 4G 6411 102770 26309182 active 2,636 2,492 68 493.1 -99.4 正常" [ref=e410] [cursor=pointer]:
+              - cell "▾" [ref=e411]
+              - cell "电信" [ref=e88]
+              - cell "4G" [ref=e89]
+              - cell "6411" [ref=e90]
+              - cell "102770" [ref=e91]
+              - cell "26309182" [ref=e92]
+              - cell "active" [ref=e93]:
+                - generic [ref=e94]: active
+              - cell "2,636" [ref=e95]
+              - cell "2,492" [ref=e96]
+              - cell "68" [ref=e97]
+              - cell "493.1" [ref=e98]
+              - cell "-99.4" [ref=e99]
+              - cell "正常" [ref=e100]:
+                - generic [ref=e101]: 正常
+            - row "GPS 中心 116.5464, 39.7546 P50 / P90 半径 367m / 493.1m Cell-BS 距离 1,475.4m 观测时段 167.8h / 7天 GPS 原始率 77.4% 信号原始率 86.7% Anchorable Yes" [ref=e412]:
+              - cell "GPS 中心 116.5464, 39.7546 P50 / P90 半径 367m / 493.1m Cell-BS 距离 1,475.4m 观测时段 167.8h / 7天 GPS 原始率 77.4% 信号原始率 86.7% Anchorable Yes" [ref=e413]:
+                - generic [ref=e415]:
+                  - generic [ref=e416]:
+                    - generic [ref=e417]: GPS 中心
+                    - generic [ref=e418]: 116.5464, 39.7546
+                  - generic [ref=e419]:
+                    - generic [ref=e420]: P50 / P90 半径
+                    - generic [ref=e421]: 367m / 493.1m
+                  - generic [ref=e422]:
+                    - generic [ref=e423]: Cell-BS 距离
+                    - generic [ref=e424]: 1,475.4m
+                  - generic [ref=e425]:
+                    - generic [ref=e426]: 观测时段
+                    - generic [ref=e427]: 167.8h / 7天
+                  - generic [ref=e428]:
+                    - generic [ref=e429]: GPS 原始率
+                    - generic [ref=e430]: 77.4%
+                  - generic [ref=e431]:
+                    - generic [ref=e432]: 信号原始率
+                    - generic [ref=e433]: 86.7%
+                  - generic [ref=e434]:
+                    - generic [ref=e435]: Anchorable
+                    - generic [ref=e436]: "Yes"
+            - row "▸ 联通 5G 73733 138418 566960137 active 2,259 2,055 120 1,332 -91.1 正常" [ref=e102] [cursor=pointer]:
+              - cell "▸" [ref=e103]
+              - cell "联通" [ref=e104]
+              - cell "5G" [ref=e105]
+              - cell "73733" [ref=e106]
+              - cell "138418" [ref=e107]
+              - cell "566960137" [ref=e108]
+              - cell "active" [ref=e109]:
+                - generic [ref=e110]: active
+              - cell "2,259" [ref=e111]
+              - cell "2,055" [ref=e112]
+              - cell "120" [ref=e113]
+              - cell "1,332" [ref=e114]
+              - cell "-91.1" [ref=e115]
+              - cell "正常" [ref=e116]:
+                - generic [ref=e117]: 正常
+            - row "▸ 联通 5G 73733 136518 559177729 active 1,942 1,510 58 278 -91.5 正常" [ref=e118] [cursor=pointer]:
+              - cell "▸" [ref=e119]
+              - cell "联通" [ref=e120]
+              - cell "5G" [ref=e121]
+              - cell "73733" [ref=e122]
+              - cell "136518" [ref=e123]
+              - cell "559177729" [ref=e124]
+              - cell "active" [ref=e125]:
+                - generic [ref=e126]: active
+              - cell "1,942" [ref=e127]
+              - cell "1,510" [ref=e128]
+              - cell "58" [ref=e129]
+              - cell "278" [ref=e130]
+              - cell "-91.5" [ref=e131]
+              - cell "正常" [ref=e132]:
+                - generic [ref=e133]: 正常
+            - row "▸ 移动 5G 2097233 1417198 5804843010 active 1,913 1,855 62 166 -83 正常" [ref=e134] [cursor=pointer]:
+              - cell "▸" [ref=e135]
+              - cell "移动" [ref=e136]
+              - cell "5G" [ref=e137]
+              - cell "2097233" [ref=e138]
+              - cell "1417198" [ref=e139]
+              - cell "5804843010" [ref=e140]
+              - cell "active" [ref=e141]:
+                - generic [ref=e142]: active
+              - cell "1,913" [ref=e143]
+              - cell "1,855" [ref=e144]
+              - cell "62" [ref=e145]
+              - cell "166" [ref=e146]
+              - cell "-83" [ref=e147]
+              - cell "正常" [ref=e148]:
+                - generic [ref=e149]: 正常
+            - row "▸ 联通 5G 73733 132247 541683715 active 1,800 1,744 52 174.3 -91.3 正常" [ref=e150] [cursor=pointer]:
+              - cell "▸" [ref=e151]
+              - cell "联通" [ref=e152]
+              - cell "5G" [ref=e153]
+              - cell "73733" [ref=e154]
+              - cell "132247" [ref=e155]
+              - cell "541683715" [ref=e156]
+              - cell "active" [ref=e157]:
+                - generic [ref=e158]: active
+              - cell "1,800" [ref=e159]
+              - cell "1,744" [ref=e160]
+              - cell "52" [ref=e161]
+              - cell "174.3" [ref=e162]
+              - cell "-91.3" [ref=e163]
+              - cell "正常" [ref=e164]:
+                - generic [ref=e165]: 正常
+            - row "▸ 移动 5G 2097233 1388314 5686534145 active 1,677 1,433 132 1,309.1 -85.2 正常" [ref=e166] [cursor=pointer]:
+              - cell "▸" [ref=e167]
+              - cell "移动" [ref=e168]
+              - cell "5G" [ref=e169]
+              - cell "2097233" [ref=e170]
+              - cell "1388314" [ref=e171]
+              - cell "5686534145" [ref=e172]
+              - cell "active" [ref=e173]:
+                - generic [ref=e174]: active
+              - cell "1,677" [ref=e175]
+              - cell "1,433" [ref=e176]
+              - cell "132" [ref=e177]
+              - cell "1,309.1" [ref=e178]
+              - cell "-85.2" [ref=e179]
+              - cell "正常" [ref=e180]:
+                - generic [ref=e181]: 正常
+            - row "▸ 电信 4G 6411 102305 26190135 observing 1,675 1,557 22 2,213 -87.6 正常" [ref=e182] [cursor=pointer]:
+              - cell "▸" [ref=e183]
+              - cell "电信" [ref=e184]
+              - cell "4G" [ref=e185]
+              - cell "6411" [ref=e186]
+              - cell "102305" [ref=e187]
+              - cell "26190135" [ref=e188]
+              - cell "observing" [ref=e189]:
+                - generic [ref=e190]: observing
+              - cell "1,675" [ref=e191]
+              - cell "1,557" [ref=e192]
+              - cell "22" [ref=e193]
+              - cell "2,213" [ref=e194]
+              - cell "-87.6" [ref=e195]
+              - cell "正常" [ref=e196]:
+                - generic [ref=e197]: 正常
+            - row "▸ 电信 4G 6411 104579 26772275 observing 1,618 1,538 21 3,733.9 -84.4 异常" [ref=e198] [cursor=pointer]:
+              - cell "▸" [ref=e199]
+              - cell "电信" [ref=e200]
+              - cell "4G" [ref=e201]
+              - cell "6411" [ref=e202]
+              - cell "104579" [ref=e203]
+              - cell "26772275" [ref=e204]
+              - cell "observing" [ref=e205]:
+                - generic [ref=e206]: observing
+              - cell "1,618" [ref=e207]
+              - cell "1,538" [ref=e208]
+              - cell "21" [ref=e209]
+              - cell "3,733.9" [ref=e210]
+              - cell "-84.4" [ref=e211]
+              - cell "异常" [ref=e212]:
+                - generic [ref=e213]: 异常
+            - row "▸ 移动 4G 4176 98293 25163219 active 1,581 1,356 71 192.8 -95.7 正常" [ref=e214] [cursor=pointer]:
+              - cell "▸" [ref=e215]
+              - cell "移动" [ref=e216]
+              - cell "4G" [ref=e217]
+              - cell "4176" [ref=e218]
+              - cell "98293" [ref=e219]
+              - cell "25163219" [ref=e220]
+              - cell "active" [ref=e221]:
+                - generic [ref=e222]: active
+              - cell "1,581" [ref=e223]
+              - cell "1,356" [ref=e224]
+              - cell "71" [ref=e225]
+              - cell "192.8" [ref=e226]
+              - cell "-95.7" [ref=e227]
+              - cell "正常" [ref=e228]:
+                - generic [ref=e229]: 正常
+            - row "▸ 移动 5G 2097233 1408879 5770768385 active 1,533 1,531 35 38.6 -80.3 正常" [ref=e230] [cursor=pointer]:
+              - cell "▸" [ref=e231]
+              - cell "移动" [ref=e232]
+              - cell "5G" [ref=e233]
+              - cell "2097233" [ref=e234]
+              - cell "1408879" [ref=e235]
+              - cell "5770768385" [ref=e236]
+              - cell "active" [ref=e237]:
+                - generic [ref=e238]: active
+              - cell "1,533" [ref=e239]
+              - cell "1,531" [ref=e240]
+              - cell "35" [ref=e241]
+              - cell "38.6" [ref=e242]
+              - cell "-80.3" [ref=e243]
+              - cell "正常" [ref=e244]:
+                - generic [ref=e245]: 正常
+            - row "▸ 电信 4G 6411 612083 156693394 active 1,526 1,354 46 267.2 -94.6 正常" [ref=e246] [cursor=pointer]:
+              - cell "▸" [ref=e247]
+              - cell "电信" [ref=e248]
+              - cell "4G" [ref=e249]
+              - cell "6411" [ref=e250]
+              - cell "612083" [ref=e251]
+              - cell "156693394" [ref=e252]
+              - cell "active" [ref=e253]:
+                - generic [ref=e254]: active
+              - cell "1,526" [ref=e255]
+              - cell "1,354" [ref=e256]
+              - cell "46" [ref=e257]
+              - cell "267.2" [ref=e258]
+              - cell "-94.6" [ref=e259]
+              - cell "正常" [ref=e260]:
+                - generic [ref=e261]: 正常
+            - row "▸ 电信 5G 405512 405928 1662681345 active 1,491 1,299 93 520.4 -95.6 异常" [ref=e262] [cursor=pointer]:
+              - cell "▸" [ref=e263]
+              - cell "电信" [ref=e264]
+              - cell "5G" [ref=e265]
+              - cell "405512" [ref=e266]
+              - cell "405928" [ref=e267]
+              - cell "1662681345" [ref=e268]
+              - cell "active" [ref=e269]:
+                - generic [ref=e270]: active
+              - cell "1,491" [ref=e271]
+              - cell "1,299" [ref=e272]
+              - cell "93" [ref=e273]
+              - cell "520.4" [ref=e274]
+              - cell "-95.6" [ref=e275]
+              - cell "异常" [ref=e276]:
+                - generic [ref=e277]: 异常
+            - row "▸ 移动 5G 2097254 1376553 5638361090 active 1,490 1,450 23 80.9 -82.6 正常" [ref=e278] [cursor=pointer]:
+              - cell "▸" [ref=e279]
+              - cell "移动" [ref=e280]
+              - cell "5G" [ref=e281]
+              - cell "2097254" [ref=e282]
+              - cell "1376553" [ref=e283]
+              - cell "5638361090" [ref=e284]
+              - cell "active" [ref=e285]:
+                - generic [ref=e286]: active
+              - cell "1,490" [ref=e287]
+              - cell "1,450" [ref=e288]
+              - cell "23" [ref=e289]
+              - cell "80.9" [ref=e290]
+              - cell "-82.6" [ref=e291]
+              - cell "正常" [ref=e292]:
+                - generic [ref=e293]: 正常
+            - row "▸ 移动 4G 4176 351239 89917386 active 1,362 1,298 19 51.8 -85.5 正常" [ref=e294] [cursor=pointer]:
+              - cell "▸" [ref=e295]
+              - cell "移动" [ref=e296]
+              - cell "4G" [ref=e297]
+              - cell "4176" [ref=e298]
+              - cell "351239" [ref=e299]
+              - cell "89917386" [ref=e300]
+              - cell "active" [ref=e301]:
+                - generic [ref=e302]: active
+              - cell "1,362" [ref=e303]
+              - cell "1,298" [ref=e304]
+              - cell "19" [ref=e305]
+              - cell "51.8" [ref=e306]
+              - cell "-85.5" [ref=e307]
+              - cell "正常" [ref=e308]:
+                - generic [ref=e309]: 正常
+            - row "▸ 移动 5G 2097233 1407852 5766561793 active 1,348 1,254 41 197.5 -85 正常" [ref=e310] [cursor=pointer]:
+              - cell "▸" [ref=e311]
+              - cell "移动" [ref=e312]
+              - cell "5G" [ref=e313]
+              - cell "2097233" [ref=e314]
+              - cell "1407852" [ref=e315]
+              - cell "5766561793" [ref=e316]
+              - cell "active" [ref=e317]:
+                - generic [ref=e318]: active
+              - cell "1,348" [ref=e319]
+              - cell "1,254" [ref=e320]
+              - cell "41" [ref=e321]
+              - cell "197.5" [ref=e322]
+              - cell "-85" [ref=e323]
+              - cell "正常" [ref=e324]:
+                - generic [ref=e325]: 正常
+            - row "▸ 移动 5G 2097233 1407859 5766590467 active 1,292 1,266 48 128.7 -93.3 正常" [ref=e326] [cursor=pointer]:
+              - cell "▸" [ref=e327]
+              - cell "移动" [ref=e328]
+              - cell "5G" [ref=e329]
+              - cell "2097233" [ref=e330]
+              - cell "1407859" [ref=e331]
+              - cell "5766590467" [ref=e332]
+              - cell "active" [ref=e333]:
+                - generic [ref=e334]: active
+              - cell "1,292" [ref=e335]
+              - cell "1,266" [ref=e336]
+              - cell "48" [ref=e337]
+              - cell "128.7" [ref=e338]
+              - cell "-93.3" [ref=e339]
+              - cell "正常" [ref=e340]:
+                - generic [ref=e341]: 正常
+            - row "▸ 移动 5G 2097233 1378596 5646729217 active 1,282 1,270 54 108.3 -89.9 正常" [ref=e342] [cursor=pointer]:
+              - cell "▸" [ref=e343]
+              - cell "移动" [ref=e344]
+              - cell "5G" [ref=e345]
+              - cell "2097233" [ref=e346]
+              - cell "1378596" [ref=e347]
+              - cell "5646729217" [ref=e348]
+              - cell "active" [ref=e349]:
+                - generic [ref=e350]: active
+              - cell "1,282" [ref=e351]
+              - cell "1,270" [ref=e352]
+              - cell "54" [ref=e353]
+              - cell "108.3" [ref=e354]
+              - cell "-89.9" [ref=e355]
+              - cell "正常" [ref=e356]:
+                - generic [ref=e357]: 正常
+            - row "▸ 电信 5G 405512 406202 1663803394 active 1,254 1,212 44 390.4 -90.2 正常" [ref=e358] [cursor=pointer]:
+              - cell "▸" [ref=e359]
+              - cell "电信" [ref=e360]
+              - cell "5G" [ref=e361]
+              - cell "405512" [ref=e362]
+              - cell "406202" [ref=e363]
+              - cell "1663803394" [ref=e364]
+              - cell "active" [ref=e365]:
+                - generic [ref=e366]: active
+              - cell "1,254" [ref=e367]
+              - cell "1,212" [ref=e368]
+              - cell "44" [ref=e369]
+              - cell "390.4" [ref=e370]
+              - cell "-90.2" [ref=e371]
+              - cell "正常" [ref=e372]:
+                - generic [ref=e373]: 正常
+            - row "▸ 移动 4G 4176 72146 18469435 active 1,234 1,200 44 263.4 -85.5 正常" [ref=e374] [cursor=pointer]:
+              - cell "▸" [ref=e375]
+              - cell "移动" [ref=e376]
+              - cell "4G" [ref=e377]
+              - cell "4176" [ref=e378]
+              - cell "72146" [ref=e379]
+              - cell "18469435" [ref=e380]
+              - cell "active" [ref=e381]:
+                - generic [ref=e382]: active
+              - cell "1,234" [ref=e383]
+              - cell "1,200" [ref=e384]
+              - cell "44" [ref=e385]
+              - cell "263.4" [ref=e386]
+              - cell "-85.5" [ref=e387]
+              - cell "正常" [ref=e388]:
+                - generic [ref=e389]: 正常
+            - row "▸ 电信 5G 405512 405544 1661108234 active 1,228 1,120 82 579.5 -94.5 正常" [ref=e390] [cursor=pointer]:
+              - cell "▸" [ref=e391]
+              - cell "电信" [ref=e392]
+              - cell "5G" [ref=e393]
+              - cell "405512" [ref=e394]
+              - cell "405544" [ref=e395]
+              - cell "1661108234" [ref=e396]
+              - cell "active" [ref=e397]:
+                - generic [ref=e398]: active
+              - cell "1,228" [ref=e399]
+              - cell "1,120" [ref=e400]
+              - cell "82" [ref=e401]
+              - cell "579.5" [ref=e402]
+              - cell "-94.5" [ref=e403]
+              - cell "正常" [ref=e404]:
+                - generic [ref=e405]: 正常
+        - generic [ref=e406]:
+          - button "上一页" [disabled] [ref=e407]
+          - generic [ref=e408]: 共 21,897 条, 第 1/1095 页
+          - button "下一页" [ref=e409] [cursor=pointer]

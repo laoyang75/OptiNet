@@ -16,7 +16,6 @@ const routes = [
   { path: '/profiles/bs', component: () => import('./pages/BsProfilePage.vue'), meta: { group: 'profile', title: 'BS 画像' } },
   { path: '/profiles/cell', component: () => import('./pages/CellProfilePage.vue'), meta: { group: 'profile', title: 'Cell 画像' } },
   // Support
-  { path: '/initialization', component: () => import('./pages/InitializationPage.vue'), meta: { group: 'support', title: '初始化' } },
   { path: '/governance', component: () => import('./pages/GovernancePage.vue'), meta: { group: 'support', title: '基础数据治理' } },
   // ETL 数据处理
   { path: '/etl/register', component: () => import('./pages/EtlRegisterPage.vue'), meta: { group: 'etl', title: '数据源注册' } },

@@ -1,0 +1,95 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: rebuild4 流式治理工作台
+    - generic [ref=e6]:
+      - generic [ref=e7]: 主流程层
+      - link "流转总览" [ref=e8] [cursor=pointer]:
+        - /url: /flow-overview
+      - link "流转快照" [ref=e9] [cursor=pointer]:
+        - /url: /flow-snapshot
+      - link "运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: /runs
+    - generic [ref=e11]:
+      - generic [ref=e12]: 画像视角层
+      - link "对象浏览" [ref=e13] [cursor=pointer]:
+        - /url: /objects
+      - link "等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: /observation-workspace
+      - link "异常工作台" [ref=e15] [cursor=pointer]:
+        - /url: /anomaly-workspace
+      - link "基线/画像" [ref=e16] [cursor=pointer]:
+        - /url: /baseline
+      - link "LAC 画像" [ref=e17] [cursor=pointer]:
+        - /url: /profiles/lac
+      - link "BS 画像" [ref=e18] [cursor=pointer]:
+        - /url: /profiles/bs
+      - link "Cell 画像" [ref=e19] [cursor=pointer]:
+        - /url: /profiles/cell
+    - generic [ref=e20]:
+      - generic [ref=e21]: 支撑治理层
+      - link "初始化" [ref=e22] [cursor=pointer]:
+        - /url: /initialization
+      - link "基础数据治理" [ref=e23] [cursor=pointer]:
+        - /url: /governance
+    - generic [ref=e25] [cursor=pointer]:
+      - generic [ref=e26]: ETL 数据处理
+      - generic [ref=e27]: ▸
+    - generic [ref=e28]:
+      - generic [ref=e29]: 辅助验证
+      - link "验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: /validation/compare
+  - generic [ref=e31]:
+    - banner [ref=e32]:
+      - generic [ref=e33]: rebuild4 流式治理工作台
+    - main [ref=e34]:
+      - generic [ref=e35]:
+        - heading "3. 解析（炸开）" [level=2] [ref=e36]
+        - paragraph [ref=e37]: 原始记录的 cell_infos (JSON) 和 ss1 (文本) 拆解为多行结构化数据。一条原始记录 → 多条 L0 记录。
+        - generic [ref=e38]:
+          - generic [ref=e39]: 解析流水线
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e42]: 原始记录
+              - generic [ref=e43]: 249,201
+            - generic [ref=e44]: →
+            - generic [ref=e45]:
+              - generic [ref=e46]: 解析后
+              - generic [ref=e47]: 689,361
+            - generic [ref=e48]: 扩展比 2.77x
+          - generic [ref=e49]: "scope: sample · 执行时间: 2026-04-07T10:13:55.238116+00:00"
+        - generic [ref=e50]:
+          - generic [ref=e51]: 来源分布
+          - table [ref=e52]:
+            - rowgroup [ref=e53]:
+              - row "来源 行数 说明" [ref=e54]:
+                - columnheader "来源" [ref=e55]
+                - columnheader "行数" [ref=e56]
+                - columnheader "说明" [ref=e57]
+            - rowgroup [ref=e58]:
+              - row "cell_infos GPS 201,518 GPS 表 cell_infos JSON 解析" [ref=e59]:
+                - cell "cell_infos GPS" [ref=e60]:
+                  - generic [ref=e61]: cell_infos GPS
+                - cell "201,518" [ref=e62]
+                - cell "GPS 表 cell_infos JSON 解析" [ref=e63]
+              - row "cell_infos LAC 188,337 LAC 表 cell_infos JSON 解析" [ref=e64]:
+                - cell "cell_infos LAC" [ref=e65]:
+                  - generic [ref=e66]: cell_infos LAC
+                - cell "188,337" [ref=e67]
+                - cell "LAC 表 cell_infos JSON 解析" [ref=e68]
+              - row "ss1 GPS 149,771 GPS 表 ss1 文本解析" [ref=e69]:
+                - cell "ss1 GPS" [ref=e70]:
+                  - generic [ref=e71]: ss1 GPS
+                - cell "149,771" [ref=e72]
+                - cell "GPS 表 ss1 文本解析" [ref=e73]
+              - row "ss1 LAC 149,735 LAC 表 ss1 文本解析" [ref=e74]:
+                - cell "ss1 LAC" [ref=e75]:
+                  - generic [ref=e76]: ss1 LAC
+                - cell "149,735" [ref=e77]
+                - cell "LAC 表 ss1 文本解析" [ref=e78]
+        - generic [ref=e79]:
+          - generic [ref=e80]:
+            - generic [ref=e81]: 代码位置
+            - code [ref=e82]: rebuild4/backend/app/etl/pipeline.py → step1_parse()
+          - generic [ref=e83]:
+            - generic [ref=e84]: 说明文档
+            - code [ref=e85]: rebuild4/docs/01_etl/01_解析.md

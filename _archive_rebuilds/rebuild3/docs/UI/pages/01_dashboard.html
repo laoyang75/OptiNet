@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 — 仪表盘</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+    border-left-color: #6366f1;
+  }
+  .sidebar-nav a .icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 90;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .topbar-context { font-size: 12px; color: #9ca3af; letter-spacing: 0.02em; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    margin-top: 52px;
+    padding: 24px 28px 40px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .card-header {
+    padding: 14px 18px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .card-body { padding: 18px; }
+
+  /* ── Row 1: Metric Cards ── */
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .metric-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 18px 20px;
+    border-left: 4px solid transparent;
+    transition: box-shadow 0.2s, transform 0.15s;
+    cursor: default;
+  }
+  .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+  .metric-card.green  { border-left-color: #22c55e; }
+  .metric-card.amber  { border-left-color: #fbbf24; }
+  .metric-card.orange { border-left-color: #f97316; }
+  .metric-card.indigo { border-left-color: #6366f1; }
+  .metric-label { font-size: 12px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
+  .metric-value { font-size: 28px; font-weight: 700; color: #111827; line-height: 1.1; }
+  .metric-sub { font-size: 12px; color: #4b5563; margin-top: 6px; }
+
+  /* ── Row 2 ── */
+  .row2 {
+    display: grid;
+    grid-template-columns: 60% 40%;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* Donut Chart Mock */
+  .donut-container { display: flex; align-items: center; gap: 28px; }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { font-size: 12.5px; line-height: 2; }
+  .donut-legend-item { display: flex; align-items: center; gap: 8px; }
+  .donut-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .donut-legend-label { color: #4b5563; }
+  .donut-legend-pct { font-weight: 600; color: #111827; margin-left: auto; min-width: 32px; text-align: right; }
+
+  /* Lifecycle Bar */
+  .lifecycle-section { margin-top: 18px; }
+  .lifecycle-label { font-size: 12px; color: #9ca3af; margin-bottom: 8px; font-weight: 500; }
+  .lifecycle-bar {
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    background: #f3f4f6;
+  }
+  .lifecycle-bar span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: width 0.6s ease;
+  }
+  .lifecycle-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #4b5563;
+    flex-wrap: wrap;
+  }
+  .lifecycle-legend i {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: middle;
+    font-style: normal;
+  }
+
+  /* Attention Panel */
+  .attention-list { list-style: none; }
+  .attention-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+  .attention-item:last-child { border-bottom: none; }
+  .attention-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .attention-dot.orange { background: #f97316; }
+  .attention-dot.amber  { background: #fbbf24; }
+  .attention-dot.blue   { background: #60a5fa; }
+  .attention-dot.red    { background: #ef4444; }
+  .attention-link {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .attention-link:hover { color: #4f46e5; text-decoration: underline; }
+
+  /* ── Row 3: Recent Batches ── */
+  .batch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .batch-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  .batch-table td {
+    padding: 11px 12px;
+    color: #4b5563;
+    border-bottom: 1px solid #f3f4f6;
+    white-space: nowrap;
+  }
+  .batch-table tbody tr { transition: background 0.12s; }
+  .batch-table tbody tr:hover { background: #f9fafb; }
+  .batch-table .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12.5px; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .status-badge.green  { background: #f0fdf4; color: #16a34a; }
+  .status-badge.amber  { background: #fffbeb; color: #d97706; }
+  .status-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .status-badge.green .dot { background: #22c55e; }
+  .status-badge.amber .dot { background: #fbbf24; animation: pulse 1.5s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Row 4: Version Context ── */
+  .version-bar {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 12px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 20px;
+  }
+  .version-bar span { color: #4b5563; font-weight: 500; }
+  .version-bar .sep { color: #d1d5db; margin: 0 6px; }
+
+  /* ── Count-up Animation ── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .metric-card { animation: fadeInUp 0.4s ease both; }
+  .metric-card:nth-child(2) { animation-delay: 0.06s; }
+  .metric-card:nth-child(3) { animation-delay: 0.12s; }
+  .metric-card:nth-child(4) { animation-delay: 0.18s; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="01_dashboard.html" class="active"><span class="icon">⊞</span> 仪表盘</a>
+    <a href="02_run_center.html"><span class="icon">▶</span> 运行中心</a>
+    <a href="#"><span class="icon">⊟</span> 对象浏览</a>
+    <a href="#"><span class="icon">◎</span> 等待池</a>
+    <a href="#"><span class="icon">⚠</span> 异常看板</a>
+    <a href="#"><span class="icon">☑</span> 批次审查</a>
+    <a href="#"><span class="icon">◈</span> 基线管理</a>
+    <a href="#"><span class="icon">⇄</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <div class="topbar-title">仪表盘</div>
+  <div class="topbar-context">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</div>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- Row 1: Metric Cards -->
+  <div class="metric-row">
+    <div class="metric-card green">
+      <div class="metric-label">活跃对象</div>
+      <div class="metric-value">12,847</div>
+      <div class="metric-sub">Cell 8,432 / BS 3,215 / LAC 1,200</div>
+    </div>
+    <div class="metric-card amber">
+      <div class="metric-label">等待池</div>
+      <div class="metric-value">1,283</div>
+      <div class="metric-sub">个候选对象</div>
+    </div>
+    <div class="metric-card orange">
+      <div class="metric-label">异常对象</div>
+      <div class="metric-value">47</div>
+      <div class="metric-sub">个待复核</div>
+    </div>
+    <div class="metric-card indigo">
+      <div class="metric-label">今日批次</div>
+      <div class="metric-value">5/12</div>
+      <div class="metric-sub">已完成</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Health + Attention -->
+  <div class="row2">
+
+    <!-- Left: System Health -->
+    <div class="card">
+      <div class="card-header">系统健康概览</div>
+      <div class="card-body">
+        <div class="donut-container">
+          <!-- Donut Chart SVG -->
+          <svg class="donut-svg" width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#f3f4f6" stroke-width="24"/>
+            <!-- healthy 78% = 280.8° -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#22c55e" stroke-width="24"
+              stroke-dasharray="293.2 376.99" stroke-dashoffset="0"
+              transform="rotate(-90 80 80)" style="transition: stroke-dasharray 0.8s ease"/>
+            <!-- insufficient 8% = 28.8° -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#fbbf24" stroke-width="24"
+              stroke-dasharray="30.16 376.99" stroke-dashoffset="-293.2"
+              transform="rotate(-90 80 80)"/>
+            <!-- collision_suspect 5% = 18° -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#f97316" stroke-width="24"
+              stroke-dasharray="18.85 376.99" stroke-dashoffset="-323.36"
+              transform="rotate(-90 80 80)"/>
+            <!-- gps_bias 4% = 14.4° -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ef4444" stroke-width="24"
+              stroke-dasharray="15.08 376.99" stroke-dashoffset="-342.21"
+              transform="rotate(-90 80 80)"/>
+            <!-- dynamic 3% = 10.8° -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#60a5fa" stroke-width="24"
+              stroke-dasharray="11.31 376.99" stroke-dashoffset="-357.29"
+              transform="rotate(-90 80 80)"/>
+            <!-- migration_suspect 2% = 7.2° -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#a78bfa" stroke-width="24"
+              stroke-dasharray="7.54 376.99" stroke-dashoffset="-368.6"
+              transform="rotate(-90 80 80)"/>
+            <!-- Center label -->
+            <text x="80" y="76" text-anchor="middle" font-size="22" font-weight="700" fill="#111827">78%</text>
+            <text x="80" y="94" text-anchor="middle" font-size="11" fill="#9ca3af">健康</text>
+          </svg>
+
+          <div class="donut-legend">
+            <div class="donut-legend-item"><span class="donut-legend-dot" style="background:#22c55e"></span><span class="donut-legend-label">healthy</span><span class="donut-legend-pct">78%</span></div>
+            <div class="donut-legend-item"><span class="donut-legend-dot" style="background:#fbbf24"></span><span class="donut-legend-label">insufficient</span><span class="donut-legend-pct">8%</span></div>
+            <div class="donut-legend-item"><span class="donut-legend-dot" style="background:#f97316"></span><span class="donut-legend-label">collision_suspect</span><span class="donut-legend-pct">5%</span></div>
+            <div class="donut-legend-item"><span class="donut-legend-dot" style="background:#ef4444"></span><span class="donut-legend-label">gps_bias</span><span class="donut-legend-pct">4%</span></div>
+            <div class="donut-legend-item"><span class="donut-legend-dot" style="background:#60a5fa"></span><span class="donut-legend-label">dynamic</span><span class="donut-legend-pct">3%</span></div>
+            <div class="donut-legend-item"><span class="donut-legend-dot" style="background:#a78bfa"></span><span class="donut-legend-label">migration_suspect</span><span class="donut-legend-pct">2%</span></div>
+          </div>
+        </div>
+
+        <!-- Lifecycle Distribution -->
+        <div class="lifecycle-section">
+          <div class="lifecycle-label">生命周期分布</div>
+          <div class="lifecycle-bar">
+            <span style="width:72%; background:#22c55e;">72%</span>
+            <span style="width:15%; background:#fbbf24; color:#78350f;">15%</span>
+            <span style="width:8%;  background:#f59e0b; color:#78350f;">8%</span>
+            <span style="width:4%;  background:#9ca3af;"></span>
+            <span style="width:1%;  background:#d1d5db;"></span>
+          </div>
+          <div class="lifecycle-legend">
+            <span><i style="background:#22c55e"></i>active 72%</span>
+            <span><i style="background:#fbbf24"></i>waiting 15%</span>
+            <span><i style="background:#f59e0b"></i>observing 8%</span>
+            <span><i style="background:#9ca3af"></i>dormant 4%</span>
+            <span><i style="background:#d1d5db"></i>retired 1%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Attention Panel -->
+    <div class="card">
+      <div class="card-header">需要关注</div>
+      <div class="card-body">
+        <ul class="attention-list">
+          <li class="attention-item">
+            <span class="attention-dot orange"></span>
+            <div>3 个 BS 新增碰撞嫌疑<a class="attention-link" href="#">查看异常看板 →</a></div>
+          </li>
+          <li class="attention-item">
+            <span class="attention-dot amber"></span>
+            <div>12 个 Cell 接近晋升门槛<a class="attention-link" href="#">查看等待池 →</a></div>
+          </li>
+          <li class="attention-item">
+            <span class="attention-dot blue"></span>
+            <div>Baseline v12 已运行 48 小时未刷新<a class="attention-link" href="#">查看基线管理 →</a></div>
+          </li>
+          <li class="attention-item">
+            <span class="attention-dot red"></span>
+            <div>批次 B-0403-03 有 2 条拒收记录<a class="attention-link" href="#">查看批次审查 →</a></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Recent Batches -->
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-header">最近批次</div>
+    <div class="card-body" style="padding:0;">
+      <table class="batch-table">
+        <thead>
+          <tr>
+            <th>批次</th>
+            <th>时间窗口</th>
+            <th>输入行数</th>
+            <th>四分流</th>
+            <th>晋升</th>
+            <th>异常</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">B-0403-05</td>
+            <td>08:00 – 10:00</td>
+            <td>34,521</td>
+            <td>89% / 5% / 4% / 2%</td>
+            <td>3 Cell</td>
+            <td>1</td>
+            <td><span class="status-badge amber"><span class="dot"></span>运行中</span></td>
+          </tr>
+          <tr>
+            <td class="mono">B-0403-04</td>
+            <td>06:00 – 08:00</td>
+            <td>31,208</td>
+            <td>91% / 4% / 3% / 2%</td>
+            <td>2 Cell</td>
+            <td>0</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+          </tr>
+          <tr>
+            <td class="mono">B-0403-03</td>
+            <td>04:00 – 06:00</td>
+            <td>28,776</td>
+            <td>90% / 5% / 3% / 2%</td>
+            <td>1 Cell</td>
+            <td>2</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+          </tr>
+          <tr>
+            <td class="mono">B-0403-02</td>
+            <td>02:00 – 04:00</td>
+            <td>25,432</td>
+            <td>92% / 4% / 2% / 2%</td>
+            <td>0</td>
+            <td>0</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+          </tr>
+          <tr>
+            <td class="mono">B-0403-01</td>
+            <td>00:00 – 02:00</td>
+            <td>22,198</td>
+            <td>91% / 5% / 3% / 1%</td>
+            <td>1 Cell</td>
+            <td>1</td>
+            <td><span class="status-badge green"><span class="dot"></span>已完成</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Row 4: Version Context Bar -->
+  <div class="version-bar">
+    <span>Run #R-20260403</span>
+    <span class="sep">|</span>
+    <span>Baseline v12</span> (2026-04-02 22:00 冻结)
+    <span class="sep">|</span>
+    <span>Contract v3.1</span>
+    <span class="sep">|</span>
+    <span>Rules v2.4</span>
+  </div>
+
+</main>
+
+</body>
+</html>

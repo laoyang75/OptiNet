@@ -1,0 +1,117 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: rebuild4 流式治理工作台
+    - generic [ref=e6]:
+      - generic [ref=e7]: 主流程层
+      - link "流转总览" [ref=e8] [cursor=pointer]:
+        - /url: /flow-overview
+      - link "流转快照" [ref=e9] [cursor=pointer]:
+        - /url: /flow-snapshot
+      - link "运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: /runs
+    - generic [ref=e11]:
+      - generic [ref=e12]: 画像视角层
+      - link "对象浏览" [ref=e13] [cursor=pointer]:
+        - /url: /objects
+      - link "等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: /observation-workspace
+      - link "异常工作台" [ref=e15] [cursor=pointer]:
+        - /url: /anomaly-workspace
+      - link "基线/画像" [ref=e16] [cursor=pointer]:
+        - /url: /baseline
+      - link "LAC 画像" [ref=e17] [cursor=pointer]:
+        - /url: /profiles/lac
+      - link "BS 画像" [ref=e18] [cursor=pointer]:
+        - /url: /profiles/bs
+      - link "Cell 画像" [ref=e19] [cursor=pointer]:
+        - /url: /profiles/cell
+    - generic [ref=e20]:
+      - generic [ref=e21]: 支撑治理层
+      - link "初始化" [ref=e22] [cursor=pointer]:
+        - /url: /initialization
+      - link "基础数据治理" [ref=e23] [cursor=pointer]:
+        - /url: /governance
+    - generic [ref=e25] [cursor=pointer]:
+      - generic [ref=e26]: ETL 数据处理
+      - generic [ref=e27]: ▸
+    - generic [ref=e28]:
+      - generic [ref=e29]: 辅助验证
+      - link "验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: /validation/compare
+  - generic [ref=e31]:
+    - banner [ref=e32]:
+      - generic [ref=e33]: rebuild4 流式治理工作台
+    - main [ref=e34]:
+      - generic [ref=e35]:
+        - heading "5. 补齐" [level=2] [ref=e36]
+        - paragraph [ref=e37]: 同一报文（record_id）内，相同 cell_id 的行互补 GPS 和 RSRP。补齐不增减行数，只填充空值。
+        - generic [ref=e38]:
+          - generic [ref=e39]: GPS 补齐
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e42]: 补齐前
+              - generic [ref=e43]:
+                - generic [ref=e44]: 有 GPS
+                - strong [ref=e45]: 583,680
+              - generic [ref=e46]:
+                - generic [ref=e47]: 无 GPS
+                - strong [ref=e48]: 104,108
+              - generic [ref=e49]:
+                - generic [ref=e50]: 覆盖率
+                - strong [ref=e51]: 84.9%
+            - generic [ref=e52]: →
+            - generic [ref=e53]:
+              - generic [ref=e54]: 补齐后
+              - generic [ref=e55]:
+                - generic [ref=e56]: 原始有
+                - strong [ref=e57]: 583,680
+              - generic [ref=e58]:
+                - generic [ref=e59]: 同cell补齐
+                - strong [ref=e60]: 47,405
+              - generic [ref=e61]:
+                - generic [ref=e62]: 仍无
+                - strong [ref=e63]: 56,703
+              - generic [ref=e64]:
+                - generic [ref=e65]: 覆盖率
+                - strong [ref=e66]: 91.8%
+        - generic [ref=e67]:
+          - generic [ref=e68]: RSRP 补齐
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - generic [ref=e71]: 补齐前
+              - generic [ref=e72]:
+                - generic [ref=e73]: 有 RSRP
+                - strong [ref=e74]: 598,069
+              - generic [ref=e75]:
+                - generic [ref=e76]: 无 RSRP
+                - strong [ref=e77]: 89,719
+              - generic [ref=e78]:
+                - generic [ref=e79]: 覆盖率
+                - strong [ref=e80]: 87.0%
+            - generic [ref=e81]: →
+            - generic [ref=e82]:
+              - generic [ref=e83]: 补齐后
+              - generic [ref=e84]:
+                - generic [ref=e85]: 原始有
+                - strong [ref=e86]: 598,069
+              - generic [ref=e87]:
+                - generic [ref=e88]: 同cell补齐
+                - strong [ref=e89]: 42,907
+              - generic [ref=e90]:
+                - generic [ref=e91]: 仍无
+                - strong [ref=e92]: 46,812
+              - generic [ref=e93]:
+                - generic [ref=e94]: 覆盖率
+                - strong [ref=e95]: 93.2%
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - text: 补齐逻辑：同一条原始报文内，相同 cell_id 且有效的行互补。
+            - text: cell_infos 行通常有 GPS（来自原始上报），ss1 行通常有信号 → 互补后两者都更完整。
+          - generic [ref=e98]: "scope: sample · 执行时间: 2026-04-07T10:13:55.238116+00:00"
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - generic [ref=e101]: 代码位置
+            - code [ref=e102]: rebuild4/backend/app/etl/pipeline.py → step3_fill()
+          - generic [ref=e103]:
+            - generic [ref=e104]: 说明文档
+            - code [ref=e105]: rebuild4/docs/01_etl/03_补齐.md

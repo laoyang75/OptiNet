@@ -1,0 +1,309 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]: rebuild3
+    - navigation [ref=e5]:
+      - link "◎ 流转总览" [ref=e6] [cursor=pointer]:
+        - /url: 01_flow_overview.html
+        - generic [ref=e7]: ◎
+        - text: 流转总览
+      - link "⏲ 流转快照" [ref=e8] [cursor=pointer]:
+        - /url: 01_flow_overview_timeline.html
+        - generic [ref=e9]: ⏲
+        - text: 流转快照
+      - link "⚙ 运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: 02_run_batch_center.html
+        - generic [ref=e11]: ⚙
+        - text: 运行/批次中心
+      - link "◼ 对象浏览" [ref=e12] [cursor=pointer]:
+        - /url: 03_objects.html
+        - generic [ref=e13]: ◼
+        - text: 对象浏览
+      - link "⏱ 等待/观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: 05_observation_workspace.html
+        - generic [ref=e15]: ⏱
+        - text: 等待/观察工作台
+      - link "⚠ 异常工作台" [ref=e16] [cursor=pointer]:
+        - /url: 06_anomaly_workspace.html
+        - generic [ref=e17]: ⚠
+        - text: 异常工作台
+      - link "★ 基线/画像" [ref=e18] [cursor=pointer]:
+        - /url: 07_baseline_profile.html
+        - generic [ref=e19]: ★
+        - text: 基线/画像
+      - link "▤ LAC 画像" [ref=e21] [cursor=pointer]:
+        - /url: 09_lac_profile.html
+        - generic [ref=e22]: ▤
+        - text: LAC 画像
+      - link "▣ BS 画像" [ref=e23] [cursor=pointer]:
+        - /url: 10_bs_profile.html
+        - generic [ref=e24]: ▣
+        - text: BS 画像
+      - link "■ Cell 画像" [ref=e25] [cursor=pointer]:
+        - /url: 11_cell_profile.html
+        - generic [ref=e26]: ■
+        - text: Cell 画像
+      - link "☰ 基础数据治理" [ref=e28] [cursor=pointer]:
+        - /url: 13_data_governance.html
+        - generic [ref=e29]: ☰
+        - text: 基础数据治理
+      - link "☑ 验证/对照" [ref=e30] [cursor=pointer]:
+        - /url: 08_validation_compare.html
+        - generic [ref=e31]: ☑
+        - text: 验证/对照
+      - link "▶ 初始化数据" [ref=e32] [cursor=pointer]:
+        - /url: 12_initialization.html
+        - generic [ref=e33]: ▶
+        - text: 初始化数据
+  - generic [ref=e34]:
+    - banner [ref=e35]:
+      - generic [ref=e36]: rebuild3 流式治理工作台
+      - generic [ref=e37]: 运行中 · 上次刷新 14:32:07
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - link "流程图视图" [ref=e42] [cursor=pointer]:
+            - /url: 01_flow_overview.html
+          - button "时间快照视图" [ref=e43] [cursor=pointer]
+        - generic [ref=e44]: 本视图用于批次回放和局部重跑对照，不是主流程首页。每次批次完成后数据记录到 batch_snapshot 表。
+      - generic [ref=e45]:
+        - generic [ref=e46]: 选择时间点
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - generic [ref=e49]:
+              - generic [ref=e50]:
+                - generic [ref=e51]: 固定
+                - generic [ref=e52]: 初始化完成后
+              - generic [ref=e53]: 初始化批次
+              - combobox [ref=e54]:
+                - option "INIT-001 (2026-04-01 ~ 04-03, 3天)" [selected]
+              - generic [ref=e55]:
+                - strong [ref=e56]: "run_id:"
+                - text: RUN-20260403-001
+                - strong [ref=e57]: "基线版本:"
+                - text: v1（首版基线）
+                - strong [ref=e58]: "完成时间:"
+                - text: 2026-04-03 00:15:32
+            - generic [ref=e59]:
+              - generic [ref=e60]:
+                - generic [ref=e61]: 自定义 1
+                - generic [ref=e62]: 时间点 A
+              - generic [ref=e63]: 选择批次完成时间
+              - combobox [ref=e64]:
+                - option "BATCH-2026040302 (02:00~04:00)"
+                - option "BATCH-2026040304 (04:00~06:00)"
+                - option "BATCH-2026040306 (06:00~08:00)"
+                - option "BATCH-2026040308 (08:00~10:00)"
+                - option "BATCH-2026040310 (10:00~12:00) ⟳重跑" [selected]
+                - option "BATCH-2026040312 (12:00~14:00)"
+                - option "BATCH-2026040314 (14:00~16:00)"
+              - generic [ref=e65]:
+                - strong [ref=e66]: "基线版本:"
+                - text: v47（本批触发刷新）
+                - strong [ref=e67]: "类型:"
+                - text: 重跑批次
+                - strong [ref=e68]: "完成时间:"
+                - text: 2026-04-03 12:08:47
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: 自定义 2
+                - generic [ref=e72]: 时间点 B
+              - generic [ref=e73]: 选择批次完成时间
+              - combobox [ref=e74]:
+                - option "BATCH-2026040302 (02:00~04:00)"
+                - option "BATCH-2026040304 (04:00~06:00)"
+                - option "BATCH-2026040306 (06:00~08:00)"
+                - option "BATCH-2026040308 (08:00~10:00)"
+                - option "BATCH-2026040310 (10:00~12:00) ⟳重跑"
+                - option "BATCH-2026040312 (12:00~14:00)"
+                - option "BATCH-2026040314 (14:00~16:00)" [selected]
+              - generic [ref=e75]:
+                - strong [ref=e76]: "基线版本:"
+                - text: v47
+                - strong [ref=e77]: "类型:"
+                - text: 正常批次
+                - strong [ref=e78]: "完成时间:"
+                - text: 2026-04-03 16:12:03
+          - button "▶ 加载快照数据" [ref=e79] [cursor=pointer]
+      - generic [ref=e80]:
+        - generic [ref=e81]: 流水线各阶段数据快照
+        - table [ref=e83]:
+          - rowgroup [ref=e84]:
+            - row "处理阶段 初始化后 INIT-001 · 4月3日 00:15 时间点 A BATCH-10 ⟳ · 4月3日 12:08 时间点 B BATCH-14 · 4月3日 16:12" [ref=e85]:
+              - columnheader "处理阶段" [ref=e86]
+              - columnheader "初始化后 INIT-001 · 4月3日 00:15" [ref=e87]:
+                - text: 初始化后
+                - text: INIT-001 · 4月3日 00:15
+              - columnheader "时间点 A BATCH-10 ⟳ · 4月3日 12:08" [ref=e88]:
+                - text: 时间点 A
+                - text: BATCH-10 ⟳ · 4月3日 12:08
+              - columnheader "时间点 B BATCH-14 · 4月3日 16:12" [ref=e89]:
+                - text: 时间点 B
+                - text: BATCH-14 · 4月3日 16:12
+          - rowgroup [ref=e90]:
+            - row "输入与标准化" [ref=e91]:
+              - cell "输入与标准化" [ref=e92]
+            - row "批次输入 原始记录 2,847,103 43,587 45,231" [ref=e93]:
+              - cell "批次输入 原始记录" [ref=e94]:
+                - generic [ref=e95]:
+                  - generic [ref=e97]: 批次输入
+                  - generic [ref=e98]: 原始记录
+              - cell "2,847,103" [ref=e99]
+              - cell "43,587" [ref=e100]
+              - cell "45,231" [ref=e101]
+            - row "标准化事件 fact_standardized 2,841,290 99.8% 43,489 99.8% 45,140 99.8%" [ref=e102]:
+              - cell "标准化事件 fact_standardized" [ref=e103]:
+                - generic [ref=e104]:
+                  - generic [ref=e106]: 标准化事件
+                  - generic [ref=e107]: fact_standardized
+              - cell "2,841,290 99.8%" [ref=e108]
+              - cell "43,489 99.8%" [ref=e109]
+              - cell "45,140 99.8%" [ref=e110]
+            - row "对象与基线匹配" [ref=e111]:
+              - cell "对象与基线匹配" [ref=e112]
+            - row "参考基线版本 — 冷启动 v46 v47" [ref=e113]:
+              - cell "参考基线版本" [ref=e114]:
+                - generic [ref=e117]: 参考基线版本
+              - cell "— 冷启动" [ref=e118]
+              - cell "v46" [ref=e119]
+              - cell "v47" [ref=e120]
+            - row "已注册对象数 — 冷启动 12,829 12,847" [ref=e121]:
+              - cell "已注册对象数" [ref=e122]:
+                - generic [ref=e125]: 已注册对象数
+              - cell "— 冷启动" [ref=e126]
+              - cell "12,829" [ref=e127]
+              - cell "12,847" [ref=e128]
+            - row "四分流结果（本批次事件分配）" [ref=e129]:
+              - cell "四分流结果（本批次事件分配）" [ref=e130]
+            - row "已治理事实 fact_governed 2,388,652 84.1% 37,041 85.2% 38,369 85.0%" [ref=e131]:
+              - cell "已治理事实 fact_governed" [ref=e132]:
+                - generic [ref=e133]:
+                  - generic [ref=e135]: 已治理事实
+                  - generic [ref=e136]: fact_governed
+              - cell "2,388,652 84.1%" [ref=e137]
+              - cell "37,041 85.2%" [ref=e138]
+              - cell "38,369 85.0%" [ref=e139]
+            - row "观察事实 fact_pending_observation 312,894 11.0% 4,262 9.8% 4,514 10.0%" [ref=e140]:
+              - cell "观察事实 fact_pending_observation" [ref=e141]:
+                - generic [ref=e142]:
+                  - generic [ref=e144]: 观察事实
+                  - generic [ref=e145]: fact_pending_observation
+              - cell "312,894 11.0%" [ref=e146]
+              - cell "4,262 9.8%" [ref=e147]
+              - cell "4,514 10.0%" [ref=e148]
+            - row "问题事实 fact_pending_issue 85,241 3.0% 1,218 2.8% 1,354 3.0%" [ref=e149]:
+              - cell "问题事实 fact_pending_issue" [ref=e150]:
+                - generic [ref=e151]:
+                  - generic [ref=e153]: 问题事实
+                  - generic [ref=e154]: fact_pending_issue
+              - cell "85,241 3.0%" [ref=e155]
+              - cell "1,218 2.8%" [ref=e156]
+              - cell "1,354 3.0%" [ref=e157]
+            - row "拒收事实 fact_rejected 54,503 1.9% 968 2.2% 903 2.0%" [ref=e158]:
+              - cell "拒收事实 fact_rejected" [ref=e159]:
+                - generic [ref=e160]:
+                  - generic [ref=e162]: 拒收事实
+                  - generic [ref=e163]: fact_rejected
+              - cell "54,503 1.9%" [ref=e164]
+              - cell "968 2.2%" [ref=e165]
+              - cell "903 2.0%" [ref=e166]
+            - row "证据累计与对象更新" [ref=e167]:
+              - cell "证据累计与对象更新" [ref=e168]
+            - row "证据更新对象数 12,782 12,839 12,850" [ref=e169]:
+              - cell "证据更新对象数" [ref=e170]:
+                - generic [ref=e173]: 证据更新对象数
+              - cell "12,782" [ref=e174]
+              - cell "12,839" [ref=e175]
+              - cell "12,850" [ref=e176]
+            - row "批末统一决策" [ref=e177]:
+              - cell "批末统一决策" [ref=e178]
+            - row "Cell 晋升 waiting→observing→active +12,782 初始晋升 +8 +5" [ref=e179]:
+              - cell "Cell 晋升 waiting→observing→active" [ref=e180]:
+                - generic [ref=e181]:
+                  - generic [ref=e183]: Cell 晋升
+                  - generic [ref=e184]: waiting→observing→active
+              - cell "+12,782 初始晋升" [ref=e185]
+              - cell "+8" [ref=e186]
+              - cell "+5" [ref=e187]
+            - row "Cell 降级 active→dormant 0 -0 -2" [ref=e188]:
+              - cell "Cell 降级 active→dormant" [ref=e189]:
+                - generic [ref=e190]:
+                  - generic [ref=e192]: Cell 降级
+                  - generic [ref=e193]: active→dormant
+              - cell "0" [ref=e194]
+              - cell "-0" [ref=e195]
+              - cell "-2" [ref=e196]
+            - row "级联更新 BS 3,382 初始派生 +9 +5" [ref=e197]:
+              - cell "级联更新 BS" [ref=e198]:
+                - generic [ref=e201]: 级联更新 BS
+              - cell "3,382 初始派生" [ref=e202]
+              - cell "+9" [ref=e203]
+              - cell "+5" [ref=e204]
+            - row "级联更新 LAC 152 初始派生 +1 +1" [ref=e205]:
+              - cell "级联更新 LAC" [ref=e206]:
+                - generic [ref=e209]: 级联更新 LAC
+              - cell "152 初始派生" [ref=e210]
+              - cell "+1" [ref=e211]
+              - cell "+1" [ref=e212]
+            - row "异常检测 碰撞/动态/迁移/GPS偏差 38 43 47" [ref=e213]:
+              - cell "异常检测 碰撞/动态/迁移/GPS偏差" [ref=e214]:
+                - generic [ref=e215]:
+                  - generic [ref=e217]: 异常检测
+                  - generic [ref=e218]: 碰撞/动态/迁移/GPS偏差
+              - cell "38" [ref=e219]
+              - cell "43" [ref=e220]
+              - cell "47" [ref=e221]
+            - row "基线刷新 v1 首版基线 v47 触发刷新 — 未触发" [ref=e222]:
+              - cell "基线刷新" [ref=e223]:
+                - generic [ref=e226]: 基线刷新
+              - cell "v1 首版基线" [ref=e227]
+              - cell "v47 触发刷新" [ref=e228]
+              - cell "— 未触发" [ref=e229]
+            - row "系统累计状态（批次结束后）" [ref=e230]:
+              - cell "系统累计状态（批次结束后）" [ref=e231]
+            - row "活跃对象 (active) 12,782 12,839 12,847" [ref=e232]:
+              - cell "活跃对象 (active)" [ref=e233]:
+                - generic [ref=e236]: 活跃对象 (active)
+              - cell "12,782" [ref=e237]
+              - cell "12,839" [ref=e238]
+              - cell "12,847" [ref=e239]
+            - row "等待中 (waiting) 1,156 1,275 1,283" [ref=e240]:
+              - cell "等待中 (waiting)" [ref=e241]:
+                - generic [ref=e244]: 等待中 (waiting)
+              - cell "1,156" [ref=e245]
+              - cell "1,275" [ref=e246]
+              - cell "1,283" [ref=e247]
+            - row "观察中 (observing) 823 882 892" [ref=e248]:
+              - cell "观察中 (observing)" [ref=e249]:
+                - generic [ref=e252]: 观察中 (observing)
+              - cell "823" [ref=e253]
+              - cell "882" [ref=e254]
+              - cell "892" [ref=e255]
+            - row "锚点可用 (anchorable) 11,403 11,256 11,234" [ref=e256]:
+              - cell "锚点可用 (anchorable)" [ref=e257]:
+                - generic [ref=e260]: 锚点可用 (anchorable)
+              - cell "11,403" [ref=e261]
+              - cell "11,256" [ref=e262]
+              - cell "11,234" [ref=e263]
+            - row "基线可用 (baseline_eligible) 10,987 10,912 10,891" [ref=e264]:
+              - cell "基线可用 (baseline_eligible)" [ref=e265]:
+                - generic [ref=e268]: 基线可用 (baseline_eligible)
+              - cell "10,987" [ref=e269]
+              - cell "10,912" [ref=e270]
+              - cell "10,891" [ref=e271]
+            - row "BS 覆盖 3,382 3,412 3,421" [ref=e272]:
+              - cell "BS 覆盖" [ref=e273]:
+                - generic [ref=e276]: BS 覆盖
+              - cell "3,382" [ref=e277]
+              - cell "3,412" [ref=e278]
+              - cell "3,421" [ref=e279]
+            - row "LAC 覆盖 152 155 156" [ref=e280]:
+              - cell "LAC 覆盖" [ref=e281]:
+                - generic [ref=e284]: LAC 覆盖
+              - cell "152" [ref=e285]
+              - cell "155" [ref=e286]
+              - cell "156" [ref=e287]
+      - generic [ref=e289]:
+        - strong [ref=e290]: 关于数据存储：
+        - text: 每次批次处理完成后，系统会将完整的流水线各阶段数据记录到
+        - code [ref=e291]: batch_snapshot
+        - text: 表中，包括：批次输入量、标准化结果、四分流分配、证据累计、晋升/降级、级联更新、异常检测、基线刷新状态、以及系统累计状态。历史快照数据永久保留，可随时选择任意两个时间点查看各阶段的数据状态。

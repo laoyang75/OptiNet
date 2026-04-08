@@ -1,0 +1,45 @@
+SET
+SET
+SET
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+SELECT 193036
+CREATE INDEX
+SELECT 193036
+CREATE INDEX
+SELECT 573561
+CREATE INDEX
+SELECT 50153
+CREATE INDEX
+SELECT 573561
+CREATE INDEX
+CREATE INDEX
+SELECT 193036
+CREATE INDEX
+SELECT 50153
+CREATE INDEX
+SELECT 4
+      328.49 real         0.02 user         0.01 sys
+            20250624  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                1617  page reclaims
+                  73  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                  44  messages sent
+                  55  messages received
+                   0  signals received
+                  18  voluntary context switches
+                 283  involuntary context switches
+           197513186  instructions retired
+            93986828  cycles elapsed
+             4654400  peak memory footprint

@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 — 批次审查</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+    border-left-color: #6366f1;
+  }
+  .sidebar-nav a .icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 90;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .topbar-context { font-size: 12px; color: #9ca3af; letter-spacing: 0.02em; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    margin-top: 52px;
+    padding: 24px 28px 40px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .card-header {
+    padding: 14px 18px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-body { padding: 18px; }
+
+  /* ── Batch Selector ── */
+  .batch-selector {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    animation: fadeInDown 0.3s ease;
+  }
+  .batch-tabs {
+    display: flex;
+    gap: 4px;
+    background: #f3f4f6;
+    border-radius: 6px;
+    padding: 3px;
+  }
+  .batch-tab {
+    padding: 7px 16px;
+    font-size: 13px;
+    color: #4b5563;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .batch-tab:hover { color: #111827; background: rgba(255,255,255,0.6); }
+  .batch-tab.active {
+    background: #fff;
+    color: #4f46e5;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .batch-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 13px;
+    color: #4b5563;
+    margin-left: auto;
+  }
+  .batch-info-item { display: flex; align-items: center; gap: 6px; }
+  .batch-info-item .label { color: #9ca3af; }
+
+  /* ── Status Badge ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .badge-green { background: #f0fdf4; color: #16a34a; }
+  .badge-amber { background: #fffbeb; color: #d97706; }
+  .badge-orange { background: #fff7ed; color: #ea580c; }
+  .badge-red { background: #fef2f2; color: #dc2626; }
+  .badge-gray { background: #f3f4f6; color: #6b7280; }
+  .badge-blue { background: #eff6ff; color: #2563eb; }
+  .badge-purple { background: #f5f3ff; color: #7c3aed; }
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .badge-dot-green { background: #22c55e; }
+  .badge-dot-amber { background: #fbbf24; }
+  .badge-dot-orange { background: #f97316; }
+  .badge-dot-red { background: #ef4444; }
+
+  /* ── Funnel ── */
+  .funnel-section { margin-bottom: 20px; animation: fadeInUp 0.35s ease; }
+  .funnel-bar-container {
+    display: flex;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .funnel-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    cursor: pointer;
+    transition: filter 0.2s, flex 0.5s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .funnel-segment:hover { filter: brightness(1.05); }
+  .funnel-segment:active { filter: brightness(0.95); }
+  .funnel-segment .seg-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    line-height: 1.2;
+  }
+  .funnel-segment .seg-pct {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.85);
+  }
+  .seg-governed { background: #22c55e; }
+  .seg-pending-obs { background: #fbbf24; }
+  .seg-pending-issue { background: #f97316; }
+  .seg-rejected { background: #ef4444; }
+
+  .funnel-details {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .funnel-detail-card {
+    text-align: center;
+    padding: 14px 12px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    transition: transform 0.15s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .funnel-detail-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .funnel-detail-card .fd-count { font-size: 22px; font-weight: 700; line-height: 1.2; }
+  .funnel-detail-card .fd-name { font-size: 12px; color: #4b5563; margin-top: 2px; }
+  .funnel-detail-card .fd-pct { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+  .funnel-detail-card .fd-link {
+    font-size: 12px;
+    color: #6366f1;
+    margin-top: 8px;
+    display: inline-block;
+    transition: color 0.15s;
+  }
+  .funnel-detail-card .fd-link:hover { color: #4f46e5; }
+  .fd-green .fd-count { color: #16a34a; }
+  .fd-amber .fd-count { color: #d97706; }
+  .fd-orange .fd-count { color: #ea580c; }
+  .fd-red .fd-count { color: #dc2626; }
+
+  .funnel-total {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .funnel-total-label { font-size: 13px; color: #9ca3af; }
+  .funnel-total-value { font-size: 20px; font-weight: 700; color: #111827; }
+
+  /* ── Two Column Row ── */
+  .row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+    animation: fadeInUp 0.4s ease;
+  }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #4b5563;
+  }
+  tbody tr { transition: background 0.12s; }
+  tbody tr:hover { background: #f9fafb; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* Row accents */
+  .row-promote { border-left: 3px solid #22c55e; }
+  .row-demote { border-left: 3px solid #9ca3af; }
+  .row-cascade { border-left: 3px solid #60a5fa; }
+
+  .action-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .action-promote { background: #f0fdf4; color: #16a34a; }
+  .action-demote { background: #f3f4f6; color: #6b7280; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 0;
+  }
+  .tab-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    color: #9ca3af;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.2s;
+    font-weight: 500;
+  }
+  .tab-btn:hover { color: #4b5563; }
+  .tab-btn.active {
+    color: #4f46e5;
+    border-bottom-color: #6366f1;
+    font-weight: 600;
+  }
+  .tab-count {
+    font-size: 11px;
+    background: #f3f4f6;
+    color: #6b7280;
+    padding: 1px 7px;
+    border-radius: 9999px;
+    margin-left: 6px;
+  }
+  .tab-btn.active .tab-count {
+    background: #eef2ff;
+    color: #4f46e5;
+  }
+
+  /* ── Source indicators ── */
+  .source-original { color: #16a34a; font-weight: 500; }
+  .source-filled { color: #9ca3af; font-style: italic; }
+
+  .baseline-check { color: #22c55e; font-weight: 600; }
+  .baseline-no { color: #9ca3af; }
+
+  .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-signal { background: #f3f4f6; color: #6b7280; }
+  .tag-gps { background: #f3f4f6; color: #6b7280; }
+  .tag-dynamic { background: #eff6ff; color: #2563eb; }
+  .tag-none { color: #d1d5db; }
+
+  .mono { font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; font-size: 12px; }
+
+  /* ── Pagination ── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-top: 1px solid #f3f4f6;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .pagination-pages { display: flex; gap: 4px; }
+  .page-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #4b5563;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .page-btn:hover { border-color: #6366f1; color: #6366f1; }
+  .page-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+  /* ── Rejected section ── */
+  .rejected-section { animation: fadeInUp 0.5s ease; }
+
+  /* ── Animations ── */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="01_dashboard.html"><span class="icon">&#9632;</span>仪表盘</a>
+    <a href="02_run_center.html"><span class="icon">&#9654;</span>运行中心</a>
+    <a href="03_objects_list.html"><span class="icon">&#9733;</span>对象浏览</a>
+    <a href="#"><span class="icon">&#9201;</span>等待池</a>
+    <a href="#"><span class="icon">&#9888;</span>异常看板</a>
+    <a href="07_batch_review.html" class="active"><span class="icon">&#9745;</span>批次审查</a>
+    <a href="08_baseline.html"><span class="icon">&#9881;</span>基线管理</a>
+    <a href="#"><span class="icon">&#8634;</span>回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <span class="topbar-title">批次审查</span>
+  <span class="topbar-context">Run #R-20260403 | Batch #B-0403-05 | Baseline v12</span>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- Batch Selector -->
+  <div class="batch-selector">
+    <div class="batch-tabs">
+      <button class="batch-tab active">B-0403-05 <span style="font-size:11px;color:#22c55e;">&#9679;</span></button>
+      <button class="batch-tab">B-0403-04</button>
+      <button class="batch-tab">B-0403-03</button>
+      <button class="batch-tab">B-0403-02</button>
+      <button class="batch-tab">B-0403-01</button>
+    </div>
+    <div class="batch-info">
+      <span class="batch-info-item"><span class="label">时间窗口</span> 06:00 - 08:00</span>
+      <span class="batch-info-item"><span class="label">输入</span> 31,208 行</span>
+      <span class="batch-info-item"><span class="label">耗时</span> 8 分钟</span>
+      <span class="badge badge-green"><span class="badge-dot badge-dot-green"></span>已完成</span>
+    </div>
+  </div>
+
+  <!-- Row 1: Four-way Split Funnel -->
+  <div class="card funnel-section">
+    <div class="card-header">
+      四分流统计
+      <span style="font-size:12px;color:#9ca3af;font-weight:400;">本批次数据分流结果</span>
+    </div>
+    <div class="card-body">
+      <div class="funnel-total">
+        <span class="funnel-total-label">总输入</span>
+        <span class="funnel-total-value">31,208</span>
+        <span style="font-size:12px;color:#9ca3af;margin-left:4px;">(100%)</span>
+      </div>
+
+      <div class="funnel-bar-container">
+        <div class="funnel-segment seg-governed" style="flex:91;">
+          <span class="seg-label">fact_governed</span>
+          <span class="seg-pct">91.0%</span>
+        </div>
+        <div class="funnel-segment seg-pending-obs" style="flex:4;">
+          <span class="seg-label" style="font-size:10px;">obs</span>
+          <span class="seg-pct">4.0%</span>
+        </div>
+        <div class="funnel-segment seg-pending-issue" style="flex:3;">
+          <span class="seg-label" style="font-size:10px;">iss</span>
+          <span class="seg-pct">3.0%</span>
+        </div>
+        <div class="funnel-segment seg-rejected" style="flex:2;">
+          <span class="seg-label" style="font-size:10px;">rej</span>
+          <span class="seg-pct">2.0%</span>
+        </div>
+      </div>
+
+      <div class="funnel-details">
+        <div class="funnel-detail-card fd-green">
+          <div class="fd-count">28,397</div>
+          <div class="fd-name">fact_governed</div>
+          <div class="fd-pct">91.0%</div>
+          <a class="fd-link" href="#">查看详情 &rarr;</a>
+        </div>
+        <div class="funnel-detail-card fd-amber">
+          <div class="fd-count">1,248</div>
+          <div class="fd-name">fact_pending_observation</div>
+          <div class="fd-pct">4.0%</div>
+          <a class="fd-link" href="#">查看详情 &rarr;</a>
+        </div>
+        <div class="funnel-detail-card fd-orange">
+          <div class="fd-count">936</div>
+          <div class="fd-name">fact_pending_issue</div>
+          <div class="fd-pct">3.0%</div>
+          <a class="fd-link" href="#">查看详情 &rarr;</a>
+        </div>
+        <div class="funnel-detail-card fd-red">
+          <div class="fd-count">627</div>
+          <div class="fd-name">fact_rejected</div>
+          <div class="fd-pct">2.0%</div>
+          <a class="fd-link" href="#">查看详情 &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Decision Summary -->
+  <div class="row-2col">
+    <!-- Left: Promotion & Demotion -->
+    <div class="card">
+      <div class="card-header">晋升与降级</div>
+      <div class="card-body" style="padding:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>动作</th>
+              <th>对象</th>
+              <th>类型</th>
+              <th>变更前</th>
+              <th>变更后</th>
+              <th>原因</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-promote">
+              <td><span class="action-badge action-promote">晋升</span></td>
+              <td class="mono">46000-4G-23456-78901</td>
+              <td>Cell</td>
+              <td><span class="badge badge-amber">observing</span></td>
+              <td><span class="badge badge-green">active</span></td>
+              <td style="font-size:12px;">GPS&ge;10, 设备&ge;2, 天数&ge;3</td>
+            </tr>
+            <tr class="row-promote">
+              <td><span class="action-badge action-promote">晋升</span></td>
+              <td class="mono">46000-4G-23458-78903</td>
+              <td>Cell</td>
+              <td><span class="badge badge-amber">observing</span></td>
+              <td><span class="badge badge-green">active</span></td>
+              <td style="font-size:12px;">满足全部门槛</td>
+            </tr>
+            <tr class="row-demote">
+              <td><span class="action-badge action-demote">降级</span></td>
+              <td class="mono">BS-460001270</td>
+              <td>BS</td>
+              <td><span class="badge badge-green">active</span></td>
+              <td><span class="badge badge-gray">dormant</span></td>
+              <td style="font-size:12px;">连续3批无活动</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Cascade Updates -->
+    <div class="card">
+      <div class="card-header">级联更新</div>
+      <div class="card-body" style="padding:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>对象</th>
+              <th>类型</th>
+              <th>更新内容</th>
+              <th>触发原因</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-cascade">
+              <td class="mono">BS-460001234</td>
+              <td>BS</td>
+              <td>新增 child Cell</td>
+              <td style="font-size:12px;">Cell 46000-4G-23456-78901 晋升</td>
+            </tr>
+            <tr class="row-cascade">
+              <td class="mono">LAC-46000-12345</td>
+              <td>LAC</td>
+              <td>活跃 BS 数 +1</td>
+              <td style="font-size:12px;">BS-460001234 状态更新</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Fact Detail Tabs -->
+  <div class="card" style="margin-bottom:20px; animation: fadeInUp 0.45s ease;">
+    <div class="tabs">
+      <button class="tab-btn active">governed <span class="tab-count">28,397</span></button>
+      <button class="tab-btn">pending_observation <span class="tab-count">1,248</span></button>
+      <button class="tab-btn">pending_issue <span class="tab-count">936</span></button>
+      <button class="tab-btn">rejected <span class="tab-count">627</span></button>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>事件键</th>
+            <th>Cell</th>
+            <th>GPS 来源</th>
+            <th>信号来源</th>
+            <th>基线资格</th>
+            <th>异常标签</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">E-0403-04-00001</td>
+            <td class="mono">46000-4G-12345-67890</td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="baseline-check">&check;</span></td>
+            <td><span class="tag-none">&mdash;</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-00002</td>
+            <td class="mono">46000-4G-12345-67890</td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="source-filled">donor_fill</span></td>
+            <td><span class="baseline-check">&check;</span></td>
+            <td><span class="tag tag-signal">signal_filled</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-00003</td>
+            <td class="mono">46001-4G-12346-67891</td>
+            <td><span class="source-filled">centroid_fill</span></td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="baseline-no">&cross;</span></td>
+            <td><span class="tag tag-gps">gps_filled</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-00004</td>
+            <td class="mono">46000-4G-55555-11111</td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="baseline-no">&cross;</span></td>
+            <td><span class="tag tag-dynamic">dynamic</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-00005</td>
+            <td class="mono">46000-4G-12345-67890</td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="source-original">original</span></td>
+            <td><span class="baseline-check">&check;</span></td>
+            <td><span class="tag-none">&mdash;</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-00006</td>
+            <td class="mono">46000-4G-33333-22222</td>
+            <td><span class="source-filled">centroid_fill</span></td>
+            <td><span class="source-filled">donor_fill</span></td>
+            <td><span class="baseline-no">&cross;</span></td>
+            <td><span class="tag tag-gps">gps_filled</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span>显示 1-20 / 共 28,397 条</span>
+      <div class="pagination-pages">
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn" style="width:auto;padding:0 8px;">...</button>
+        <button class="page-btn">1,420</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: Rejected Records -->
+  <div class="card rejected-section">
+    <div class="card-header">
+      拒收记录
+      <span class="badge badge-red" style="font-size:11px;">627 条</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>事件键</th>
+            <th>原始记录</th>
+            <th>拒收原因</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">E-0403-04-R001</td>
+            <td class="mono">rec-88001</td>
+            <td><span class="badge badge-red" style="font-weight:500;">运营商编码不合法</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-R002</td>
+            <td class="mono">rec-88045</td>
+            <td><span class="badge badge-red" style="font-weight:500;">Cell ID 格式异常</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-R003</td>
+            <td class="mono">rec-88102</td>
+            <td><span class="badge badge-red" style="font-weight:500;">GPS 坐标超出合理范围</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-R004</td>
+            <td class="mono">rec-88200</td>
+            <td><span class="badge badge-red" style="font-weight:500;">时间戳格式非法</span></td>
+          </tr>
+          <tr>
+            <td class="mono">E-0403-04-R005</td>
+            <td class="mono">rec-88351</td>
+            <td><span class="badge badge-red" style="font-weight:500;">信号强度值越界</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span>显示 1-20 / 共 627 条</span>
+      <div class="pagination-pages">
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn" style="width:auto;padding:0 8px;">...</button>
+        <button class="page-btn">32</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

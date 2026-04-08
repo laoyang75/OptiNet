@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 UI v2 设计导航</title>
+<style>
+  :root {
+    --c-indigo-50: #EEF2FF;
+    --c-indigo-600: #4F46E5;
+    --c-indigo-700: #4338CA;
+    --c-indigo-950: #1E1B4B;
+    --c-green-600: #16A34A;
+    --c-gray-50: #F9FAFB;
+    --c-gray-100: #F3F4F6;
+    --c-gray-200: #E5E7EB;
+    --c-gray-400: #9CA3AF;
+    --c-gray-500: #6B7280;
+    --c-gray-800: #1F2937;
+    --c-gray-900: #111827;
+    --c-white: #FFFFFF;
+    --radius: 12px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    color: var(--c-gray-800);
+    background: var(--c-gray-50);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
+  }
+  a { color: var(--c-indigo-600); text-decoration: none; }
+  a:hover { color: var(--c-indigo-700); text-decoration: underline; }
+
+  .header { text-align: center; margin-bottom: 48px; }
+  .header h1 { font-size: 28px; font-weight: 700; color: var(--c-gray-900); margin-bottom: 8px; }
+  .header p { color: var(--c-gray-500); font-size: 15px; }
+  .header .version { display: inline-block; background: var(--c-indigo-50); color: var(--c-indigo-600); padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; max-width: 1100px; width: 100%; }
+  .section-title { grid-column: 1 / -1; font-size: 16px; font-weight: 600; color: var(--c-gray-900); margin-top: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--c-gray-200); }
+
+  .card {
+    background: var(--c-white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 20px;
+    transition: box-shadow .2s, transform .15s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-2px); }
+  .card .num { font-size: 13px; color: var(--c-gray-400); font-weight: 600; margin-bottom: 4px; }
+  .card h3 { font-size: 16px; font-weight: 600; color: var(--c-gray-900); margin-bottom: 6px; }
+  .card h3 a { color: var(--c-gray-900); }
+  .card h3 a:hover { color: var(--c-indigo-600); text-decoration: none; }
+  .card p { font-size: 13px; color: var(--c-gray-500); line-height: 1.5; }
+  .card .links { margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .card .links a { font-size: 12px; color: var(--c-indigo-600); font-weight: 500; }
+
+  .badge-launcher { display: inline-block; background: #DBEAFE; color: #1D4ED8; font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+  .badge-doc { display: inline-block; background: var(--c-gray-100); color: var(--c-gray-500); font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="version">v2.0</span>
+  <h1>rebuild3 UI v2 设计导航</h1>
+  <p>流式治理工作台 — 静态 HTML 原型索引</p>
+</div>
+
+<div class="grid">
+
+  <!-- 设计基础 -->
+  <div class="section-title">设计基础</div>
+
+  <div class="card">
+    <div class="num">基础</div>
+    <h3><a href="design_system.html">设计系统</a></h3>
+    <p>色彩、字体、间距、状态徽标、delta 组件、流转图组件、重跑标记等 v2 设计规范。</p>
+    <div class="links">
+      <a href="design_system.html">打开页面 →</a>
+      <a href="design_notes.md">设计说明 (MD)</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">组件</div>
+    <h3><a href="components/shared_components.html">共享组件</a></h3>
+    <p>状态徽标、资格标签、delta 指示器、进度条、指标卡等可复用组件展示。</p>
+    <div class="links">
+      <a href="components/shared_components.html">打开页面 →</a>
+    </div>
+  </div>
+
+  <!-- 独立页面 -->
+  <div class="section-title">独立页面</div>
+
+  <div class="card">
+    <div class="num">启动器</div>
+    <h3><a href="launcher/launcher.html">启动器</a> <span class="badge-launcher">独立</span></h3>
+    <p>运维控制面板，管理后端 API、前端 Vite、数据库进程的启动/停止/日志查看。</p>
+    <div class="links">
+      <a href="launcher/launcher.html">打开页面 →</a>
+      <a href="launcher/launcher_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <!-- 主工作台页面 -->
+  <div class="section-title">主工作台页面（按导航优先级排序）</div>
+
+  <div class="card">
+    <div class="num">01a 首页 · 流程图</div>
+    <h3><a href="pages/01_flow_overview.html">流转总览（流程图版）</a></h3>
+    <p>按完整处理流水线展示当前批次数据：输入→标准化→对象查询→四分流→证据累计→批末决策→基线刷新。</p>
+    <div class="links">
+      <a href="pages/01_flow_overview.html">打开页面 →</a>
+      <a href="pages/01_flow_overview_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">01b 首页 · 快照</div>
+    <h3><a href="pages/01_flow_overview_timeline.html">流转快照（时间对照版）</a></h3>
+    <p>3列快照：初始化后 + 自定义时间1 + 自定义时间2。选择不同批次查看各阶段数据状态，每批完成后记录到 batch_snapshot 表。</p>
+    <div class="links">
+      <a href="pages/01_flow_overview_timeline.html">打开页面 →</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">02</div>
+    <h3><a href="pages/02_run_batch_center.html">运行 / 批次中心</a></h3>
+    <p>批次列表、四分流比例、晋升/降级、近 N 批趋势图、重跑标记、批次详情展开。</p>
+    <div class="links">
+      <a href="pages/02_run_batch_center.html">打开页面 →</a>
+      <a href="pages/02_run_batch_center_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">03</div>
+    <h3><a href="pages/03_objects.html">对象浏览</a></h3>
+    <p>Cell/BS/LAC 列表，按状态/健康/资格筛选，WATCH 标记，对象详情入口。</p>
+    <div class="links">
+      <a href="pages/03_objects.html">打开页面 →</a>
+      <a href="pages/03_objects_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">04</div>
+    <h3><a href="pages/04_object_detail.html">对象详情</a></h3>
+    <p>单对象深度诊断：状态历史时间线、画像摘要、事实分布、资格原因、下游影响。</p>
+    <div class="links">
+      <a href="pages/04_object_detail.html">打开页面 →</a>
+      <a href="pages/04_object_detail_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">05</div>
+    <h3><a href="pages/05_observation_workspace.html">等待 / 观察工作台</a></h3>
+    <p>推进工作台：门槛进度条、推进趋势、建议动作、堆积分析。不是候选列表。</p>
+    <div class="links">
+      <a href="pages/05_observation_workspace.html">打开页面 →</a>
+      <a href="pages/05_observation_workspace_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">06</div>
+    <h3><a href="pages/06_anomaly_workspace.html">异常工作台</a></h3>
+    <p>异常影响路径：类型/严重度/下游影响/证据趋势、碰撞对象组、受影响 Cell 列表。</p>
+    <div class="links">
+      <a href="pages/06_anomaly_workspace.html">打开页面 →</a>
+      <a href="pages/06_anomaly_workspace_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">07</div>
+    <h3><a href="pages/07_baseline_profile.html">基线 / 画像</a></h3>
+    <p>触发原因、影响范围、版本差异、稳定性风险评估。不只是版本号列表。</p>
+    <div class="links">
+      <a href="pages/07_baseline_profile.html">打开页面 →</a>
+      <a href="pages/07_baseline_profile_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">08</div>
+    <h3><a href="pages/08_validation_compare.html">验证 / 对照</a></h3>
+    <p>收敛性验证（降级为辅助模块）：对象/空间/信号/异常收敛、差异解释。</p>
+    <div class="links">
+      <a href="pages/08_validation_compare.html">打开页面 →</a>
+      <a href="pages/08_validation_compare_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <!-- 对象画像 -->
+  <div class="section-title">对象画像（数据质量视角）</div>
+
+  <div class="card">
+    <div class="num">09</div>
+    <h3><a href="pages/09_lac_profile.html">LAC 画像</a></h3>
+    <p>LAC 区域级画像：覆盖面积、Cell/BS 统计、异常 BS 命中、GPS/信号来源构成、数据质量。</p>
+    <div class="links">
+      <a href="pages/09_lac_profile.html">打开页面 →</a>
+      <a href="pages/09_lac_profile_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">10</div>
+    <h3><a href="pages/10_bs_profile.html">BS 画像</a></h3>
+    <p>BS 空间锚点画像：中心点、P50/P90 距离、异常分类、GPS 可信度、信号质量、筛选排序。</p>
+    <div class="links">
+      <a href="pages/10_bs_profile.html">打开页面 →</a>
+      <a href="pages/10_bs_profile_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num">11</div>
+    <h3><a href="pages/11_cell_profile.html">Cell 画像</a></h3>
+    <p>Cell 最小治理单元画像：质心、空间精度、动态/固定判定、GPS/信号构成、最近批次事实分布。</p>
+    <div class="links">
+      <a href="pages/11_cell_profile.html">打开页面 →</a>
+      <a href="pages/11_cell_profile_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <!-- 系统管理 -->
+  <div class="section-title">系统管理</div>
+
+  <div class="card">
+    <div class="num">12</div>
+    <h3><a href="pages/12_initialization.html">初始化数据</a></h3>
+    <p>初始化流程结果：3 天数据冷启动的完整流程、各阶段数据量、首版基线、研究期口径说明。</p>
+    <div class="links">
+      <a href="pages/12_initialization.html">打开页面 →</a>
+      <a href="pages/12_initialization_doc.md">设计说明</a>
+    </div>
+  </div>
+
+  <!-- 待确认 -->
+  <div class="section-title">待确认事项</div>
+
+  <div class="card">
+    <div class="num">&#9888;</div>
+    <h3><a href="../Docs/questions_for_review.md">问题确认文件</a></h3>
+    <p>6 个待确认问题：导航组织、字段保留策略、搜索范围、初始化页面定位、侧边栏分组、delta 展示。</p>
+    <div class="links">
+      <a href="../Docs/questions_for_review.md">查看问题 →</a>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 48px; text-align: center; color: var(--c-gray-400); font-size: 12px;">
+  rebuild3 UI v2 设计原型 — 2026-04-03 — 流式治理工作台导向
+</div>
+
+</body>
+</html>

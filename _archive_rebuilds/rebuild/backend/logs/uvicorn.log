@@ -1,0 +1,799 @@
+INFO:     Started server process [46449]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64122 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64141 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [46449]
+INFO:     Started server process [46868]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65478 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65496 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Started server process [47657]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50876 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50877 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50880 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50888 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50899 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50908 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50910 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50915 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50910 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50915 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50920 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50923 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50915 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:50931 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50945 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50949 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50952 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50976 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50998 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51004 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51016 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51026 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51044 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51054 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51064 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51090 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51121 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51130 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51135 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51199 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51203 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51206 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51209 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51212 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51229 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51250 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51276 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51281 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51335 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51406 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51412 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51415 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51424 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51429 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51464 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51505 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51511 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51532 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51547 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51637 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51662 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51667 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51671 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51674 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51677 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51683 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51698 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51701 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51704 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51713 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51716 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51722 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51725 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51743 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51777 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Started server process [48586]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52626 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52629 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52632 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52640 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52642 - "GET /static/css/bootstrap-icons.min.css HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52641 - "GET /static/js/bootstrap.bundle.min.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52643 - "GET /static/css/fonts/bootstrap-icons.woff2?1bb88866b4085542c8ed5fb61b9393dd HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52644 - "GET /static/css/bootstrap.min.css HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52640 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52642 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52643 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52648 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52657 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52666 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52676 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52641 - "GET /api/v1/steps?main_chain_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52686 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52641 - "GET /api/v1/steps/s0/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52641 - "GET /api/v1/pipeline/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52699 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/v1/steps/s0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52711 - "GET /api/v1/steps/s0/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52710 - "GET /api/v1/steps/s0/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52726 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52712 - "GET /api/v1/metrics/anomaly-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52746 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52687 - "GET /api/v1/metrics/step-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52727 - "GET /api/v1/pipeline/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52764 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52688 - "GET /api/v1/metrics/layer-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52748 - "GET /api/v1/steps/s52 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52760 - "GET /api/v1/steps/s52/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52759 - "GET /api/v1/steps/s52/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52776 - "GET /api/v1/steps/s1/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52774 - "GET /api/v1/steps/s1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52775 - "GET /api/v1/steps/s1/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52780 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52712 - "GET /api/v1/metrics/step-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52747 - "GET /api/v1/metrics/layer-snapshot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52804 - "GET /api/v1/steps/s2/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/v1/steps/s2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52803 - "GET /api/v1/steps/s2/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52824 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52829 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52805 - "GET /api/v1/metrics/anomaly-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52841 - "GET /api/v1/steps/s2/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52830 - "GET /api/v1/steps/s2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52840 - "GET /api/v1/steps/s2/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52830 - "GET /api/v1/steps/s30/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52842 - "GET /api/v1/steps/s30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52841 - "GET /api/v1/steps/s30/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52929 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52935 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53009 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53012 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53121 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53223 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53284 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53429 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53432 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53513 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53519 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53650 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54058 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54525 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54624 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54693 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54832 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54835 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54891 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54967 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55027 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55098 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55134 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55195 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55242 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55312 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55398 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55416 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55474 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55634 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55690 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55722 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55797 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55830 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55886 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55953 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56018 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56079 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56133 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56245 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56522 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56817 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56970 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57043 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57100 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57264 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57485 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57582 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57665 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57739 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57850 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57930 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58234 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58284 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58333 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59048 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59263 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59370 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59470 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59546 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59665 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59668 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59911 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60008 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60062 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60109 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60201 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60277 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60326 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60422 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60584 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60664 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60805 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60860 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60925 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60984 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61062 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61169 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61256 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61317 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61392 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61488 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61571 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61629 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61709 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61773 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61890 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61953 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61997 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62035 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62092 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62153 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62226 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62269 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62312 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62355 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62418 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62457 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62544 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62572 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62641 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62706 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62765 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62786 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62871 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62910 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62927 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63024 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63310 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63433 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63499 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63557 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63608 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63620 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63626 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63640 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63655 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63661 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63676 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63679 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63684 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63687 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63694 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63707 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63710 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63714 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63717 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63723 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63726 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63734 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63747 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63750 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63756 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63851 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63952 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64043 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64105 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64212 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64330 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64420 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64497 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64625 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64696 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64775 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64962 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65018 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65203 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65279 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65381 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65405 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65434 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65474 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65528 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49202 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49222 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49267 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49299 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49357 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49441 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49534 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49558 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49574 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49581 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [48586]
+INFO:     Started server process [62867]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:49597 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49598 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49603 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49605 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49606 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49605 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49610 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49613 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49616 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49605 - "GET /api/v1/steps?main_chain_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49634 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49605 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49605 - "GET /api/v1/pipeline/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49650 - "GET /api/v1/metrics/step-summary?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49651 - "GET /api/v1/metrics/layer-snapshot?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49762 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49812 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49816 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49819 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49825 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49651 - "GET /api/v1/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49775 - "GET /api/v1/samples HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49830 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49651 - "GET /api/v1/samples/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49774 - "GET /api/v1/samples/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49833 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49844 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49827 - "GET /api/v1/samples/4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49775 - "GET /api/v1/samples/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49847 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49852 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49858 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49908 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49917 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49920 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49940 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49946 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49953 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49956 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49963 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49968 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49948 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49971 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49974 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49984 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49948 - "GET /api/v1/metrics/step-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49975 - "GET /api/v1/metrics/layer-snapshot?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49996 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49976 - "GET /api/v1/metrics/anomaly-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50010 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49976 - "GET /api/v1/steps/s0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50004 - "GET /api/v1/steps/s0/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50005 - "GET /api/v1/steps/s0/rules?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50003 - "GET /api/v1/steps/s0/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50018 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50021 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50006 - "GET /api/v1/steps/s0/metrics?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50007 - "GET /api/v1/steps/s0/sql HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50027 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50033 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50038 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50050 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50053 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49976 - "GET /api/v1/steps/s0/diff?run_id=5&compare_run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50004 - "GET /api/v1/steps/s0/samples HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50056 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50059 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50074 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50094 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50113 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50124 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50127 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50130 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50134 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50144 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50147 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50150 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50156 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50164 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50169 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50179 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50188 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50202 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50205 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50211 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50216 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50233 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50238 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50252 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50257 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50264 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50275 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50278 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50285 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50295 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50298 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50301 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50304 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50307 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50310 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50313 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50325 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50331 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50348 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50357 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50360 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50365 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50417 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50420 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50423 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50440 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50443 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50449 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50453 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50456 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50459 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50462 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50465 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50468 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50471 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50478 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50484 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50490 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50499 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50502 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50513 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50523 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50534 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50537 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50540 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50551 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50554 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50560 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50574 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50577 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50580 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50583 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50588 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50591 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50594 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50604 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50610 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50613 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50623 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50636 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50639 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50647 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50657 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50669 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50672 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50675 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50680 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50684 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50689 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50702 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50705 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50711 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50717 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50720 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50728 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50739 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50742 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50745 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50748 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50764 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50783 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50795 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50807 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50817 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50834 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50840 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50852 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50862 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50868 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50871 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50874 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50884 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50887 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50890 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50893 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50896 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50899 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50905 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50918 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50924 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50932 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50935 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50941 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50944 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50954 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50957 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50960 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50964 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50967 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50970 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50973 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50986 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50990 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50996 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51002 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51005 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51011 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51014 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51019 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51035 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51040 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51043 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51046 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51053 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51063 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51069 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51072 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51079 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51085 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51088 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51094 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51103 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51106 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51109 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51112 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51115 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51118 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51121 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51132 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51142 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51148 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51156 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51162 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51175 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51188 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51193 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51138 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51196 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51203 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51208 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51213 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51216 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51226 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51229 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51235 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51240 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51246 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51249 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51261 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [62867]
+INFO:     Started server process [63922]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51843 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51846 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51849 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51858 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /style.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51861 - "GET /app.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51865 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51872 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51875 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51884 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51887 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51890 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51905 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51927 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51943 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51951 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51963 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51976 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51989 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51904 - "GET /api/v1/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/steps/s0/rules?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52007 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51980 - "GET /api/v1/steps/s0/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51904 - "GET /api/v1/steps/s50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51980 - "GET /api/v1/steps/s50/parameters HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51982 - "GET /api/v1/steps/s0/metrics?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/steps/s50/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51904 - "GET /api/v1/steps/s50/rules?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52010 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51982 - "GET /api/v1/steps/s50/metrics?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51983 - "GET /api/v1/steps/s0/diff?run_id=5&compare_run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51984 - "GET /api/v1/steps/s0/samples HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52019 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51980 - "GET /api/v1/steps/s50/sql HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51980 - "GET /api/v1/pipeline/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52037 - "GET /api/v1/metrics/step-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52038 - "GET /api/v1/metrics/layer-snapshot?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51980 - "GET /api/v1/metrics/step-summary?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52039 - "GET /api/v1/metrics/anomaly-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52040 - "GET /api/v1/metrics/layer-snapshot?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52044 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52084 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52133 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52175 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52213 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52258 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52321 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52386 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52429 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52472 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52512 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52542 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58978 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64434 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51705 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [63922]
+INFO:     Started server process [17999]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59745 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59748 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59753 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59755 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59756 - "GET /style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59757 - "GET /app.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59755 - "GET /js/main.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59756 - "GET /styles/base.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59757 - "GET /styles/layout.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59758 - "GET /styles/overlays.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59759 - "GET /styles/fields.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59756 - "GET /js/core/api.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59757 - "GET /js/ui/common.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59758 - "GET /js/ui/drawers.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59755 - "GET /js/core/state.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59759 - "GET /js/pages/overview.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59756 - "GET /js/pages/fields.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59760 - "GET /js/pages/step.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59757 - "GET /js/pages/samples.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59758 - "GET /js/ui/sample_views.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59764 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59759 - "GET /api/v1/steps?main_chain_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59780 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59785 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59790 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59759 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59759 - "GET /api/v1/pipeline/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59793 - "GET /api/v1/metrics/anomaly-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59792 - "GET /api/v1/metrics/layer-snapshot?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59795 - "GET /api/v1/metrics/layer-snapshot?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59791 - "GET /api/v1/metrics/step-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59794 - "GET /api/v1/metrics/step-summary?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59803 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59759 - "GET /api/v1/source-fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59793 - "GET /api/v1/version/change-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59870 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59989 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59994 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59991 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60011 - "GET /api/v1/steps/s4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60020 - "GET /api/v1/steps/s4/parameters?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60021 - "GET /api/v1/steps/s4/rules?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60022 - "GET /api/v1/steps/s4/metrics?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60037 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59991 - "GET /api/v1/steps/s4/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60020 - "GET /api/v1/steps/s4/parameter-diff?run_id=5&compare_run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60071 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60093 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60113 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60161 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60176 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60196 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60283 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60300 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60334 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60334 - "GET /style.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60335 - "GET /js/main.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60334 - "GET /styles/base.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60335 - "GET /styles/layout.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60336 - "GET /styles/overlays.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60337 - "GET /styles/fields.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60339 - "GET /js/ui/common.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60335 - "GET /js/pages/overview.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60338 - "GET /js/core/state.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60334 - "GET /js/ui/drawers.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60336 - "GET /js/pages/samples.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60337 - "GET /js/pages/step.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60339 - "GET /js/pages/fields.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60335 - "GET /js/ui/sample_views.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60343 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60359 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60420 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60452 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60338 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60338 - "GET /api/v1/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60457 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60453 - "GET /api/v1/source-fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60480 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60583 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60607 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60609 - "GET /api/v1/source-fields/cell_id_dec HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60651 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60682 - "GET /api/v1/steps/s0/parameters?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60683 - "GET /api/v1/steps/s0/rules?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60651 - "GET /api/v1/steps/s0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60684 - "GET /api/v1/steps/s0/metrics?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60681 - "GET /api/v1/steps/s0/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60651 - "GET /api/v1/steps/s0/parameter-diff?run_id=5&compare_run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60743 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60759 - "GET /api/v1/steps/s1/rules?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60758 - "GET /api/v1/steps/s1/parameters?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60756 - "GET /api/v1/steps/s1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60760 - "GET /api/v1/steps/s1/metrics?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60757 - "GET /api/v1/steps/s1/io-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60756 - "GET /api/v1/steps/s1/parameter-diff?run_id=5&compare_run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60788 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60915 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60961 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60984 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60992 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17999]
+INFO:     Started server process [55318]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62804 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62805 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62807 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62811 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62813 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62814 - "GET /style.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62814 - "GET /styles/base.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62813 - "GET /js/main.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62815 - "GET /styles/layout.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62817 - "GET /styles/overlays.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62816 - "GET /styles/fields.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62814 - "GET /js/core/api.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62815 - "GET /js/core/state.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62813 - "GET /js/ui/common.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62817 - "GET /js/ui/drawers.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62816 - "GET /js/pages/samples.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62813 - "GET /js/pages/fields.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62815 - "GET /js/pages/step.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62818 - "GET /js/pages/overview.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62817 - "GET /js/ui/sample_views.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62814 - "GET /api/v1/steps?main_chain_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62816 - "GET /api/v1/version/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62818 - "GET /api/v1/metrics/step-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62813 - "GET /api/v1/pipeline/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62815 - "GET /api/v1/metrics/layer-snapshot?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62817 - "GET /api/v1/metrics/anomaly-summary?run_id=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62816 - "GET /api/v1/metrics/layer-snapshot?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62814 - "GET /api/v1/metrics/step-summary?run_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62818 - "GET /api/v1/source-fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62813 - "GET /api/v1/version/change-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62830 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62834 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62841 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62844 - "GET /api/v1/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62847 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62853 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62860 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62863 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62878 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62885 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62890 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62903 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62910 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62918 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62941 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62951 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62962 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62997 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [55318]

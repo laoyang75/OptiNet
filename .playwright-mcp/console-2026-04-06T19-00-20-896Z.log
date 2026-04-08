@@ -1,0 +1,2 @@
+[24170820ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:47132/?token=MJoeUnw-OZ6i' failed:  @ http://127.0.0.1:47132/@vite/client:840
+[24170853ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:47132/@vite/client:968

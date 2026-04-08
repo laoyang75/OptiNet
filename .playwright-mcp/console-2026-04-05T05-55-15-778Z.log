@@ -1,0 +1,58 @@
+[   52702ms] [WARNING] [Vue warn]: Property "refreshReasonLabel" was accessed during render but is not defined on instance. 
+  at <PageSection title="版本历史" kicker="历史" > 
+  at <BaselineProfilePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2203
+[   52703ms] [WARNING] [Vue warn]: Unhandled error during execution of render function 
+  at <PageSection title="版本历史" kicker="历史" > 
+  at <BaselineProfilePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2203
+[   52703ms] [ERROR] TypeError: _ctx.refreshReasonLabel is not a function
+    at http://127.0.0.1:47122/src/pages/BaselineProfilePage.vue?t=1775368568457:547:49
+    at renderList (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:5354:16)
+    at http://127.0.0.1:47122/src/pages/BaselineProfilePage.vue?t=1775368568457:513:21
+    at renderFnWithContext (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2862:13)
+    at renderSlot (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:5434:53)
+    at Proxy._sfc_render (http://127.0.0.1:47122/src/components/PageSection.vue:43:5)
+    at renderComponentRoot (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:6722:17)
+    at ReactiveEffect.componentUpdateFn [as fn] (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8368:26)
+    at ReactiveEffect.run (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:507:19)
+    at updateComponent (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8226:18) @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2723
+[   52704ms] [WARNING] [HMR] Something went wrong during Vue component hot-reload. Full reload required. @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2724
+[   82565ms] [WARNING] [Vue warn]: Property "healthLabel" was accessed during render but is not defined on instance. 
+  at <PageSection title="差异样本" kicker="差异" > 
+  at <BaselineProfilePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2203
+[   82565ms] [WARNING] [Vue warn]: Unhandled error during execution of render function 
+  at <PageSection title="差异样本" kicker="差异" > 
+  at <BaselineProfilePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2203
+[   82565ms] [ERROR] TypeError: _ctx.healthLabel is not a function
+    at http://127.0.0.1:47122/src/pages/BaselineProfilePage.vue?t=1775368598325:459:49
+    at renderList (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:5354:16)
+    at http://127.0.0.1:47122/src/pages/BaselineProfilePage.vue?t=1775368598325:429:21
+    at renderFnWithContext (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2862:13)
+    at renderSlot (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:5434:53)
+    at Proxy._sfc_render (http://127.0.0.1:47122/src/components/PageSection.vue:43:5)
+    at renderComponentRoot (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:6722:17)
+    at ReactiveEffect.componentUpdateFn [as fn] (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8368:26)
+    at ReactiveEffect.run (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:507:19)
+    at updateComponent (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8226:18) @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2723
+[   82565ms] [WARNING] [HMR] Something went wrong during Vue component hot-reload. Full reload required. @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2724
+[   92699ms] [WARNING] [Vue warn]: Unhandled error during execution of scheduler flush 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:2203
+[   92715ms] TypeError: Cannot read properties of null (reading 'type')
+    at unmountComponent (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8920:18)
+    at unmount (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8823:7)
+    at unmountChildren (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8946:7)
+    at unmount (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8847:9)
+    at unmountChildren (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8946:7)
+    at unmount (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8847:9)
+    at unmountComponent (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8932:7)
+    at unmount (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8823:7)
+    at patch (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:7597:7)
+    at ReactiveEffect.componentUpdateFn [as fn] (http://127.0.0.1:47122/node_modules/.vite/deps/chunk-XX7PHJXQ.js?v=53110a1d:8377:9)

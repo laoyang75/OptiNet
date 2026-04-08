@@ -1,0 +1,141 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: R4
+      - generic [ref=e6]:
+        - generic [ref=e7]: rebuild4 启动器
+        - generic [ref=e8]: 独立 Python 入口 · 先确认服务，再进入流式治理工作台
+    - generic [ref=e9]:
+      - button "一键启动全部" [ref=e10] [cursor=pointer]
+      - button "一键停止全部" [ref=e11] [cursor=pointer]
+      - button "一键重启全部" [ref=e12] [cursor=pointer]
+      - button "打开工作台" [ref=e13] [cursor=pointer]
+      - button "刷新状态" [ref=e14] [cursor=pointer]
+  - generic [ref=e15]:
+    - article [ref=e16]:
+      - generic [ref=e17]: Launcher
+      - generic [ref=e18]: http://127.0.0.1:47130
+      - generic [ref=e19]: 独立入口，不依赖前后端先启动
+    - article [ref=e20]:
+      - generic [ref=e21]: Workbench
+      - generic [ref=e22]: http://127.0.0.1:47132
+      - generic [ref=e23]: 前端工作台地址
+    - article [ref=e24]:
+      - generic [ref=e25]: Backend Health
+      - generic [ref=e26]: http://127.0.0.1:47131/api/health
+      - generic [ref=e27]: 后端健康检查地址
+    - article [ref=e28]:
+      - generic [ref=e29]: Generated
+      - generic [ref=e30]: 2026-04-06 22:23:11+08:00
+      - generic [ref=e31]: 状态轮询自动刷新
+  - generic [ref=e32]:
+    - article [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: 后端 API
+          - generic [ref=e37]: FastAPI · Python
+        - generic [ref=e38]: 运行中
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]: PID
+          - generic [ref=e43]: "30995"
+        - generic [ref=e44]:
+          - generic [ref=e45]: Port
+          - generic [ref=e46]: :47131
+        - generic [ref=e47]:
+          - generic [ref=e48]: Uptime
+          - generic [ref=e49]: 00:22
+      - generic [ref=e50]: 由 rebuild4 脚本托管的实例已在线。
+      - generic [ref=e51]:
+        - link "服务地址" [ref=e52] [cursor=pointer]:
+          - /url: http://127.0.0.1:47131
+        - generic [ref=e53]: ·
+        - link "健康检查" [ref=e54] [cursor=pointer]:
+          - /url: http://127.0.0.1:47131/api/health
+      - generic [ref=e55]:
+        - button "启动" [ref=e56] [cursor=pointer]
+        - button "停止" [ref=e57] [cursor=pointer]
+        - button "重启" [ref=e58] [cursor=pointer]
+        - button "杀掉端口" [ref=e59] [cursor=pointer]
+        - link "健康检查" [ref=e60] [cursor=pointer]:
+          - /url: http://127.0.0.1:47131/api/health
+    - article [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]: 前端工作台
+          - generic [ref=e65]: Vue 3 · Vite
+        - generic [ref=e66]: 运行中
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]: PID
+          - generic [ref=e71]: "31043"
+        - generic [ref=e72]:
+          - generic [ref=e73]: Port
+          - generic [ref=e74]: :47132
+        - generic [ref=e75]:
+          - generic [ref=e76]: Uptime
+          - generic [ref=e77]: 00:21
+      - generic [ref=e78]: 由 rebuild4 脚本托管的实例已在线。
+      - link "服务地址" [ref=e80] [cursor=pointer]:
+        - /url: http://127.0.0.1:47132
+      - generic [ref=e81]:
+        - button "启动" [ref=e82] [cursor=pointer]
+        - button "停止" [ref=e83] [cursor=pointer]
+        - button "重启" [ref=e84] [cursor=pointer]
+        - button "杀掉端口" [ref=e85] [cursor=pointer]
+        - link "打开页面" [ref=e86] [cursor=pointer]:
+          - /url: http://127.0.0.1:47132
+    - article [ref=e87]:
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]: 数据库
+          - generic [ref=e91]: PostgreSQL 17
+        - generic [ref=e92]: 运行中
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e96]: PID
+          - generic [ref=e97]: "--"
+        - generic [ref=e98]:
+          - generic [ref=e99]: Port
+          - generic [ref=e100]: :5433
+        - generic [ref=e101]:
+          - generic [ref=e102]: Uptime
+          - generic [ref=e103]: "--"
+      - generic [ref=e104]: 远端数据库可达，当前只提供连通性检查。
+  - generic [ref=e105]:
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e108]:
+          - button "后端 API" [ref=e109] [cursor=pointer]
+          - button "前端工作台" [ref=e110] [cursor=pointer]
+          - button "数据库" [ref=e111] [cursor=pointer]
+        - generic [ref=e112]:
+          - button "全部" [ref=e113] [cursor=pointer]
+          - button "信息" [ref=e114] [cursor=pointer]
+          - button "警告" [ref=e115] [cursor=pointer]
+          - button "错误" [ref=e116] [cursor=pointer]
+      - generic [ref=e117]:
+        - generic [ref=e118] [cursor=pointer]: 自动滚动
+        - button "清除视图" [ref=e121] [cursor=pointer]
+    - generic [ref=e122]:
+      - generic [ref=e123]: "[--] INFO INFO: Started server process [30138]"
+      - generic [ref=e124]: "[--] INFO INFO: Waiting for application startup."
+      - generic [ref=e125]: "[--] INFO INFO: Application startup complete."
+      - generic [ref=e126]: "[--] INFO INFO: Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)"
+      - generic [ref=e127]: "[--] WARN WARNING: Invalid HTTP request received."
+      - generic [ref=e128]: "[--] INFO INFO: 127.0.0.1:53948 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e129]: "[--] INFO INFO: 127.0.0.1:53956 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e130]: "[--] INFO INFO: 127.0.0.1:53963 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e131]: "[--] INFO INFO: Started server process [30995]"
+      - generic [ref=e132]: "[--] INFO INFO: Waiting for application startup."
+      - generic [ref=e133]: "[--] INFO INFO: Application startup complete."
+      - generic [ref=e134]: "[--] INFO INFO: Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)"
+      - generic [ref=e135]: "[--] WARN WARNING: Invalid HTTP request received."
+      - generic [ref=e136]: "[--] INFO INFO: 127.0.0.1:54070 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e137]: "[--] INFO INFO: 127.0.0.1:54076 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e138]: "[--] INFO INFO: 127.0.0.1:54085 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e139]: "[--] INFO INFO: 127.0.0.1:54089 - \"GET /api/flow-overview HTTP/1.1\" 200 OK"
+      - generic [ref=e140]: "[--] INFO INFO: 127.0.0.1:54092 - \"GET /api/governance/overview HTTP/1.1\" 200 OK"
+      - generic [ref=e141]: "[--] INFO INFO: 127.0.0.1:54099 - \"GET /api/health HTTP/1.1\" 200 OK"
+      - generic [ref=e142]: "[--] INFO INFO: 127.0.0.1:54112 - \"GET /api/health HTTP/1.1\" 200 OK"
+  - generic [ref=e143]: "危险操作说明：仅本机服务支持 `kill-port`；数据库当前为远端只读输入源，启动器只做状态检查。"

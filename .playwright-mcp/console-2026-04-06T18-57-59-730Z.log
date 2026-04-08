@@ -1,0 +1,40 @@
+[   24721ms] [WARNING] [Vue warn]: Property "anomalyTypeLabel" was accessed during render but is not defined on instance. 
+  at <AnomalyWorkspacePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47132/@vite/client:509
+[   24721ms] [WARNING] [Vue warn]: Unhandled error during execution of render function 
+  at <AnomalyWorkspacePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47132/@vite/client:509
+[   24721ms] [ERROR] TypeError: _ctx.anomalyTypeLabel is not a function
+    at http://127.0.0.1:47132/src/pages/AnomalyWorkspacePage.vue?t=1775501904429:403:32
+    at renderList (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:3844:59)
+    at Proxy._sfc_render (http://127.0.0.1:47132/src/pages/AnomalyWorkspacePage.vue?t=1775501904429:378:6)
+    at renderComponentRoot (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:4697:35)
+    at ReactiveEffect.componentUpdateFn [as fn] (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:5588:22)
+    at ReactiveEffect.run (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:409:16)
+    at http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:2098:43
+    at Array.forEach (<anonymous>)
+    at rerender (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:2091:24)
+    at Object.rerender (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:2148:11) @ http://127.0.0.1:47132/@vite/client:509
+[   24722ms] [WARNING] [HMR] Something went wrong during Vue component hot-reload. Full reload required. @ http://127.0.0.1:47132/@vite/client:509
+[   40452ms] [WARNING] [Vue warn]: Property "anomalyTypeLabel" was accessed during render but is not defined on instance. 
+  at <AnomalyWorkspacePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47132/@vite/client:509
+[   40452ms] [WARNING] [Vue warn]: Unhandled error during execution of render function 
+  at <AnomalyWorkspacePage onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< Proxy(Object) > > 
+  at <RouterView> 
+  at <App> @ http://127.0.0.1:47132/@vite/client:509
+[   40453ms] [ERROR] TypeError: _ctx.anomalyTypeLabel is not a function
+    at http://127.0.0.1:47132/src/pages/AnomalyWorkspacePage.vue?t=1775501920164:403:32
+    at renderList (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:3844:59)
+    at Proxy._sfc_render (http://127.0.0.1:47132/src/pages/AnomalyWorkspacePage.vue?t=1775501920164:378:6)
+    at renderComponentRoot (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:4697:35)
+    at ReactiveEffect.componentUpdateFn [as fn] (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:5588:22)
+    at ReactiveEffect.run (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:409:16)
+    at http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:2098:43
+    at Array.forEach (<anonymous>)
+    at rerender (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:2091:24)
+    at Object.rerender (http://127.0.0.1:47132/node_modules/.vite/deps/vue.runtime.esm-bundler-DaROHT9e.js?v=20c71b7d:2148:11) @ http://127.0.0.1:47132/@vite/client:509
+[   40453ms] [WARNING] [HMR] Something went wrong during Vue component hot-reload. Full reload required. @ http://127.0.0.1:47132/@vite/client:509

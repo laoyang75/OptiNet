@@ -1,0 +1,229 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: 望优数仓工作台
+      - heading "数据驱动的网优数仓重构" [level=1] [ref=e6]
+      - paragraph [ref=e7]: 先看数据，再建结构；每建一层，可视化确认一层。
+    - generic [ref=e9]:
+      - generic [ref=e10]: "当前层: L4 LAC 画像"
+      - generic [ref=e11]: RAW（27 列）
+      - generic [ref=e12]: "状态: 就绪"
+  - generic [ref=e13]:
+    - complementary [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: 数仓层级
+        - link "原始数据 · 字段挑选" [ref=e17] [cursor=pointer]:
+          - /url: "#raw"
+          - generic [ref=e19]: 原始数据 · 字段挑选
+        - link "L0 字段审计" [ref=e20] [cursor=pointer]:
+          - /url: "#audit"
+          - generic [ref=e22]: L0 字段审计
+        - link "L0 数据概览" [ref=e23] [cursor=pointer]:
+          - /url: "#l0data"
+          - generic [ref=e25]: L0 数据概览
+        - link "L1 ODS 清洗规则" [ref=e26] [cursor=pointer]:
+          - /url: "#ods"
+          - generic [ref=e28]: L1 ODS 清洗规则
+        - link "L2 可信库" [ref=e29] [cursor=pointer]:
+          - /url: "#trusted"
+          - generic [ref=e31]: L2 可信库
+        - link "L3 BS+GPS+信号" [ref=e32] [cursor=pointer]:
+          - /url: "#bs-gps"
+          - generic [ref=e34]: L3 BS+GPS+信号
+        - link "L3 问题数据研究" [ref=e35] [cursor=pointer]:
+          - /url: "#anomaly"
+          - generic [ref=e37]: L3 问题数据研究
+        - link "L4 LAC 画像" [active] [ref=e38] [cursor=pointer]:
+          - /url: "#profile"
+          - generic [ref=e40]: L4 LAC 画像
+        - link "L4 BS 画像" [ref=e41] [cursor=pointer]:
+          - /url: "#profile-bs"
+          - generic [ref=e43]: L4 BS 画像
+        - link "L4 Cell 画像" [ref=e44] [cursor=pointer]:
+          - /url: "#profile-cell"
+          - generic [ref=e46]: L4 Cell 画像
+    - main [ref=e47]:
+      - generic [ref=e2271]:
+        - button "LAC 画像" [ref=e2272] [cursor=pointer]
+        - button "LAC 总览" [disabled] [ref=e2273]
+      - generic [ref=e2275]:
+        - heading "L4 LAC 画像 — 样本评估" [level=2] [ref=e2276]
+        - paragraph [ref=e2277]: 3 运营商 × 2 制式，每组 1 个 LAC。基于 LAC × 天 × 小时 压缩表，点击行查看详情。
+      - generic [ref=e2278]:
+        - generic [ref=e2279]:
+          - generic [ref=e2280]: 样本 LAC
+          - generic [ref=e2281]: "6"
+        - generic [ref=e2282]:
+          - generic [ref=e2283]: 有效记录（排除异常后）
+          - generic [ref=e2284]: 199,894
+        - generic [ref=e2285]:
+          - generic [ref=e2286]: 被排除记录
+          - generic [ref=e2287]: 6,203
+      - generic [ref=e2288]:
+        - heading "7 天汇总对比" [level=3] [ref=e2290]
+        - paragraph [ref=e2291]: 点击行展开详情（异常命中、补齐构成、24小时潮汐、日级趋势）
+        - table [ref=e2292]:
+          - rowgroup [ref=e2293]:
+            - row "运营商 制式 LAC 位置 记录数 BS Cell 设备数 面积km² BS密度/km² 上报密度/km² GPS原始率 信号原始率 RSRP 异常排除率" [ref=e2294]:
+              - columnheader "运营商" [ref=e2295]
+              - columnheader "制式" [ref=e2296]
+              - columnheader "LAC" [ref=e2297]
+              - columnheader "位置" [ref=e2298]
+              - columnheader "记录数" [ref=e2299]
+              - columnheader "BS" [ref=e2300]
+              - columnheader "Cell" [ref=e2301]
+              - columnheader "设备数" [ref=e2302]
+              - columnheader "面积km²" [ref=e2303]
+              - columnheader "BS密度/km²" [ref=e2304]
+              - columnheader "上报密度/km²" [ref=e2305]
+              - columnheader "GPS原始率" [ref=e2306]
+              - columnheader "信号原始率" [ref=e2307]
+              - columnheader "RSRP" [ref=e2308]
+              - columnheader "异常排除率" [ref=e2309]
+          - rowgroup [ref=e2310]:
+            - row "中国移动 4G 4176 (0x1050) 北京市 丰台区、惠东县、房山区、西城区 43,197 90 123 142 3.98 22.6 10,854 85.0% 95.0% -86.4 dBm 0.6%" [ref=e2311] [cursor=pointer]:
+              - cell "中国移动" [ref=e2312]:
+                - generic [ref=e2313]: 中国移动
+              - cell "4G" [ref=e2314]:
+                - generic [ref=e2315]: 4G
+              - cell "4176 (0x1050)" [ref=e2316]
+              - cell "北京市 丰台区、惠东县、房山区、西城区" [ref=e2317]:
+                - generic [ref=e2318]:
+                  - text: 北京市
+                  - text: 丰台区、惠东县、房山区、西城区
+              - cell "43,197" [ref=e2319]
+              - cell "90" [ref=e2320]
+              - cell "123" [ref=e2321]
+              - cell "142" [ref=e2322]
+              - cell "3.98" [ref=e2323]
+              - cell "22.6" [ref=e2324]
+              - cell "10,854" [ref=e2325]
+              - cell "85.0%" [ref=e2326]:
+                - generic [ref=e2330]: 85.0%
+              - cell "95.0%" [ref=e2331]:
+                - generic [ref=e2335]: 95.0%
+              - cell "-86.4 dBm" [ref=e2336]
+              - cell "0.6%" [ref=e2337]:
+                - generic [ref=e2341]: 0.6%
+            - row "中国移动 5G 2097233 (0x200051) 北京市 东城区、西城区 37,283 85 126 159 5.94 14.3 6,277 82.5% 85.1% -85 dBm 0.0%" [ref=e2342] [cursor=pointer]:
+              - cell "中国移动" [ref=e2343]:
+                - generic [ref=e2344]: 中国移动
+              - cell "5G" [ref=e2345]:
+                - generic [ref=e2346]: 5G
+              - cell "2097233 (0x200051)" [ref=e2347]
+              - cell "北京市 东城区、西城区" [ref=e2348]:
+                - generic [ref=e2349]:
+                  - text: 北京市
+                  - text: 东城区、西城区
+              - cell "37,283" [ref=e2350]
+              - cell "85" [ref=e2351]
+              - cell "126" [ref=e2352]
+              - cell "159" [ref=e2353]
+              - cell "5.94" [ref=e2354]
+              - cell "14.3" [ref=e2355]
+              - cell "6,277" [ref=e2356]
+              - cell "82.5%" [ref=e2357]:
+                - generic [ref=e2361]: 82.5%
+              - cell "85.1%" [ref=e2362]:
+                - generic [ref=e2366]: 85.1%
+              - cell "-85 dBm" [ref=e2367]
+              - cell "0.0%" [ref=e2368]:
+                - generic [ref=e2371]: 0.0%
+            - row "中国联通 4G 6402 (0x1902) 北京市 海淀区 28,769 77 101 99 11.04 7 2,606 84.7% 93.4% -90 dBm 2.3%" [ref=e2372] [cursor=pointer]:
+              - cell "中国联通" [ref=e2373]:
+                - generic [ref=e2374]: 中国联通
+              - cell "4G" [ref=e2375]:
+                - generic [ref=e2376]: 4G
+              - cell "6402 (0x1902)" [ref=e2377]
+              - cell "北京市 海淀区" [ref=e2378]
+              - cell "28,769" [ref=e2379]
+              - cell "77" [ref=e2380]
+              - cell "101" [ref=e2381]
+              - cell "99" [ref=e2382]
+              - cell "11.04" [ref=e2383]
+              - cell "7" [ref=e2384]
+              - cell "2,606" [ref=e2385]
+              - cell "84.7%" [ref=e2386]:
+                - generic [ref=e2390]: 84.7%
+              - cell "93.4%" [ref=e2391]:
+                - generic [ref=e2395]: 93.4%
+              - cell "-90 dBm" [ref=e2396]
+              - cell "2.3%" [ref=e2397]:
+                - generic [ref=e2401]: 2.3%
+            - row "中国联通 5G 73733 (0x12005) 北京市 朝阳区 38,285 51 102 126 8.71 5.9 4,396 77.4% 89.6% -89.1 dBm 2.8%" [ref=e2402] [cursor=pointer]:
+              - cell "中国联通" [ref=e2403]:
+                - generic [ref=e2404]: 中国联通
+              - cell "5G" [ref=e2405]:
+                - generic [ref=e2406]: 5G
+              - cell "73733 (0x12005)" [ref=e2407]
+              - cell "北京市 朝阳区" [ref=e2408]
+              - cell "38,285" [ref=e2409]
+              - cell "51" [ref=e2410]
+              - cell "102" [ref=e2411]
+              - cell "126" [ref=e2412]
+              - cell "8.71" [ref=e2413]
+              - cell "5.9" [ref=e2414]
+              - cell "4,396" [ref=e2415]
+              - cell "77.4%" [ref=e2416]:
+                - generic [ref=e2420]: 77.4%
+              - cell "89.6%" [ref=e2421]:
+                - generic [ref=e2425]: 89.6%
+              - cell "-89.1 dBm" [ref=e2426]
+              - cell "2.8%" [ref=e2427]:
+                - generic [ref=e2431]: 2.8%
+            - row "中国电信 4G 6411 (0x190B) 北京市 大兴区、朝阳区、通州区 21,233 47 66 70 22.87 2.1 928 77.9% 90.6% -91.9 dBm 4.0%" [ref=e2432] [cursor=pointer]:
+              - cell "中国电信" [ref=e2433]:
+                - generic [ref=e2434]: 中国电信
+              - cell "4G" [ref=e2435]:
+                - generic [ref=e2436]: 4G
+              - cell "6411 (0x190B)" [ref=e2437]
+              - cell "北京市 大兴区、朝阳区、通州区" [ref=e2438]:
+                - generic [ref=e2439]:
+                  - text: 北京市
+                  - text: 大兴区、朝阳区、通州区
+              - cell "21,233" [ref=e2440]
+              - cell "47" [ref=e2441]
+              - cell "66" [ref=e2442]
+              - cell "70" [ref=e2443]
+              - cell "22.87" [ref=e2444]
+              - cell "2.1" [ref=e2445]
+              - cell "928" [ref=e2446]
+              - cell "77.9%" [ref=e2447]:
+                - generic [ref=e2451]: 77.9%
+              - cell "90.6%" [ref=e2452]:
+                - generic [ref=e2456]: 90.6%
+              - cell "-91.9 dBm" [ref=e2457]
+              - cell "4.0%" [ref=e2458]:
+                - generic [ref=e2462]: 4.0%
+            - row "中国电信 5G 405512 (0x63008) 北京市 海淀区、苏家屯区 31,127 60 110 110 3.69 16.3 8,436 82.9% 85.9% -88.6 dBm 9.5%" [ref=e2463] [cursor=pointer]:
+              - cell "中国电信" [ref=e2464]:
+                - generic [ref=e2465]: 中国电信
+              - cell "5G" [ref=e2466]:
+                - generic [ref=e2467]: 5G
+              - cell "405512 (0x63008)" [ref=e2468]
+              - cell "北京市 海淀区、苏家屯区" [ref=e2469]:
+                - generic [ref=e2470]:
+                  - text: 北京市
+                  - text: 海淀区、苏家屯区
+              - cell "31,127" [ref=e2471]
+              - cell "60" [ref=e2472]
+              - cell "110" [ref=e2473]
+              - cell "110" [ref=e2474]
+              - cell "3.69" [ref=e2475]
+              - cell "16.3" [ref=e2476]
+              - cell "8,436" [ref=e2477]
+              - cell "82.9%" [ref=e2478]:
+                - generic [ref=e2482]: 82.9%
+              - cell "85.9%" [ref=e2483]:
+                - generic [ref=e2487]: 85.9%
+              - cell "-88.6 dBm" [ref=e2488]
+              - cell "9.5%" [ref=e2489]:
+                - generic [ref=e2493]: 9.5%
+      - generic [ref=e2494]:
+        - heading "口径说明" [level=3] [ref=e2496]
+        - generic [ref=e2497]:
+          - paragraph [ref=e2498]: 有效口径：剔除 dynamic_bs、collision_confirmed、collision_suspected 三类异常 BS 后统计
+          - paragraph [ref=e2499]: GPS 原始率 = gps_source='original' / 有效记录
+          - paragraph [ref=e2500]: 信号原始率 = signal_fill_source='original' / 有效记录
+          - paragraph [ref=e2501]: 覆盖面积 = GPS 经纬度 P5-P95 矩形面积（去极端飘点）
+          - paragraph [ref=e2502]: 上报密度 = 有效记录数 / 覆盖面积(km²)

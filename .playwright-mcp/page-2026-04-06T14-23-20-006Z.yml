@@ -1,0 +1,43 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: rebuild4 流式治理工作台
+    - generic [ref=e6]:
+      - generic [ref=e7]: 主流程层
+      - link "流转总览" [ref=e8] [cursor=pointer]:
+        - /url: /flow-overview
+      - link "流转快照" [ref=e9] [cursor=pointer]:
+        - /url: /flow-snapshot
+      - link "运行/批次中心" [ref=e10] [cursor=pointer]:
+        - /url: /runs
+    - generic [ref=e11]:
+      - generic [ref=e12]: 画像视角层
+      - link "对象家族" [ref=e13] [cursor=pointer]:
+        - /url: /objects
+      - link "观察工作台" [ref=e14] [cursor=pointer]:
+        - /url: /observation-workspace
+      - link "异常工作台" [ref=e15] [cursor=pointer]:
+        - /url: /anomaly-workspace
+      - link "基线管理" [ref=e16] [cursor=pointer]:
+        - /url: /baseline
+      - link "LAC 画像" [ref=e17] [cursor=pointer]:
+        - /url: /profiles/lac
+      - link "BS 画像" [ref=e18] [cursor=pointer]:
+        - /url: /profiles/bs
+      - link "Cell 画像" [ref=e19] [cursor=pointer]:
+        - /url: /profiles/cell
+    - generic [ref=e20]:
+      - generic [ref=e21]: 支撑治理层
+      - link "初始化" [ref=e22] [cursor=pointer]:
+        - /url: /initialization
+      - link "治理" [ref=e23] [cursor=pointer]:
+        - /url: /governance
+    - generic [ref=e24]:
+      - generic [ref=e25]: 辅助验证
+      - link "对比验证" [ref=e26] [cursor=pointer]:
+        - /url: /validation/compare
+  - main [ref=e27]:
+    - generic [ref=e28]:
+      - generic [ref=e29]:
+        - heading "流转总览" [level=1] [ref=e30]
+        - paragraph [ref=e31]: 当前批次的四路流转统计
+      - generic [ref=e32]: 加载中...

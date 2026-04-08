@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>流转总览 — rebuild3</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-200:#C7D2FE;
+    --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA;
+    --c-indigo-900:#312E81; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-500:#3B82F6; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB;
+    --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280;
+    --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --sidebar-w:240px; --topbar-h:56px; --radius:12px;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover:0 4px 12px rgba(0,0,0,.08);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;color:var(--c-gray-800);background:var(--c-gray-50);min-width:1100px;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--c-indigo-950);color:var(--c-indigo-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-brand{height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;font-size:15px;font-weight:600;color:var(--c-white);border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-nav{padding:12px 8px;flex:1}
+  .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--c-indigo-200);transition:background .15s,color .15s;margin-bottom:2px}
+  .sidebar-nav a:hover{background:rgba(255,255,255,.08);color:var(--c-white)}
+  .sidebar-nav a.active{background:var(--c-indigo-600);color:var(--c-white);font-weight:500}
+  .sidebar-nav .ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:8px 14px}
+  .sidebar-group-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);padding:8px 14px 4px;text-transform:uppercase;letter-spacing:.06em}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+  .topbar{height:var(--topbar-h);background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:16px;font-weight:600;color:var(--c-gray-900)}
+  .topbar-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-gray-500)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-green-600);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  .content{padding:24px 32px 48px}
+  .section-title{font-size:15px;font-weight:600;color:var(--c-gray-900);margin-bottom:12px}
+  .section+.section{margin-top:28px}
+
+  /* 上下文条 */
+  .context-bar{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:14px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;box-shadow:var(--shadow-card)}
+  .ctx-item{display:flex;align-items:center;gap:6px}
+  .ctx-label{font-size:11px;color:var(--c-gray-400);letter-spacing:.04em}
+  .ctx-value{font-size:13px;font-weight:600;color:var(--c-gray-800);font-family:"SF Mono","JetBrains Mono",monospace}
+  .ctx-divider{width:1px;height:24px;background:var(--c-gray-200)}
+
+  /* ═══ 流程图 ═══ */
+  .flow-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:32px;max-width:720px;margin:0 auto}
+
+  .flow-stage{display:flex;align-items:center;position:relative;min-height:64px}
+
+  /* 竖线 */
+  .flow-stage::before{content:'';position:absolute;left:23px;top:0;bottom:0;width:2px;background:var(--c-gray-200);z-index:0}
+  .flow-stage:first-child::before{top:50%}
+  .flow-stage:last-child::before{bottom:50%}
+
+  .flow-node{width:48px;height:48px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--c-white);flex-shrink:0;position:relative;z-index:1}
+  .flow-node.input{background:var(--c-indigo-600)}
+  .flow-node.process{background:var(--c-gray-500)}
+  .flow-node.route{background:var(--c-indigo-500);border-radius:6px;transform:rotate(45deg);width:40px;height:40px;margin:4px}
+  .flow-node.route span{transform:rotate(-45deg);font-size:14px}
+  .flow-node.governed{background:var(--c-green-600)}
+  .flow-node.pending_obs{background:var(--c-amber-500)}
+  .flow-node.pending_issue{background:var(--c-orange-600)}
+  .flow-node.rejected{background:var(--c-red-500)}
+  .flow-node.merge{background:var(--c-blue-500)}
+  .flow-node.decision{background:var(--c-purple-600)}
+  .flow-node.baseline{background:var(--c-indigo-600)}
+
+  .flow-info{flex:1;margin-left:16px}
+  .flow-name{font-size:14px;font-weight:600;color:var(--c-gray-900)}
+  .flow-desc{font-size:12px;color:var(--c-gray-400);margin-top:1px}
+
+  .flow-data{text-align:right;min-width:140px}
+  .flow-data .val{font-size:18px;font-weight:700;color:var(--c-gray-900);font-family:"SF Mono","JetBrains Mono",monospace}
+  .flow-data .sub{font-size:11px;color:var(--c-gray-400);margin-top:1px}
+  .flow-data .pct{font-size:12px;color:var(--c-gray-500);font-weight:500}
+
+  /* 四分流缩进 */
+  .flow-stage.branch{margin-left:32px}
+  .flow-stage.branch::before{left:-9px}
+
+  /* 分流标记线 */
+  .flow-split{height:8px;position:relative;margin-left:23px}
+  .flow-split::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--c-gray-200)}
+
+  /* 批末决策分隔 */
+  .flow-divider{display:flex;align-items:center;gap:12px;margin:8px 0 8px 56px}
+  .flow-divider-line{flex:1;height:1px;border-top:1px dashed var(--c-gray-200)}
+  .flow-divider-text{font-size:10px;font-weight:700;color:var(--c-gray-400);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+
+  /* 切换视图 */
+  .view-switch{display:flex;gap:8px;margin-bottom:16px}
+  .view-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid var(--c-gray-200);background:var(--c-white);color:var(--c-gray-600);cursor:pointer;transition:all .15s}
+  .view-btn:hover{border-color:var(--c-indigo-200);color:var(--c-indigo-600)}
+  .view-btn.active{background:var(--c-indigo-600);color:var(--c-white);border-color:var(--c-indigo-600)}
+
+  /* 下方汇总+问题入口 */
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .summary-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card);cursor:pointer;transition:box-shadow .15s}
+  .summary-card:hover{box-shadow:var(--shadow-card-hover)}
+  .summary-card .label{font-size:12px;color:var(--c-gray-500);margin-bottom:4px}
+  .summary-card .value{font-size:24px;font-weight:700;color:var(--c-gray-900)}
+  .summary-card .meta{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--c-gray-500)}
+  .d-up{color:var(--c-green-600);font-weight:600}
+  .d-down{color:var(--c-red-600);font-weight:600}
+  .d-warn{color:var(--c-orange-600);font-weight:600}
+  .d-neutral{color:var(--c-gray-400);font-weight:600}
+
+  .issue-list{display:flex;flex-direction:column;gap:8px}
+  .issue-item{display:flex;align-items:center;gap:14px;background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:14px 20px;box-shadow:var(--shadow-card);cursor:pointer;transition:box-shadow .15s,border-color .15s}
+  .issue-item:hover{box-shadow:var(--shadow-card-hover);border-color:var(--c-indigo-200)}
+  .issue-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .issue-dot.critical{background:var(--c-red-600)}
+  .issue-dot.warning{background:var(--c-orange-600)}
+  .issue-dot.caution{background:#EAB308}
+  .issue-dot.info{background:var(--c-blue-600)}
+  .issue-text{flex:1;font-size:14px;color:var(--c-gray-800);font-weight:500}
+  .issue-target{font-size:12px;color:var(--c-indigo-600);font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <!-- 主流程层 -->
+      <a href="01_flow_overview.html" class="active"><span class="ico">&#9678;</span> 流转总览</a>
+      <a href="01_flow_overview_timeline.html"><span class="ico">&#9202;</span> 流转快照</a>
+      <a href="02_run_batch_center.html"><span class="ico">&#9881;</span> 运行/批次中心</a>
+      <a href="03_objects.html"><span class="ico">&#9724;</span> 对象浏览</a>
+      <a href="05_observation_workspace.html"><span class="ico">&#9201;</span> 等待/观察工作台</a>
+      <a href="06_anomaly_workspace.html"><span class="ico">&#9888;</span> 异常工作台</a>
+      <a href="07_baseline_profile.html"><span class="ico">&#9733;</span> 基线/画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 画像视角层 -->
+      <a href="09_lac_profile.html"><span class="ico">&#9636;</span> LAC 画像</a>
+      <a href="10_bs_profile.html"><span class="ico">&#9635;</span> BS 画像</a>
+      <a href="11_cell_profile.html"><span class="ico">&#9632;</span> Cell 画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 支撑治理层 -->
+      <a href="13_data_governance.html"><span class="ico">&#9776;</span> 基础数据治理</a>
+      <a href="08_validation_compare.html"><span class="ico">&#9745;</span> 验证/对照</a>
+      <a href="12_initialization.html"><span class="ico">&#9654;</span> 初始化数据</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">rebuild3 流式治理工作台</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 当前上下文 -->
+      <div class="section">
+        <div class="section-title">当前上下文</div>
+        <div class="context-bar">
+          <div class="ctx-item"><span class="ctx-label">run_id</span><span class="ctx-value">RUN-20260403-001</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">batch_id</span><span class="ctx-value">BATCH-2026040314</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">窗口</span><span class="ctx-value">2026-04-03 14:00 ~ 16:00</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">基线版本</span><span class="ctx-value">v47</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">规则版本</span><span class="ctx-value">v3.2</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">契约版本</span><span class="ctx-value">v2.1</span></div>
+        </div>
+      </div>
+
+      <!-- 视图切换 -->
+      <div class="section">
+        <div class="view-switch">
+          <button class="view-btn active">流程图视图</button>
+          <a href="01_flow_overview_timeline.html" class="view-btn">时间快照视图</a>
+        </div>
+
+        <div class="section-title">当前批次处理流程</div>
+
+        <!-- 流程图：匹配 7.1 增量流程图 -->
+        <div class="flow-card">
+
+          <!-- 1. 2小时批次进入 -->
+          <div class="flow-stage">
+            <div class="flow-node input">入</div>
+            <div class="flow-info">
+              <div class="flow-name">2小时批次进入</div>
+              <div class="flow-desc">原始记录导入系统</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">45,231</div>
+              <div class="sub">条原始记录</div>
+            </div>
+          </div>
+
+          <!-- 2. 注册 batch_id -->
+          <div class="flow-stage">
+            <div class="flow-node process">注</div>
+            <div class="flow-info">
+              <div class="flow-name">注册 batch_id</div>
+              <div class="flow-desc">BATCH-2026040314 · 14:00~16:00</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="font-size:14px;color:var(--c-indigo-600)">BATCH-2026040314</div>
+            </div>
+          </div>
+
+          <!-- 3. 标准化事件 -->
+          <div class="flow-stage">
+            <div class="flow-node process">标</div>
+            <div class="flow-info">
+              <div class="flow-name">标准化事件</div>
+              <div class="flow-desc">解析为不可变标准事件 (fact_standardized)</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">45,140</div>
+              <div class="pct">通过率 99.8%</div>
+              <div class="sub">91 条解析失败</div>
+            </div>
+          </div>
+
+          <!-- 4. 查对象注册表和上一版baseline -->
+          <div class="flow-stage">
+            <div class="flow-node process">查</div>
+            <div class="flow-info">
+              <div class="flow-name">查对象注册表 + 上一版基线</div>
+              <div class="flow-desc">匹配 obj_cell · 参考 baseline v47 — 当前批次只读取上一版冻结 baseline，不会边判边刷</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="font-size:14px">12,847 个已知对象</div>
+              <div class="sub">基线 v47 · 规则 v3.2</div>
+            </div>
+          </div>
+
+          <div class="flow-split"></div>
+
+          <!-- 5. 四分流 -->
+          <div class="flow-stage">
+            <div class="flow-node route"><span>分</span></div>
+            <div class="flow-info">
+              <div class="flow-name" style="color:var(--c-indigo-600)">四分流路由</div>
+              <div class="flow-desc">事件进入哪条路径？</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="font-size:14px">45,140 条待分流</div>
+            </div>
+          </div>
+
+          <!-- 5a. fact_governed -->
+          <div class="flow-stage branch">
+            <div class="flow-node governed" style="width:40px;height:40px;font-size:13px">治</div>
+            <div class="flow-info">
+              <div class="flow-name">已治理事实 (fact_governed)</div>
+              <div class="flow-desc">已知且健康，或仅记录级异常</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">38,369</div>
+              <div class="pct">85.0%</div>
+            </div>
+          </div>
+
+          <!-- 5b. fact_pending_observation -->
+          <div class="flow-stage branch">
+            <div class="flow-node pending_obs" style="width:40px;height:40px;font-size:13px">观</div>
+            <div class="flow-info">
+              <div class="flow-name">观察事实 (fact_pending_observation)</div>
+              <div class="flow-desc">未知但合规，证据累计中</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">4,514</div>
+              <div class="pct">10.0%</div>
+            </div>
+          </div>
+
+          <!-- 5c. fact_pending_issue -->
+          <div class="flow-stage branch">
+            <div class="flow-node pending_issue" style="width:40px;height:40px;font-size:13px">问</div>
+            <div class="flow-info">
+              <div class="flow-name">问题事实 (fact_pending_issue)</div>
+              <div class="flow-desc">已知但对象级异常/待复核</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">1,354</div>
+              <div class="pct">3.0%</div>
+            </div>
+          </div>
+
+          <!-- 5d. fact_rejected -->
+          <div class="flow-stage branch">
+            <div class="flow-node rejected" style="width:40px;height:40px;font-size:13px">拒</div>
+            <div class="flow-info">
+              <div class="flow-name">拒收事实 (fact_rejected)</div>
+              <div class="flow-desc">结构不合规 → 留痕后结束</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">903</div>
+              <div class="pct">2.0%</div>
+            </div>
+          </div>
+
+          <div class="flow-split" style="margin-left:32px"></div>
+
+          <!-- 6. 累计对象证据 -->
+          <div class="flow-stage">
+            <div class="flow-node merge">累</div>
+            <div class="flow-info">
+              <div class="flow-name">累计对象证据</div>
+              <div class="flow-desc">governed + pending_observation + pending_issue → 对象证据更新</div>
+            </div>
+            <div class="flow-data">
+              <div class="val">12,850</div>
+              <div class="sub">个对象更新证据 (+6)</div>
+            </div>
+          </div>
+
+          <div class="flow-divider">
+            <div class="flow-divider-line"></div>
+            <div class="flow-divider-text">批末统一决策</div>
+            <div class="flow-divider-line"></div>
+          </div>
+
+          <!-- 7. 批末晋升 Cell -->
+          <div class="flow-stage">
+            <div class="flow-node decision">升</div>
+            <div class="flow-info">
+              <div class="flow-name">批末晋升 Cell</div>
+              <div class="flow-desc">waiting → observing → active / active → dormant</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="color:var(--c-green-600)">晋升 +5</div>
+              <div class="sub" style="color:var(--c-red-500)">降级 -2</div>
+            </div>
+          </div>
+
+          <!-- 8. 级联更新 BS 和 LAC -->
+          <div class="flow-stage">
+            <div class="flow-node decision">联</div>
+            <div class="flow-info">
+              <div class="flow-name">级联更新 BS 和 LAC</div>
+              <div class="flow-desc">由 active Cell 派生更新</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="font-size:14px">+5 BS · +1 LAC</div>
+              <div class="sub">共 12 个级联变化</div>
+            </div>
+          </div>
+
+          <!-- 9. 批末异常检测与状态转移 -->
+          <div class="flow-stage">
+            <div class="flow-node" style="background:var(--c-orange-500)">异</div>
+            <div class="flow-info">
+              <div class="flow-name">批末异常检测与状态转移</div>
+              <div class="flow-desc">碰撞 / 动态 / 迁移 / GPS偏差</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="color:var(--c-orange-600)">47 个异常</div>
+              <div class="sub">本批新增 +2</div>
+            </div>
+          </div>
+
+          <!-- 10. 按触发条件刷新 baseline -->
+          <div class="flow-stage">
+            <div class="flow-node baseline">基</div>
+            <div class="flow-info">
+              <div class="flow-name">按触发条件刷新基线</div>
+              <div class="flow-desc">批末统一判断，新基线仅供下一批次使用</div>
+            </div>
+            <div class="flow-data">
+              <div class="val" style="color:var(--c-gray-400)">未触发刷新</div>
+              <div class="sub">当前 v47 继续使用</div>
+            </div>
+          </div>
+
+        </div><!-- /flow-card -->
+      </div>
+
+      <!-- 当前累计状态 -->
+      <div class="section">
+        <div class="section-title">当前累计状态（本批次后）</div>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">活跃对象</div>
+            <div class="value">12,847</div>
+            <div class="meta"><span>本批 <span class="d-up">+3</span></span><span>较上批 <span class="d-up">+1 ↑</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">等待 + 观察中</div>
+            <div class="value">2,175</div>
+            <div class="meta"><span>本批 <span class="d-warn">+23</span></span><span>较上批 <span class="d-up">-3 ↓</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">异常对象</div>
+            <div class="value" style="color:var(--c-orange-600)">47</div>
+            <div class="meta"><span>本批 <span class="d-down">+2</span></span><span>较上批 <span class="d-down">+2 ↑</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">锚点可用</div>
+            <div class="value">11,234</div>
+            <div class="meta"><span>本批 <span class="d-up">+2</span></span><span>较上批 <span class="d-down">-5 ↓</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">基线可用</div>
+            <div class="value">10,891</div>
+            <div class="meta"><span>本批 <span class="d-up">+1</span></span><span>较上批 <span class="d-down">-3 ↓</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">健康异常比例</div>
+            <div class="value">3.2%</div>
+            <div class="meta"><span>较上批 <span class="d-warn">+0.1% ↑</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">BS 覆盖</div>
+            <div class="value">3,421</div>
+            <div class="meta"><span>本批 <span class="d-up">+5</span></span></div>
+          </div>
+          <div class="summary-card">
+            <div class="label">LAC 覆盖</div>
+            <div class="value">156</div>
+            <div class="meta"><span>本批 <span class="d-up">+1</span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 问题入口 -->
+      <div class="section">
+        <div class="section-title">问题入口</div>
+        <div class="issue-list">
+          <a class="issue-item" href="06_anomaly_workspace.html">
+            <span class="issue-dot critical"></span>
+            <span class="issue-text">碰撞嫌疑 BS 新增 2 个（BATCH-2026040314 发现）</span>
+            <span class="issue-target">异常工作台 →</span>
+          </a>
+          <a class="issue-item" href="05_observation_workspace.html">
+            <span class="issue-dot warning"></span>
+            <span class="issue-text">等待池堆积：连续 3 批 waiting 数量增长</span>
+            <span class="issue-target">等待/观察工作台 →</span>
+          </a>
+          <a class="issue-item" href="03_objects.html">
+            <span class="issue-dot caution"></span>
+            <span class="issue-text">锚点资格失效 5 个对象（GPS 偏差超过阈值）</span>
+            <span class="issue-target">对象浏览 →</span>
+          </a>
+          <a class="issue-item" href="02_run_batch_center.html">
+            <span class="issue-dot info"></span>
+            <span class="issue-text">本批次 fact_pending_issue 占比上升 0.3%</span>
+            <span class="issue-target">批次中心 →</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+SET
+SET
+psql:exec_l0_gps.sql:5: NOTICE:  table "l0_gps_ci" does not exist, skipping
+DROP TABLE
+SELECT 24006779
+psql:exec_l0_gps.sql:80: NOTICE:  table "l0_gps_ss1" does not exist, skipping
+DROP TABLE
+SELECT 14485305
+psql:exec_l0_gps.sql:201: NOTICE:  table "l0_gps_new" does not exist, skipping
+DROP TABLE
+SELECT 38433729
+DROP TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ANALYZE
+DROP TABLE
+DROP TABLE

@@ -1,0 +1,43 @@
+sample:
+  dimensions:
+    - object_count
+    - lifecycle_distribution
+    - health_distribution
+    - qualification_distribution
+    - fact_route_distribution
+    - object_anomaly_distribution
+    - record_anomaly_distribution
+    - profile_metrics
+    - baseline_metrics
+  tolerance:
+    object_count_pct: 0.35
+    qualification_pct: 0.35
+    fact_route_pct: 0.30
+    center_distance_p90_m: 1200
+    profile_ratio_pct: 0.25
+  severity:
+    p0:
+      - sample 双跑任一失败
+      - compare 关键维度缺值
+    p1:
+      - 无法解释的关键对象数量偏差
+      - 无法解释的基线对象清单偏差
+    p2:
+      - 预期语义差异导致的分布偏差
+      - 样本噪声导致的比例偏差
+  gate_rule:
+    allow_full_if:
+      - sample 双跑成功
+      - 主要偏差均可解释
+      - 无 p0/p1 未处理实现缺陷
+      - 报告明确给出“可进入全量”结论
+full:
+  dimensions:
+    - object_count
+    - state_distribution
+    - fact_route_distribution
+    - anomaly_distribution
+    - baseline_metrics
+    - profile_metrics
+    - heat_layer_stability
+    - key_read_model_consistency

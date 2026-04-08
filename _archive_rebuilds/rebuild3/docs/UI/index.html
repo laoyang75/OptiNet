@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 UI 设计导航</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 15px;
+    color: #6b7280;
+    line-height: 1.6;
+  }
+  .header .badge {
+    display: inline-block;
+    background: #eef2ff;
+    color: #6366f1;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 12px;
+    margin-top: 12px;
+  }
+
+  .section {
+    margin-bottom: 36px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    display: block;
+  }
+  .card:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+  }
+  .card .card-number {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    margin-bottom: 6px;
+  }
+  .card .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+  .card .card-desc {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+  .card .card-files {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .card .file-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .file-tag.html { background: #dbeafe; color: #1d4ed8; }
+  .file-tag.md { background: #f3e8ff; color: #7c3aed; }
+
+  .doc-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .doc-card .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .doc-card .card-desc {
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .doc-card .card-files {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>rebuild3 UI 设计</h1>
+    <p>本地动态治理系统 — 静态 HTML 设计原型</p>
+    <span class="badge">UI 审查版 2026-04-03</span>
+  </div>
+
+  <!-- 设计文档 -->
+  <div class="section">
+    <div class="section-title">设计文档</div>
+    <div class="card-grid">
+      <div class="doc-card">
+        <div class="card-title">设计决策与信息架构</div>
+        <div class="card-desc">项目理解、信息架构、状态表达方案、组件边界、样本场景映射、设计风险</div>
+        <div class="card-files">
+          <span class="file-tag md">design_notes.md</span>
+        </div>
+      </div>
+      <a href="design_system.html" class="card">
+        <div class="card-title">设计系统</div>
+        <div class="card-desc">色彩、字体、间距、阴影、全部共享组件的视觉规范</div>
+        <div class="card-files">
+          <span class="file-tag html">design_system.html</span>
+        </div>
+      </a>
+      <a href="components/shared_components.html" class="card">
+        <div class="card-title">共享组件库</div>
+        <div class="card-desc">状态徽标、资格标签、指标卡、按钮、进度条、空状态等全部共享组件</div>
+        <div class="card-files">
+          <span class="file-tag html">shared_components.html</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 启动器 -->
+  <div class="section">
+    <div class="section-title">启动器（独立页面）</div>
+    <div class="card-grid">
+      <a href="launcher/launcher.html" class="card">
+        <div class="card-title">启动器控制面板</div>
+        <div class="card-desc">服务启停控制、运行状态监控、实时日志查看、端口管理</div>
+        <div class="card-files">
+          <span class="file-tag html">launcher.html</span>
+          <span class="file-tag md">launcher_doc.md</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 主系统页面 -->
+  <div class="section">
+    <div class="section-title">主系统页面</div>
+    <div class="card-grid">
+      <a href="pages/01_dashboard.html" class="card">
+        <div class="card-number">01</div>
+        <div class="card-title">仪表盘</div>
+        <div class="card-desc">系统全局健康概览、关键指标、需要关注项、最近批次</div>
+        <div class="card-files">
+          <span class="file-tag html">01_dashboard.html</span>
+          <span class="file-tag md">01_dashboard_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/02_run_center.html" class="card">
+        <div class="card-number">02</div>
+        <div class="card-title">运行中心</div>
+        <div class="card-desc">Run/Batch/Baseline 管理、批次时间线、版本绑定</div>
+        <div class="card-files">
+          <span class="file-tag html">02_run_center.html</span>
+          <span class="file-tag md">02_run_center_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/03_objects_list.html" class="card">
+        <div class="card-number">03</div>
+        <div class="card-title">对象浏览</div>
+        <div class="card-desc">Cell/BS/LAC 列表、多维筛选、状态和资格展示、WATCH 标记</div>
+        <div class="card-files">
+          <span class="file-tag html">03_objects_list.html</span>
+          <span class="file-tag md">03_objects_list_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/04_object_detail.html" class="card">
+        <div class="card-number">04</div>
+        <div class="card-title">对象详情</div>
+        <div class="card-desc">单对象详情抽屉：基本信息、画像、状态历史、关系、三层资格</div>
+        <div class="card-files">
+          <span class="file-tag html">04_object_detail.html</span>
+          <span class="file-tag md">04_object_detail_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/05_waiting_pool.html" class="card">
+        <div class="card-number">05</div>
+        <div class="card-title">等待池</div>
+        <div class="card-desc">Waiting/Observing 候选对象、门槛进度、差距分析、晋升建议</div>
+        <div class="card-files">
+          <span class="file-tag html">05_waiting_pool.html</span>
+          <span class="file-tag md">05_waiting_pool_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/06_anomaly_board.html" class="card">
+        <div class="card-number">06</div>
+        <div class="card-title">异常看板</div>
+        <div class="card-desc">Collision/Dynamic/Migration 等问题对象集中管理、复核操作</div>
+        <div class="card-files">
+          <span class="file-tag html">06_anomaly_board.html</span>
+          <span class="file-tag md">06_anomaly_board_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/07_batch_review.html" class="card">
+        <div class="card-number">07</div>
+        <div class="card-title">批次审查</div>
+        <div class="card-desc">四分流漏斗、晋升/降级/级联决策、各层事实明细、拒收记录</div>
+        <div class="card-files">
+          <span class="file-tag html">07_batch_review.html</span>
+          <span class="file-tag md">07_batch_review_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/08_baseline.html" class="card">
+        <div class="card-number">08</div>
+        <div class="card-title">基线管理</div>
+        <div class="card-desc">Baseline 版本历史、版本对比差异、覆盖分布、质量指标</div>
+        <div class="card-files">
+          <span class="file-tag html">08_baseline.html</span>
+          <span class="file-tag md">08_baseline_doc.md</span>
+        </div>
+      </a>
+      <a href="pages/09_replay.html" class="card">
+        <div class="card-number">09</div>
+        <div class="card-title">回放对比</div>
+        <div class="card-desc">3+4 vs 7 天收敛验证、六维指标、差异对象、趋势图</div>
+        <div class="card-files">
+          <span class="file-tag html">09_replay.html</span>
+          <span class="file-tag md">09_replay_doc.md</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    rebuild3 UI Design &mdash; 审查通过后使用 04b_prompt_开发实施.md 进入开发阶段
+  </div>
+
+</div>
+</body>
+</html>

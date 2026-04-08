@@ -1,0 +1,34 @@
+database:
+  default_dsn: postgresql://postgres:123456@192.168.200.217:5433/ip_loc2
+  host: 192.168.200.217
+  port: 5433
+  read_only_inputs:
+    - rebuild2
+    - rebuild2_meta
+    - legacy
+backend:
+  mode: sql-first
+  runner: python3 + psycopg
+  host: 127.0.0.1
+  port: 47121
+  start_script: ./rebuild3/scripts/dev/start_backend.sh
+  stop_script: ./rebuild3/scripts/dev/stop_backend.sh
+  restart_script: ./rebuild3/scripts/dev/restart_backend.sh
+frontend:
+  stack: Vue 3 + TypeScript + Vite
+  host: 127.0.0.1
+  port: 47122
+  start_script: ./rebuild3/scripts/dev/start_frontend.sh
+  stop_script: ./rebuild3/scripts/dev/stop_frontend.sh
+  restart_script: ./rebuild3/scripts/dev/restart_frontend.sh
+launcher:
+  mode: standalone-python
+  host: 127.0.0.1
+  port: 47120
+  entry_script: ./rebuild3/launcher/launcher.py
+  start_script: ./rebuild3/scripts/dev/start_launcher.sh
+  stop_script: ./rebuild3/scripts/dev/stop_launcher.sh
+  restart_script: ./rebuild3/scripts/dev/restart_launcher.sh
+  start_all_script: ./rebuild3/scripts/dev/start_all.sh
+  stop_all_script: ./rebuild3/scripts/dev/stop_all.sh
+  status_script: ./rebuild3/scripts/dev/status.sh

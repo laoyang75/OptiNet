@@ -1,0 +1,40 @@
+sample:
+  cell:
+    existence:
+      min_records: 5
+      min_devices: 1
+      min_active_days: 1
+    anchorable:
+      min_gps_points: 10
+      min_devices: 2
+      min_active_days: 1
+      max_p90_m: 1500
+    baseline:
+      min_gps_points: 20
+      min_devices: 2
+      min_active_days: 3
+      min_signal_original_ratio: 0.50
+  bs:
+    usable_min_gps_points: 10
+    usable_max_p90_m: 1500
+    risk_min_gps_points: 3
+    risk_max_p90_m: 4000
+  gps:
+    china_lon_min: 73
+    china_lon_max: 135
+    china_lat_min: 3
+    china_lat_max: 54
+    raw_keep_max_dist_5g_m: 500
+    raw_keep_max_dist_non5g_m: 1000
+  anomaly_mapping:
+    classification_to_health_state:
+      dynamic_bs: dynamic
+      collision_suspected: collision_suspect
+      collision_confirmed: collision_confirmed
+      collision_uncertain: collision_suspect
+    record_level_tags:
+      - single_large
+      - normal_spread
+full:
+  inherits_from_sample: true
+  note: full 阶段在 Gate E 通过后再按相同口径扩展为全量窗口

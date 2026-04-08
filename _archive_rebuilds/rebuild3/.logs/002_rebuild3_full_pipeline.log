@@ -1,0 +1,76 @@
+SET
+SET
+SET
+TRUNCATE TABLE
+TRUNCATE TABLE
+INSERT 0 1
+INSERT 0 1
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:66: NOTICE:  table "stg_bs_classification_ref" does not exist, skipping
+DROP TABLE
+SELECT 193036
+CREATE INDEX
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:93: NOTICE:  table "stg_cell_dist" does not exist, skipping
+DROP TABLE
+SELECT 568153
+CREATE INDEX
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:126: NOTICE:  table "stg_cell_ratio" does not exist, skipping
+DROP TABLE
+SELECT 1257982
+CREATE INDEX
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:146: NOTICE:  table "stg_cell_profile" does not exist, skipping
+DROP TABLE
+SELECT 573561
+CREATE INDEX
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:193: NOTICE:  table "stg_bs_ratio" does not exist, skipping
+DROP TABLE
+SELECT 609364
+CREATE INDEX
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:212: NOTICE:  table "stg_bs_profile" does not exist, skipping
+DROP TABLE
+SELECT 193036
+CREATE INDEX
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:244: NOTICE:  table "stg_lac_profile" does not exist, skipping
+DROP TABLE
+SELECT 50153
+CREATE INDEX
+INSERT 0 573561
+CREATE INDEX
+CREATE INDEX
+INSERT 0 193036
+CREATE INDEX
+INSERT 0 50153
+INSERT 0 816750
+INSERT 0 766597
+INSERT 0 43771306
+INSERT 0 4499401
+INSERT 0 3825562
+INSERT 0 1401109
+INSERT 0 24855605
+INSERT 0 194952
+INSERT 0 108970
+INSERT 0 988
+INSERT 0 1
+INSERT 0 4
+INSERT 0 7
+psql:rebuild3/backend/sql/govern/002_rebuild3_full_pipeline.sql:797: ERROR:  column "fact_count" is of type bigint but expression is of type text
+LINE 2: ...01-20251207-V1', 'cell_object', health_state, count(*), NULL
+                                                                   ^
+HINT:  You will need to rewrite or cast the expression.
+     2183.86 real         0.02 user         0.04 sys
+            20185088  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                1733  page reclaims
+                 275  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                  65  messages sent
+                  76  messages received
+                   0  signals received
+                  76  voluntary context switches
+                 490  involuntary context switches
+           227334686  instructions retired
+           133859372  cycles elapsed
+             4801920  peak memory footprint

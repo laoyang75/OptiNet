@@ -1,0 +1,13 @@
+SET
+DROP TABLE
+CREATE TABLE
+INSERT 0 11
+psql:rebuild3/backend/sql/init/001_sample_extract.sql:33: NOTICE:  table "source_l0_lac" does not exist, skipping
+DROP TABLE
+SELECT 34998
+psql:rebuild3/backend/sql/init/001_sample_extract.sql:77: NOTICE:  table "source_l0_gps" does not exist, skipping
+DROP TABLE
+SELECT 36170
+psql:rebuild3/backend/sql/init/001_sample_extract.sql:121: NOTICE:  table "sample_source_summary" does not exist, skipping
+DROP TABLE
+SELECT 20

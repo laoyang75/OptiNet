@@ -1,0 +1,280 @@
+/* ===== rebuild3 Design Tokens (aligned to UI_v2 design_system.html) ===== */
+:root {
+  color-scheme: light;
+
+  /* Primary — Indigo */
+  --primary-600: #4F46E5;
+  --primary-500: #6366F1;
+  --primary-100: #E0E7FF;
+  --primary-50: #EEF2FF;
+
+  /* Semantic: Lifecycle & Health */
+  --green-600: #16A34A;
+  --green-500: #22C55E;
+  --green-100: #DCFCE7;
+  --green-50: #F0FDF4;
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --amber-100: #FEF3C7;
+  --amber-50: #FFFBEB;
+  --orange-400: #FB923C;
+  --orange-500: #F97316;
+  --orange-600: #EA580C;
+  --orange-100: #FFEDD5;
+  --orange-50: #FFF7ED;
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+  --red-500: #EF4444;
+  --red-600: #DC2626;
+  --red-100: #FEE2E2;
+  --red-50: #FEF2F2;
+  --blue-400: #60A5FA;
+  --blue-500: #3B82F6;
+  --blue-600: #2563EB;
+  --blue-100: #DBEAFE;
+  --blue-50: #EFF6FF;
+  --purple-400: #A78BFA;
+  --purple-600: #9333EA;
+  --purple-100: #EDE9FE;
+  --purple-50: #F5F3FF;
+  --indigo-50: #EEF2FF;
+  --indigo-100: #E0E7FF;
+  --indigo-200: #C7D2FE;
+  --indigo-500: #6366F1;
+  --indigo-600: #4F46E5;
+  --indigo-700: #4338CA;
+  --indigo-900: #312E81;
+  --indigo-950: #1E1B4B;
+
+  /* Surfaces */
+  --surface-bg: #FFFFFF;
+  --surface-secondary: #F9FAFB;
+  --surface-border: #E5E7EB;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  --font-h1: 32px;
+  --font-h2: 24px;
+  --font-h3: 18px;
+  --font-body: 14px;
+  --font-small: 12px;
+
+  /* Radius — design system: 8/6/4 */
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --radius-sm: 4px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08);
+
+  /* Layout */
+  --sidebar-w: 240px;
+  --topbar-h: 56px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: var(--font-body);
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* ===== LAYOUT SHELL ===== */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===== SIDEBAR — Deep indigo (design spec: #1E1B4B) ===== */
+.app-sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--indigo-950);
+  color: var(--indigo-200);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+}
+
+.sidebar-brand {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #FFFFFF;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  padding: var(--sp-3) var(--sp-2);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+  margin: var(--sp-2) var(--sp-3);
+}
+
+.sidebar-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.3);
+  padding: var(--sp-2) 14px var(--sp-1);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-body);
+  color: var(--indigo-200);
+  transition: background 0.15s, color 0.15s;
+  margin-bottom: 2px;
+}
+
+.sidebar-link .ico {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.sidebar-link:hover {
+  background: rgba(255,255,255,0.08);
+  color: #FFFFFF;
+}
+
+.sidebar-link--active {
+  background: var(--indigo-600);
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* ===== MAIN AREA ===== */
+.app-main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+}
+
+/* ===== STICKY TOPBAR ===== */
+.app-topbar {
+  height: var(--topbar-h);
+  background: var(--surface-bg);
+  border-bottom: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-8);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot--ok { background: var(--green-600); animation: pulse 2s infinite; }
+.status-dot--processing { background: var(--blue-600); animation: pulse 1.5s infinite; }
+.status-dot--rerun { background: var(--purple-600); animation: pulse 1.5s infinite; }
+.status-dot--validation { background: var(--gray-500); animation: pulse 2s infinite; }
+.status-dot--error { background: var(--red-500); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

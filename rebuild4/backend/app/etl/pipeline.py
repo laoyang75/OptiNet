@@ -29,8 +29,9 @@ class EtlResult:
         return {s.step: {"in": s.input_count, "out": s.output_count, "filtered": s.filtered_count} for s in self.steps}
 
 
-def run_etl(scope: str = "sample") -> EtlResult:
-    """运行完整 ETL 管道：解析 → 清洗 → 补齐。"""
+def run_etl(scope: str = "sample", build_profile: bool = True,
+            profile_mode: str = "full", params_path: str = None) -> EtlResult:
+    """运行完整 ETL 管道：解析 → 清洗 → 补齐 → (画像构建)。"""
     result = EtlResult(scope=scope)
 
     if scope == "sample":
@@ -53,6 +54,15 @@ def run_etl(scope: str = "sample") -> EtlResult:
 
     # 写入统计表
     _save_stats(result)
+
+    # Step 4: 画像构建 (etl_filled → etl_dim_cell/bs/lac)
+    if build_profile:
+        if profile_mode == "streaming":
+            from .profile import run_profile_streaming
+            run_profile_streaming(params_path=params_path)
+        else:
+            from .profile import run_profile
+            run_profile(params_path=params_path)
 
     return result
 
@@ -446,6 +456,10 @@ ODS_RULES = [
      "field": "lac", "action": "nullify",
      "where": "lac = 268435455",
      "desc": "0xFFFFFFF 溢出值"},
+    {"id": "ODS-005b", "cat": "LAC", "name": "LAC INT32_MAX 溢出值置空",
+     "field": "lac", "action": "nullify",
+     "where": "lac = 2147483647",
+     "desc": "Integer.MAX_VALUE 溢出值（5G TAC 字段异常）"},
     # ── CellID ──
     {"id": "ODS-006", "cat": "CellID", "name": "CellID=0 置空",
      "field": "cell_id", "action": "nullify",

@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>治理链路总览 - 工作台</title>
+<link rel="stylesheet" href="wb.css"/>
+</head>
+<body>
+
+<!-- 顶部上下文条 -->
+<div class="ctx-bar">
+  <span>Run: <strong>#0037</strong></span>
+  <span>Compare: <strong>#0034</strong></span>
+  <span>参数集: <strong>P-003</strong></span>
+  <span>规则集: <strong>R2</strong></span>
+  <span>SQL: <strong>S-005</strong></span>
+  <span>契约: <strong>C1</strong></span>
+  <span>基线: <strong>B1</strong></span>
+  <span class="spacer"></span>
+  <button class="ctx-btn" onclick="openDrawer('version')">版本抽屉</button>
+  <span style="color:#5a7a80">刷新 10s前</span>
+</div>
+
+<!-- 侧栏 -->
+<nav class="sidebar">
+  <div class="group-label">治理链路</div>
+  <a href="index.html" class="active">
+    <span class="step-status done"></span><span>链路总览</span>
+  </a>
+  <a href="step-lac.html">
+    <span class="step-status done"></span><span>可信 LAC</span><span class="step-count">45</span>
+  </a>
+  <a href="step-cell.html">
+    <span class="step-status done"></span><span>Cell 统计</span><span class="step-count">9,654</span>
+  </a>
+  <a href="step-bs.html">
+    <span class="step-status done"></span><span>可信 BS</span><span class="step-count">3,218</span>
+  </a>
+  <a href="step-gps.html">
+    <span class="step-status done"></span><span>GPS 修正</span><span class="step-count">22%</span>
+  </a>
+  <a href="#">
+    <span class="step-status done"></span><span>信号补齐</span><span class="step-count">8%</span>
+  </a>
+  <a href="#">
+    <span class="step-status done"></span><span>完整回归</span><span class="step-count">10.8M</span>
+  </a>
+  <a href="#">
+    <span class="step-status done"></span><span>画像/基线</span><span class="step-count">B1</span>
+  </a>
+  <a href="#">
+    <span class="step-status pending"></span><span>伪日更</span><span class="step-count">—</span>
+  </a>
+  <div class="sep"></div>
+  <div class="group-label">辅助页面</div>
+  <a href="fields.html"><span>字段治理</span></a>
+  <a href="samples.html"><span>样本研究</span></a>
+</nav>
+
+<div class="main">
+  <div class="page-header"><h1>治理链路总览</h1></div>
+
+  <!-- 链路节点图 -->
+  <div class="card">
+    <h3>链路节点</h3>
+    <div class="pipeline-flow">
+      <a class="pf-node done" href="#">
+        <span class="pf-label">数据起点</span>
+        <span class="pf-count">12.3M</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="step-lac.html">
+        <span class="pf-label">可信 LAC</span>
+        <span class="pf-count">45 (+2)</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="step-cell.html">
+        <span class="pf-label">Cell 统计</span>
+        <span class="pf-count">9,654 <span class="tag diff-up" style="font-size:9px">+453</span></span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="step-bs.html">
+        <span class="pf-label">可信 BS</span>
+        <span class="pf-count">3,218 (+113)</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="step-gps.html">
+        <span class="pf-label">GPS 修正</span>
+        <span class="pf-count">修正率22%</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="#">
+        <span class="pf-label">信号补齐</span>
+        <span class="pf-count">补齐率8%</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="#">
+        <span class="pf-label">完整回归</span>
+        <span class="pf-count">10.8M</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node done" href="#">
+        <span class="pf-label">画像/基线</span>
+        <span class="pf-count">B1</span>
+      </a>
+      <span class="pf-arrow">&rarr;</span>
+      <a class="pf-node pending" href="#">
+        <span class="pf-label">伪日更</span>
+        <span class="pf-count">—</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Run 摘要对比 -->
+  <div class="cols-2">
+    <div class="card">
+      <h3>当前 Run #0037</h3>
+      <dl class="detail-grid">
+        <dt>类型</dt><dd>冷启动</dd>
+        <dt>状态</dt><dd><span class="tag ok">已完成 8/8</span></dd>
+        <dt>输入窗口</dt><dd>2026-03-01 ~ 03-14</dd>
+        <dt>总输入行</dt><dd>12,345,678</dd>
+        <dt>参数集</dt><dd>P-003</dd>
+        <dt>规则集</dt><dd>R2</dd>
+        <dt>SQL版本</dt><dd>S-005</dd>
+        <dt>契约版本</dt><dd>C1</dd>
+        <dt>耗时</dt><dd>2h 17m</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>对比 Run #0034</h3>
+      <dl class="detail-grid">
+        <dt>类型</dt><dd>冷启动</dd>
+        <dt>状态</dt><dd><span class="tag ok">已完成 8/8</span></dd>
+        <dt>输入窗口</dt><dd>2026-02-15 ~ 02-28</dd>
+        <dt>总输入行</dt><dd>11,890,234</dd>
+        <dt>参数集</dt><dd>P-002</dd>
+        <dt>规则集</dt><dd>R1</dd>
+        <dt>SQL版本</dt><dd>S-004</dd>
+        <dt>契约版本</dt><dd>C1</dd>
+        <dt>耗时</dt><dd>3h 05m</dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- 差异摘要 -->
+  <div class="card">
+    <h3>步骤差异摘要 (Run#0037 vs Run#0034)</h3>
+    <table>
+      <thead><tr><th>步骤</th><th>#0037 输出</th><th>#0034 输出</th><th>变化</th><th>变化率</th><th></th></tr></thead>
+      <tbody>
+        <tr class="expandable" onclick="location.href='step-lac.html'">
+          <td>可信 LAC</td><td>45</td><td>43</td>
+          <td><span class="tag diff-new">+2</span></td><td>+4.7%</td>
+          <td><a class="link">查看 &rarr;</a></td>
+        </tr>
+        <tr class="expandable" onclick="location.href='step-cell.html'" style="background:#fffaf5">
+          <td><strong>Cell 统计</strong></td><td>9,654</td><td>9,201</td>
+          <td><span class="tag diff-up">+453</span></td><td><strong>+4.9%</strong></td>
+          <td><a class="link">查看 &rarr;</a></td>
+        </tr>
+        <tr class="expandable" onclick="location.href='step-bs.html'">
+          <td>可信 BS</td><td>3,218</td><td>3,105</td>
+          <td><span class="tag diff-new">+113</span></td><td>+3.6%</td>
+          <td><a class="link">查看 &rarr;</a></td>
+        </tr>
+        <tr class="expandable" onclick="location.href='step-gps.html'">
+          <td>GPS 修正</td><td>修正率 22%</td><td>修正率 25%</td>
+          <td><span class="tag diff-down">-3%</span></td><td>改善</td>
+          <td><a class="link">查看 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td>信号补齐</td><td>补齐率 8%</td><td>补齐率 9%</td>
+          <td><span class="tag diff-down">-1%</span></td><td>改善</td>
+          <td><a class="link">查看 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td>完整回归</td><td>10,800,000</td><td>10,100,000</td>
+          <td><span class="tag diff-new">+700K</span></td><td>+6.9%</td>
+          <td><a class="link">查看 &rarr;</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 重点关注 -->
+  <div class="card">
+    <h3>重点关注</h3>
+    <table>
+      <thead><tr><th>类型</th><th>描述</th><th></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag warn">步骤变化</span></td>
+          <td>Cell统计 变化最大：+453 对象 (+4.9%)，建议优先查看</td>
+          <td><a class="link" href="step-cell.html">跳转 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="tag err">新增问题</span></td>
+          <td>碰撞BS 新增4个（规则阈值从2km降至1.5km）</td>
+          <td><a class="link" href="samples.html">查看样本 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="tag info">字段变化</span></td>
+          <td>rsrq 空值率 5% &rarr; 15%，可能影响信号补齐和画像</td>
+          <td><a class="link" href="fields.html">查看字段 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="tag ok">改善</span></td>
+          <td>GPS修正率从25%降至22%，锚点质量提升</td>
+          <td><a class="link" href="step-gps.html">查看 &rarr;</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 操作区 -->
+  <div class="card" style="display:flex;gap:10px">
+    <button class="btn btn-primary">从数据起点开始全链路重跑</button>
+    <button class="btn btn-ghost">选择步骤局部重跑</button>
+  </div>
+</div>
+
+<!-- 版本抽屉 -->
+<div class="drawer-overlay" id="overlay-version" onclick="closeDrawer('version')"></div>
+<div class="drawer" id="drawer-version">
+  <button class="close" onclick="closeDrawer('version')">&times;</button>
+  <h2>版本与运行</h2>
+  <div class="card">
+    <h3>当前版本体系</h3>
+    <dl class="detail-grid">
+      <dt>run_id</dt><dd>#0037</dd>
+      <dt>parameter_set</dt><dd>P-003</dd>
+      <dt>rule_set</dt><dd>R2</dd>
+      <dt>sql_bundle</dt><dd>S-005</dd>
+      <dt>contract</dt><dd>C1</dd>
+      <dt>baseline</dt><dd>B1</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h3>最近运行</h3>
+    <table>
+      <tbody>
+        <tr><td><strong>#0037</strong></td><td>冷启动</td><td><span class="tag ok">完成</span></td><td>2h17m</td></tr>
+        <tr><td><strong>#0036</strong></td><td>局部重跑</td><td><span class="tag warn">运行中</span></td><td>—</td></tr>
+        <tr><td><strong>#0035</strong></td><td>局部重跑</td><td><span class="tag err">失败</span></td><td>0h34m</td></tr>
+        <tr><td><strong>#0034</strong></td><td>冷启动</td><td><span class="tag ok">完成</span></td><td>3h05m</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>参数集变更</h3>
+    <table>
+      <tbody>
+        <tr><td><span class="tag info">P-003</span> &larr; P-002</td><td>碰撞阈值 2km&rarr;1.5km</td></tr>
+        <tr><td><span class="tag info">P-002</span> &larr; P-001</td><td>LAC活跃天数 5&rarr;7</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>规则集变更</h3>
+    <table>
+      <tbody>
+        <tr><td><span class="tag info">R2</span> &larr; R1</td><td>新增碰撞BS拆分规则</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function openDrawer(name) {
+  document.getElementById('drawer-'+name).classList.add('open');
+  document.getElementById('overlay-'+name).classList.add('open');
+}
+function closeDrawer(name) {
+  document.getElementById('drawer-'+name).classList.remove('open');
+  document.getElementById('overlay-'+name).classList.remove('open');
+}
+</script>
+</body>
+</html>

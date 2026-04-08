@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基础数据治理 — rebuild3</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-200:#C7D2FE;
+    --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA;
+    --c-indigo-900:#312E81; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-500:#3B82F6; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB;
+    --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280;
+    --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --sidebar-w:240px; --topbar-h:56px; --radius:12px;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover:0 4px 12px rgba(0,0,0,.08);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;color:var(--c-gray-800);background:var(--c-gray-50);min-width:1100px;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--c-indigo-950);color:var(--c-indigo-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-brand{height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;font-size:15px;font-weight:600;color:var(--c-white);border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-nav{padding:12px 8px;flex:1;overflow-y:auto}
+  .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--c-indigo-200);transition:background .15s,color .15s;margin-bottom:2px}
+  .sidebar-nav a:hover{background:rgba(255,255,255,.08);color:var(--c-white)}
+  .sidebar-nav a.active{background:var(--c-indigo-600);color:var(--c-white);font-weight:500}
+  .sidebar-nav .ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:8px 14px}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+  .topbar{height:var(--topbar-h);background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:16px;font-weight:600;color:var(--c-gray-900)}
+  .topbar-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-gray-500)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-green-600);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  .content{padding:24px 32px 48px}
+  .section-title{font-size:15px;font-weight:600;color:var(--c-gray-900);margin-bottom:12px}
+  .section+.section{margin-top:28px}
+
+  /* === 概览卡 === */
+  .overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px}
+  .overview-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card)}
+  .overview-card .label{font-size:12px;color:var(--c-gray-500);margin-bottom:4px}
+  .overview-card .value{font-size:24px;font-weight:700;color:var(--c-gray-900);font-family:"SF Mono","JetBrains Mono",monospace}
+  .overview-card .sub{font-size:12px;color:var(--c-gray-400);margin-top:2px}
+
+  /* === Tab 切换 === */
+  .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--c-gray-200);margin-bottom:20px}
+  .tab-btn{padding:10px 20px;font-size:14px;font-weight:500;color:var(--c-gray-500);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+  .tab-btn:hover{color:var(--c-gray-800)}
+  .tab-btn.active{color:var(--c-indigo-600);border-bottom-color:var(--c-indigo-600);font-weight:600}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+  /* === 搜索/筛选 === */
+  .filter-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .filter-bar input[type="text"]{padding:8px 14px;border:1px solid var(--c-gray-200);border-radius:8px;font-size:13px;width:260px;outline:none;transition:border-color .15s}
+  .filter-bar input[type="text"]:focus{border-color:var(--c-indigo-500)}
+  .filter-bar select{padding:8px 12px;border:1px solid var(--c-gray-200);border-radius:8px;font-size:13px;color:var(--c-gray-700);background:var(--c-white);outline:none;cursor:pointer}
+
+  /* === 表格 === */
+  .data-table{width:100%;border-collapse:collapse;background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card)}
+  .data-table thead{background:var(--c-gray-50)}
+  .data-table th{padding:10px 14px;font-size:12px;font-weight:600;color:var(--c-gray-500);text-align:left;border-bottom:1px solid var(--c-gray-200);white-space:nowrap}
+  .data-table td{padding:10px 14px;font-size:13px;color:var(--c-gray-800);border-bottom:1px solid var(--c-gray-100);vertical-align:top}
+  .data-table tbody tr:hover{background:var(--c-indigo-50)}
+  .data-table .mono{font-family:"SF Mono","JetBrains Mono",monospace;font-size:12px}
+
+  /* === 标签 === */
+  .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap}
+  .tag-blue{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .tag-green{background:var(--c-green-50);color:var(--c-green-600)}
+  .tag-yellow{background:var(--c-amber-50);color:var(--c-amber-500)}
+  .tag-purple{background:var(--c-purple-50);color:var(--c-purple-600)}
+  .tag-gray-blue{background:#EFF6FF;color:#64748B}
+  .tag-gray{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .tag-orange{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .tag-red{background:var(--c-red-50);color:var(--c-red-600)}
+  .tag-teal{background:#F0FDFA;color:#0D9488}
+
+  /* === Tab3 左右布局 === */
+  .usage-layout{display:flex;gap:20px;min-height:520px}
+  .usage-list{width:280px;flex-shrink:0;background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column}
+  .usage-list-header{padding:12px 16px;border-bottom:1px solid var(--c-gray-200)}
+  .usage-list-header input{width:100%;padding:7px 12px;border:1px solid var(--c-gray-200);border-radius:6px;font-size:13px;outline:none}
+  .usage-list-header input:focus{border-color:var(--c-indigo-500)}
+  .usage-list-items{flex:1;overflow-y:auto}
+  .usage-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--c-gray-100);transition:background .1s}
+  .usage-item:hover{background:var(--c-gray-50)}
+  .usage-item.selected{background:var(--c-indigo-50);border-left:3px solid var(--c-indigo-600)}
+  .usage-item .name{font-size:13px;font-weight:500;font-family:"SF Mono","JetBrains Mono",monospace}
+
+  .usage-detail{flex:1;background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:24px}
+  .detail-section{margin-bottom:20px}
+  .detail-section:last-child{margin-bottom:0}
+  .detail-title{font-size:14px;font-weight:600;color:var(--c-gray-900);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--c-gray-100)}
+  .detail-row{display:flex;align-items:flex-start;gap:12px;padding:6px 0;font-size:13px}
+  .detail-label{color:var(--c-gray-500);min-width:100px;flex-shrink:0}
+  .detail-value{color:var(--c-gray-800)}
+  .chain{display:flex;align-items:center;gap:8px;font-size:13px;font-family:"SF Mono","JetBrains Mono",monospace;color:var(--c-gray-700)}
+  .chain-arrow{color:var(--c-gray-400)}
+
+  /* === Tab4 迁移分组 === */
+  .migration-group{margin-bottom:24px}
+  .migration-header{display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:var(--radius) var(--radius) 0 0;font-size:14px;font-weight:600;color:var(--c-white)}
+  .migration-header.green{background:var(--c-green-600)}
+  .migration-header.blue{background:var(--c-blue-600)}
+  .migration-header.orange{background:var(--c-orange-600)}
+  .migration-header.red{background:var(--c-red-600)}
+  .migration-header .count{background:rgba(255,255,255,.25);padding:2px 10px;border-radius:12px;font-size:12px}
+  .migration-body{background:var(--c-white);border:1px solid var(--c-gray-200);border-top:none;border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow-card)}
+  .migration-item{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid var(--c-gray-100)}
+  .migration-item:last-child{border-bottom:none}
+  .migration-item .m-name{font-size:13px;font-weight:600;font-family:"SF Mono","JetBrains Mono",monospace;min-width:220px;color:var(--c-gray-900)}
+  .migration-item .m-desc{flex:1;font-size:13px;color:var(--c-gray-600)}
+  .migration-item .m-action{font-size:12px;color:var(--c-gray-400);white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <!-- 主流程层 -->
+      <a href="01_flow_overview.html"><span class="ico">&#9678;</span> 流转总览</a>
+      <a href="01_flow_overview_timeline.html"><span class="ico">&#9202;</span> 流转快照</a>
+      <a href="02_run_batch_center.html"><span class="ico">&#9881;</span> 运行/批次中心</a>
+      <a href="03_objects.html"><span class="ico">&#9724;</span> 对象浏览</a>
+      <a href="05_observation_workspace.html"><span class="ico">&#9201;</span> 等待/观察工作台</a>
+      <a href="06_anomaly_workspace.html"><span class="ico">&#9888;</span> 异常工作台</a>
+      <a href="07_baseline_profile.html"><span class="ico">&#9733;</span> 基线/画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 画像视角层 -->
+      <a href="09_lac_profile.html"><span class="ico">&#9636;</span> LAC 画像</a>
+      <a href="10_bs_profile.html"><span class="ico">&#9635;</span> BS 画像</a>
+      <a href="11_cell_profile.html"><span class="ico">&#9632;</span> Cell 画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 支撑治理层 -->
+      <a href="13_data_governance.html" class="active"><span class="ico">&#9776;</span> 基础数据治理</a>
+      <a href="08_validation_compare.html"><span class="ico">&#9745;</span> 验证/对照</a>
+      <a href="12_initialization.html"><span class="ico">&#9654;</span> 初始化数据</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">基础数据治理</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 概览卡 上行 -->
+      <div class="section">
+        <div class="section-title">登记概览</div>
+        <div class="overview-grid">
+          <div class="overview-card">
+            <div class="label">已登记表</div>
+            <div class="value">28</div>
+            <div class="sub">核心依赖 12 &middot; 历史兼容 9 &middot; 研究表 7</div>
+          </div>
+          <div class="overview-card">
+            <div class="label">已登记字段</div>
+            <div class="value">347</div>
+            <div class="sub">覆盖全部 28 张表</div>
+          </div>
+          <div class="overview-card">
+            <div class="label">实际使用字段</div>
+            <div class="value">198</div>
+            <div class="sub">使用率 57.1%</div>
+          </div>
+        </div>
+        <div class="overview-grid">
+          <div class="overview-card">
+            <div class="label">核心依赖</div>
+            <div class="value">12</div>
+            <div class="sub">流转必需表</div>
+          </div>
+          <div class="overview-card">
+            <div class="label">历史兼容</div>
+            <div class="value">9</div>
+            <div class="sub">rebuild2 遗留</div>
+          </div>
+          <div class="overview-card">
+            <div class="label">待迁移确认</div>
+            <div class="value" style="color:var(--c-orange-600)">43</div>
+            <div class="sub">字段级待确认</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 切换 -->
+      <div class="section">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('field')">字段目录</button>
+          <button class="tab-btn" onclick="switchTab('table')">表目录</button>
+          <button class="tab-btn" onclick="switchTab('usage')">实际使用</button>
+          <button class="tab-btn" onclick="switchTab('migration')">迁移状态</button>
+        </div>
+
+        <!-- ========== Tab 1: 字段目录 ========== -->
+        <div id="tab-field" class="tab-panel active">
+          <div class="filter-bar">
+            <input type="text" placeholder="搜索字段名或中文说明...">
+            <select>
+              <option value="">全部层级</option>
+              <option>源/标准</option>
+              <option>对象</option>
+              <option>事实</option>
+              <option>基线</option>
+              <option>画像</option>
+              <option>元数据</option>
+            </select>
+            <select>
+              <option value="">全部数据类型</option>
+              <option>varchar</option>
+              <option>integer</option>
+              <option>numeric</option>
+              <option>boolean</option>
+              <option>enum</option>
+            </select>
+            <select>
+              <option value="">是否核心</option>
+              <option>核心依赖</option>
+              <option>辅助依赖</option>
+            </select>
+            <select>
+              <option value="">全部迁移状态</option>
+              <option>直接复用</option>
+              <option>重组迁移</option>
+              <option>仅参考</option>
+              <option>可淘汰</option>
+            </select>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>字段名</th>
+                <th>中文说明</th>
+                <th>所属层级</th>
+                <th>数据类型</th>
+                <th>来源表</th>
+                <th>使用位置</th>
+                <th>核心</th>
+                <th>迁移状态</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">operator_code</td>
+                <td>运营商编码</td>
+                <td><span class="tag tag-blue">源/标准</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">fact_standardized</td>
+                <td>全部页面</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="mono">tech_norm</td>
+                <td>制式</td>
+                <td><span class="tag tag-blue">源/标准</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">fact_standardized</td>
+                <td>全部页面</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="mono">lac</td>
+                <td>位置区编码</td>
+                <td><span class="tag tag-blue">源/标准</span></td>
+                <td class="mono">integer</td>
+                <td class="mono">fact_standardized</td>
+                <td>对象/画像</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="mono">cell_id</td>
+                <td>小区编号</td>
+                <td><span class="tag tag-blue">源/标准</span></td>
+                <td class="mono">integer</td>
+                <td class="mono">fact_standardized</td>
+                <td>对象/画像</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="mono">lifecycle_state</td>
+                <td>生命周期状态</td>
+                <td><span class="tag tag-green">对象</span></td>
+                <td class="mono">enum</td>
+                <td class="mono">obj_cell/obj_bs/obj_lac</td>
+                <td>对象浏览/等待</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td>rebuild3 新增</td>
+              </tr>
+              <tr>
+                <td class="mono">health_state</td>
+                <td>健康状态</td>
+                <td><span class="tag tag-green">对象</span></td>
+                <td class="mono">enum</td>
+                <td class="mono">obj_cell/obj_bs/obj_lac</td>
+                <td>对象浏览/异常</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td>rebuild3 新增</td>
+              </tr>
+              <tr>
+                <td class="mono">anchorable</td>
+                <td>锚点资格</td>
+                <td><span class="tag tag-green">对象</span></td>
+                <td class="mono">boolean</td>
+                <td class="mono">obj_cell/obj_bs</td>
+                <td>对象/画像</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td>rebuild3 新增</td>
+              </tr>
+              <tr>
+                <td class="mono">baseline_eligible</td>
+                <td>基线资格</td>
+                <td><span class="tag tag-green">对象</span></td>
+                <td class="mono">boolean</td>
+                <td class="mono">obj_cell/obj_bs</td>
+                <td>对象/基线</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td>rebuild3 新增</td>
+              </tr>
+              <tr>
+                <td class="mono">classification_v2</td>
+                <td>旧异常分类</td>
+                <td><span class="tag tag-gray-blue">画像</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">profile_bs</td>
+                <td>BS 画像</td>
+                <td><span class="tag tag-gray">辅助依赖</span></td>
+                <td><span class="tag tag-orange">仅参考</span></td>
+                <td>rebuild2 遗留，降级为解释层</td>
+              </tr>
+              <tr>
+                <td class="mono">gps_confidence</td>
+                <td>GPS 可信度</td>
+                <td><span class="tag tag-gray-blue">画像</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">profile_bs</td>
+                <td>BS 画像</td>
+                <td><span class="tag tag-gray">辅助依赖</span></td>
+                <td><span class="tag tag-orange">仅参考</span></td>
+                <td>rebuild2 遗留</td>
+              </tr>
+              <tr>
+                <td class="mono">signal_confidence</td>
+                <td>信号可信度</td>
+                <td><span class="tag tag-gray-blue">画像</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">profile_bs</td>
+                <td>BS 画像</td>
+                <td><span class="tag tag-gray">辅助依赖</span></td>
+                <td><span class="tag tag-orange">仅参考</span></td>
+                <td>rebuild2 遗留</td>
+              </tr>
+              <tr>
+                <td class="mono">gps_p50_dist_m</td>
+                <td>GPS P50 距离</td>
+                <td><span class="tag tag-gray-blue">画像</span></td>
+                <td class="mono">numeric</td>
+                <td class="mono">profile_bs/profile_cell</td>
+                <td>BS/Cell 画像</td>
+                <td><span class="tag tag-gray">辅助依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td>质量指标</td>
+              </tr>
+              <tr>
+                <td class="mono">center_lon</td>
+                <td>GPS 中心经度</td>
+                <td><span class="tag tag-gray-blue">画像</span></td>
+                <td class="mono">numeric</td>
+                <td class="mono">profile_bs/profile_cell</td>
+                <td>画像</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-green">直接复用</span></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="mono">batch_id</td>
+                <td>批次标识</td>
+                <td><span class="tag tag-gray">元数据</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">batch_meta</td>
+                <td>全部页面</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-blue">重组迁移</span></td>
+                <td>rebuild3 新增元数据</td>
+              </tr>
+              <tr>
+                <td class="mono">baseline_version</td>
+                <td>基线版本号</td>
+                <td><span class="tag tag-gray">元数据</span></td>
+                <td class="mono">varchar</td>
+                <td class="mono">baseline_meta</td>
+                <td>基线/流转</td>
+                <td><span class="tag tag-green">核心依赖</span></td>
+                <td><span class="tag tag-blue">重组迁移</span></td>
+                <td>rebuild3 新增</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ========== Tab 2: 表目录 ========== -->
+        <div id="tab-table" class="tab-panel">
+          <div class="filter-bar">
+            <input type="text" placeholder="搜索表名或中文说明...">
+            <select>
+              <option value="">全部表类型</option>
+              <option>事实表</option>
+              <option>对象快照表</option>
+              <option>基线表</option>
+              <option>画像聚合表</option>
+              <option>元数据表</option>
+              <option>研究表</option>
+            </select>
+            <select>
+              <option value="">全部迁移状态</option>
+              <option>直接复用</option>
+              <option>重组迁移</option>
+              <option>仅参考</option>
+              <option>可淘汰</option>
+            </select>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>表名</th>
+                <th>中文说明</th>
+                <th>表类型</th>
+                <th>粒度</th>
+                <th>主键</th>
+                <th>更新方式</th>
+                <th>上游来源</th>
+                <th>下游使用</th>
+                <th>保留策略</th>
+                <th>迁移状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">fact_standardized</td>
+                <td>标准化事件层</td>
+                <td><span class="tag tag-green">事实表</span></td>
+                <td>记录级</td>
+                <td class="mono">event_key</td>
+                <td>批次追加</td>
+                <td>源表</td>
+                <td>四分流路由</td>
+                <td>归档层</td>
+                <td><span class="tag tag-green">直接复用</span></td>
+              </tr>
+              <tr>
+                <td class="mono">fact_governed</td>
+                <td>已治理事实</td>
+                <td><span class="tag tag-green">事实表</span></td>
+                <td>记录级</td>
+                <td class="mono">event_key</td>
+                <td>批次追加</td>
+                <td class="mono">fact_standardized</td>
+                <td>对象证据/画像</td>
+                <td>热层+归档</td>
+                <td><span class="tag tag-green">直接复用</span></td>
+              </tr>
+              <tr>
+                <td class="mono">fact_pending_observation</td>
+                <td>观察事实</td>
+                <td><span class="tag tag-green">事实表</span></td>
+                <td>记录级</td>
+                <td class="mono">event_key</td>
+                <td>批次追加</td>
+                <td class="mono">fact_standardized</td>
+                <td>等待池</td>
+                <td>热层</td>
+                <td><span class="tag tag-green">直接复用</span></td>
+              </tr>
+              <tr>
+                <td class="mono">fact_pending_issue</td>
+                <td>问题事实</td>
+                <td><span class="tag tag-green">事实表</span></td>
+                <td>记录级</td>
+                <td class="mono">event_key</td>
+                <td>批次追加</td>
+                <td class="mono">fact_standardized</td>
+                <td>异常工作台</td>
+                <td>热层</td>
+                <td><span class="tag tag-green">直接复用</span></td>
+              </tr>
+              <tr>
+                <td class="mono">fact_rejected</td>
+                <td>拒收事实</td>
+                <td><span class="tag tag-green">事实表</span></td>
+                <td>记录级</td>
+                <td class="mono">event_key</td>
+                <td>批次追加</td>
+                <td class="mono">fact_standardized</td>
+                <td>留痕</td>
+                <td>归档层</td>
+                <td><span class="tag tag-green">直接复用</span></td>
+              </tr>
+              <tr>
+                <td class="mono">obj_cell</td>
+                <td>Cell 对象快照</td>
+                <td><span class="tag tag-blue">对象快照表</span></td>
+                <td>Cell 级</td>
+                <td class="mono">cell_key</td>
+                <td>批末更新</td>
+                <td>事实层</td>
+                <td>对象浏览/画像</td>
+                <td>实时</td>
+                <td><span class="tag tag-blue">重组迁移</span></td>
+              </tr>
+              <tr>
+                <td class="mono">obj_bs</td>
+                <td>BS 对象快照</td>
+                <td><span class="tag tag-blue">对象快照表</span></td>
+                <td>BS 级</td>
+                <td class="mono">bs_key</td>
+                <td>批末级联</td>
+                <td class="mono">obj_cell</td>
+                <td>对象/画像</td>
+                <td>实时</td>
+                <td><span class="tag tag-blue">重组迁移</span></td>
+              </tr>
+              <tr>
+                <td class="mono">obj_lac</td>
+                <td>LAC 对象快照</td>
+                <td><span class="tag tag-blue">对象快照表</span></td>
+                <td>LAC 级</td>
+                <td class="mono">lac_key</td>
+                <td>批末级联</td>
+                <td class="mono">obj_bs</td>
+                <td>对象/画像</td>
+                <td>实时</td>
+                <td><span class="tag tag-blue">重组迁移</span></td>
+              </tr>
+              <tr>
+                <td class="mono">profile_bs</td>
+                <td>BS 画像聚合</td>
+                <td><span class="tag tag-teal">画像聚合表</span></td>
+                <td>BS 级</td>
+                <td class="mono">bs_key</td>
+                <td>画像刷新</td>
+                <td class="mono">fact_governed</td>
+                <td>BS 画像</td>
+                <td>长层</td>
+                <td><span class="tag tag-orange">仅参考</span> <span style="font-size:11px;color:var(--c-gray-400)">(rebuild2遗留)</span></td>
+              </tr>
+              <tr>
+                <td class="mono">batch_snapshot</td>
+                <td>批次快照</td>
+                <td><span class="tag tag-gray">元数据表</span></td>
+                <td>批次级</td>
+                <td class="mono">batch_id</td>
+                <td>批末写入</td>
+                <td>全链路</td>
+                <td>流转快照</td>
+                <td>长层</td>
+                <td><span class="tag tag-blue">重组迁移</span> <span style="font-size:11px;color:var(--c-gray-400)">(rebuild3新增)</span></td>
+              </tr>
+              <tr>
+                <td class="mono">baseline_meta</td>
+                <td>基线版本表</td>
+                <td><span class="tag tag-purple">基线表</span></td>
+                <td>版本级</td>
+                <td class="mono">baseline_version</td>
+                <td>触发刷新</td>
+                <td>obj+fact</td>
+                <td>基线页面</td>
+                <td>永久</td>
+                <td><span class="tag tag-blue">重组迁移</span></td>
+              </tr>
+              <tr>
+                <td class="mono">_research_bs_classification_v2</td>
+                <td>BS 异常研究表</td>
+                <td><span class="tag tag-gray">研究表</span></td>
+                <td>BS 级</td>
+                <td class="mono">bs_key</td>
+                <td>一次性</td>
+                <td class="mono">fact_governed</td>
+                <td>参考</td>
+                <td>仅保留</td>
+                <td><span class="tag tag-red">可淘汰</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ========== Tab 3: 实际使用 ========== -->
+        <div id="tab-usage" class="tab-panel">
+          <div class="usage-layout">
+            <!-- 左侧列表 -->
+            <div class="usage-list">
+              <div class="usage-list-header">
+                <input type="text" placeholder="搜索表名...">
+              </div>
+              <div class="usage-list-items">
+                <div class="usage-item"><span class="name">fact_standardized</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">fact_governed</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">fact_pending_observation</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">fact_pending_issue</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">fact_rejected</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item selected"><span class="name">obj_cell</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">obj_bs</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">obj_lac</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">profile_bs</span><span class="tag tag-gray" style="font-size:10px">历史兼容</span></div>
+                <div class="usage-item"><span class="name">batch_snapshot</span><span class="tag tag-blue" style="font-size:10px">辅助</span></div>
+                <div class="usage-item"><span class="name">baseline_meta</span><span class="tag tag-green" style="font-size:10px">核心</span></div>
+                <div class="usage-item"><span class="name">_research_bs_*</span><span class="tag tag-gray" style="font-size:10px">历史兼容</span></div>
+              </div>
+            </div>
+
+            <!-- 右侧详情 -->
+            <div class="usage-detail">
+              <div style="font-size:18px;font-weight:700;color:var(--c-gray-900);margin-bottom:4px;font-family:'SF Mono','JetBrains Mono',monospace">obj_cell</div>
+              <div style="font-size:13px;color:var(--c-gray-500);margin-bottom:20px">Cell 对象快照 &middot; Cell 级 &middot; 批末更新</div>
+
+              <div class="detail-section">
+                <div class="detail-title">使用方列表</div>
+                <div class="detail-row">
+                  <span class="detail-label">UI 页面</span>
+                  <span class="detail-value">对象浏览、对象详情、等待工作台、异常工作台 — <span class="tag tag-green" style="font-size:10px">核心依赖</span></span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">API</span>
+                  <span class="detail-value"><span class="mono">/api/objects</span>, <span class="mono">/api/observation-workspace</span> — <span class="tag tag-blue" style="font-size:10px">主读模型</span></span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">批处理</span>
+                  <span class="detail-value">批末晋升任务、级联更新任务 — <span class="tag tag-orange" style="font-size:10px">写入方</span></span>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">上下游关系</div>
+                <div class="chain">
+                  <span>fact_governed</span>
+                  <span class="chain-arrow">&rarr;</span>
+                  <span style="font-weight:700;color:var(--c-indigo-600)">obj_cell</span>
+                  <span class="chain-arrow">&rarr;</span>
+                  <span>obj_bs</span>
+                  <span class="chain-arrow">&rarr;</span>
+                  <span>baseline_meta</span>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">使用说明</div>
+                <div style="font-size:13px;color:var(--c-gray-700);line-height:1.8">
+                  对象快照是整个治理系统的核心，承载 <span class="mono">lifecycle_state</span>、<span class="mono">health_state</span>、资格状态（<span class="mono">anchorable</span>、<span class="mono">baseline_eligible</span>）。所有对象级页面和工作台均以此表为主读模型，批末晋升任务和级联更新任务为唯一写入方。
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Tab 4: 迁移状态 ========== -->
+        <div id="tab-migration" class="tab-panel">
+
+          <!-- 直接复用 -->
+          <div class="migration-group">
+            <div class="migration-header green">
+              直接复用 <span class="count">8 项</span>
+            </div>
+            <div class="migration-body">
+              <div class="migration-item">
+                <span class="m-name">fact_standardized</span>
+                <span class="m-desc">标准化事件层，结构稳定，字段完全对齐</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">fact_governed</span>
+                <span class="m-desc">已治理事实，核心流转表</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">fact_pending_observation</span>
+                <span class="m-desc">观察事实，等待池数据源</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">fact_pending_issue</span>
+                <span class="m-desc">问题事实，异常工作台数据源</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">fact_rejected</span>
+                <span class="m-desc">拒收事实，留痕用途</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">operator_code / tech_norm / lac / cell_id</span>
+                <span class="m-desc">源/标准层核心字段，全页面使用</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">lifecycle_state / health_state</span>
+                <span class="m-desc">对象层核心状态字段，rebuild3 新增</span>
+                <span class="m-action">无需操作</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">center_lon / gps_p50_dist_m</span>
+                <span class="m-desc">画像层质量和定位字段</span>
+                <span class="m-action">无需操作</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 重组迁移 -->
+          <div class="migration-group">
+            <div class="migration-header blue">
+              重组迁移 <span class="count">6 项</span>
+            </div>
+            <div class="migration-body">
+              <div class="migration-item">
+                <span class="m-name">obj_cell</span>
+                <span class="m-desc">新增 lifecycle_state / health_state / anchorable / baseline_eligible 字段</span>
+                <span class="m-action">ALTER TABLE 新增列</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">obj_bs</span>
+                <span class="m-desc">新增资格和健康字段，级联 obj_cell 结构</span>
+                <span class="m-action">ALTER TABLE 新增列</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">obj_lac</span>
+                <span class="m-desc">新增生命周期和健康字段</span>
+                <span class="m-action">ALTER TABLE 新增列</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">batch_snapshot</span>
+                <span class="m-desc">rebuild3 新增，批次级元数据快照</span>
+                <span class="m-action">CREATE TABLE</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">baseline_meta</span>
+                <span class="m-desc">rebuild3 新增，基线版本管理表</span>
+                <span class="m-action">CREATE TABLE</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">batch_id / baseline_version</span>
+                <span class="m-desc">新增元数据字段，贯穿全链路</span>
+                <span class="m-action">各表 ALTER 新增</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 仅参考 -->
+          <div class="migration-group">
+            <div class="migration-header orange">
+              仅参考 <span class="count">4 项</span>
+            </div>
+            <div class="migration-body">
+              <div class="migration-item">
+                <span class="m-name">profile_bs</span>
+                <span class="m-desc">rebuild2 遗留画像聚合表，降级为参考层</span>
+                <span class="m-action">只读，不写入新数据</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">classification_v2</span>
+                <span class="m-desc">旧异常分类字段，降级为解释层</span>
+                <span class="m-action">保留展示，不参与逻辑</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">gps_confidence</span>
+                <span class="m-desc">rebuild2 GPS 可信度，新系统用画像质量指标替代</span>
+                <span class="m-action">保留展示，不参与逻辑</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">signal_confidence</span>
+                <span class="m-desc">rebuild2 信号可信度，新系统用画像质量指标替代</span>
+                <span class="m-action">保留展示，不参与逻辑</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 可淘汰 -->
+          <div class="migration-group">
+            <div class="migration-header red">
+              可淘汰 <span class="count">2 项</span>
+            </div>
+            <div class="migration-body">
+              <div class="migration-item">
+                <span class="m-name">_research_bs_classification_v2</span>
+                <span class="m-desc">BS 异常研究表，一次性研究产物，不迁移</span>
+                <span class="m-action">归档后删除</span>
+              </div>
+              <div class="migration-item">
+                <span class="m-name">_research_* (其他研究表)</span>
+                <span class="m-desc">其他临时研究表，已完成使命</span>
+                <span class="m-action">归档后删除</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>

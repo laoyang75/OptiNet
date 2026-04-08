@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 启动器</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --bg-page: #f9fafb;
+    --bg-card: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.10);
+    --green: #22c55e;
+    --red: #ef4444;
+    --red-dark: #dc2626;
+    --amber: #f59e0b;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --log-bg: #1e1e2e;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+  }
+  .header-left .subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    box-shadow: var(--shadow);
+  }
+  .header-right .dot-ok {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+  .header-right span {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* ── Global Controls ── */
+  .global-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+
+  .btn-danger-outline {
+    background: transparent;
+    color: var(--red);
+    border-color: var(--red);
+  }
+  .btn-danger-outline:hover { background: #fef2f2; }
+
+  .btn-secondary {
+    background: #f3f4f6;
+    color: var(--text-secondary);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { background: #e5e7eb; }
+
+  .btn-green {
+    background: var(--green);
+    color: #fff;
+    border-color: var(--green);
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+  .btn-green:hover { background: #16a34a; }
+
+  .btn-gray {
+    background: #f3f4f6;
+    color: var(--text-secondary);
+    border-color: var(--border);
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+  .btn-gray:hover { background: #e5e7eb; }
+
+  .btn-blue {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+  .btn-blue:hover { background: #2563eb; }
+
+  .btn-kill {
+    background: transparent;
+    color: var(--red-dark);
+    border: 1px dashed var(--red);
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+  .btn-kill:hover { background: #fef2f2; border-style: solid; }
+
+  /* ── Service Cards ── */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .card-type {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px 3px 8px;
+    border-radius: 999px;
+  }
+  .status-badge .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .status-running {
+    background: #f0fdf4;
+    color: #15803d;
+  }
+  .status-running .dot {
+    background: var(--green);
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+  .status-stopped {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+  .status-stopped .dot { background: var(--red); }
+  .status-starting {
+    background: #fffbeb;
+    color: #a16207;
+  }
+  .status-starting .dot { background: var(--amber); animation: pulse-amber 1.5s ease-in-out infinite; }
+  .status-error {
+    background: #fef2f2;
+    color: var(--red-dark);
+  }
+  .status-error .dot { background: var(--red-dark); }
+
+  .card-meta {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 14px;
+  }
+  .meta-item {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .meta-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* ── Log Viewer ── */
+  .log-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .log-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .log-tab {
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: var(--font);
+  }
+  .log-tab:hover { color: var(--text-primary); }
+  .log-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+  .log-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a3c;
+    padding: 8px 14px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .log-filters {
+    display: flex;
+    gap: 4px;
+  }
+  .log-filter-btn {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font);
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .log-filter-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .log-filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .log-clear-btn {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: var(--font);
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .log-clear-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  .log-area {
+    background: var(--log-bg);
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 16px;
+    min-height: 260px;
+    max-height: 340px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+  .log-line {
+    white-space: pre;
+  }
+  .log-ts { color: #6b7280; }
+  .log-info { color: #94a3b8; }
+  .log-warn { color: #f59e0b; }
+  .log-error { color: #f87171; }
+
+  .log-autoscroll {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #252536;
+    border-radius: 0 0 var(--radius) var(--radius);
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+  }
+  .log-autoscroll .dot-scroll {
+    width: 5px; height: 5px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+
+  /* ── Animations ── */
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.35); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+  }
+  @keyframes pulse-amber {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ── Section spacer ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #9ca3af;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>rebuild3 启动器</h1>
+      <div class="subtitle">2026-04-03 10:34:22 &nbsp;·&nbsp; 系统正常</div>
+    </div>
+    <div class="header-right">
+      <div class="dot-ok"></div>
+      <span>3/3 服务运行中</span>
+    </div>
+  </div>
+
+  <!-- Global Controls -->
+  <div class="global-controls">
+    <button class="btn btn-primary">&#9654;&ensp;一键启动全部</button>
+    <button class="btn btn-danger-outline">&#9632;&ensp;一键停止全部</button>
+    <button class="btn btn-secondary">&#8635;&ensp;一键重启全部</button>
+  </div>
+
+  <!-- Service Cards -->
+  <div class="section-label">服务列表</div>
+  <div class="cards">
+
+    <!-- 后端 API -->
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">后端 API</div>
+          <div class="card-type">FastAPI</div>
+        </div>
+        <span class="status-badge status-running"><span class="dot"></span>运行中</span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">PID&ensp;<strong>12847</strong></div>
+        <div class="meta-item">端口&ensp;<strong>8000</strong></div>
+        <div class="meta-item">运行时间&ensp;<strong>2小时 15分</strong></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-green">启动</button>
+        <button class="btn btn-gray">停止</button>
+        <button class="btn btn-blue">重启</button>
+        <button class="btn btn-kill">杀掉端口</button>
+      </div>
+    </div>
+
+    <!-- 前端开发服务 -->
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">前端开发服务</div>
+          <div class="card-type">Vite</div>
+        </div>
+        <span class="status-badge status-running"><span class="dot"></span>运行中</span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">PID&ensp;<strong>12903</strong></div>
+        <div class="meta-item">端口&ensp;<strong>5173</strong></div>
+        <div class="meta-item">运行时间&ensp;<strong>2小时 14分</strong></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-green">启动</button>
+        <button class="btn btn-gray">停止</button>
+        <button class="btn btn-blue">重启</button>
+        <button class="btn btn-kill">杀掉端口</button>
+      </div>
+    </div>
+
+    <!-- 数据库 -->
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">数据库</div>
+          <div class="card-type">PostgreSQL 17</div>
+        </div>
+        <span class="status-badge status-running"><span class="dot"></span>运行中</span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">PID&ensp;<strong>1024</strong></div>
+        <div class="meta-item">端口&ensp;<strong>5432</strong></div>
+        <div class="meta-item">运行时间&ensp;<strong>48小时 32分</strong></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-green">启动</button>
+        <button class="btn btn-gray">停止</button>
+        <button class="btn btn-blue">重启</button>
+        <button class="btn btn-kill">杀掉端口</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Viewer -->
+  <div class="section-label">日志输出</div>
+
+  <div class="log-tabs">
+    <button class="log-tab active">后端 API</button>
+    <button class="log-tab">前端服务</button>
+    <button class="log-tab">数据库</button>
+  </div>
+
+  <div class="log-toolbar">
+    <div class="log-filters">
+      <button class="log-filter-btn active">ALL</button>
+      <button class="log-filter-btn">INFO</button>
+      <button class="log-filter-btn">WARN</button>
+      <button class="log-filter-btn">ERROR</button>
+    </div>
+    <button class="log-clear-btn">清空日志</button>
+  </div>
+
+  <div class="log-area">
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:32:15]</span> <span class="log-info">INFO</span>  <span class="log-info">Application startup complete.</span></div>
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:32:15]</span> <span class="log-info">INFO</span>  <span class="log-info">Uvicorn running on http://0.0.0.0:8000</span></div>
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:33:01]</span> <span class="log-info">INFO</span>  <span class="log-info">GET /api/v1/run/current 200 OK (23ms)</span></div>
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:33:05]</span> <span class="log-warn">WARN</span>  <span class="log-warn">Slow query detected: obj_cell scan took 1.2s</span></div>
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:33:12]</span> <span class="log-info">INFO</span>  <span class="log-info">POST /api/v1/batch/trigger 202 Accepted</span></div>
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:34:00]</span> <span class="log-error">ERROR</span> <span class="log-error">Connection pool exhausted, retrying...</span></div>
+    <div class="log-line"><span class="log-ts">[2026-04-03 10:34:01]</span> <span class="log-info">INFO</span>  <span class="log-info">Connection recovered.</span></div>
+  </div>
+
+  <div class="log-autoscroll">
+    <span class="dot-scroll"></span>
+    自动滚动已开启
+  </div>
+
+</div>
+</body>
+</html>

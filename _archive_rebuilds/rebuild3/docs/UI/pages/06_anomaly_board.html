@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 — 异常看板</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+    border-left-color: #6366f1;
+  }
+  .sidebar-nav a .icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 90;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .topbar-context { font-size: 12px; color: #9ca3af; letter-spacing: 0.02em; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    margin-top: 52px;
+    padding: 24px 28px 40px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Summary Cards ── */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sc-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .sc-icon.orange { background: #fff7ed; color: #f97316; }
+  .sc-icon.red { background: #fef2f2; color: #ef4444; }
+  .sc-icon.blue { background: #eff6ff; color: #60a5fa; }
+  .sc-icon.purple { background: #f5f3ff; color: #a78bfa; }
+  .sc-icon.orange-light { background: #fffbeb; color: #f59e0b; }
+  .sc-label { font-size: 12px; color: #9ca3af; margin-bottom: 2px; }
+  .sc-value { font-size: 20px; font-weight: 700; color: #111827; }
+  .sc-unit { font-size: 12px; color: #9ca3af; font-weight: 400; margin-left: 2px; }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-label {
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+  }
+  .filter-select {
+    padding: 5px 10px;
+    font-size: 12.5px;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    color: #111827;
+    background: #fff;
+    cursor: pointer;
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 2px;
+    background: #f3f4f6;
+    border-radius: 5px;
+    padding: 2px;
+  }
+  .filter-tab {
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #4b5563;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-tab:hover { color: #111827; }
+  .filter-tab.active { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.06); font-weight: 500; }
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    background: #e5e7eb;
+  }
+
+  /* ── Anomaly Table ── */
+  .anomaly-table-wrap {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .anomaly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .anomaly-table thead th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    white-space: nowrap;
+  }
+  .anomaly-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.1s;
+  }
+  .anomaly-table tbody tr:last-child { border-bottom: none; }
+  .anomaly-table tbody tr:hover { background: #f9fafb; }
+  .anomaly-table tbody td {
+    padding: 10px 14px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  /* Row left border by type */
+  tr.type-collision-suspect { border-left: 3px solid #f97316; }
+  tr.type-collision-confirmed { border-left: 3px solid #ef4444; }
+  tr.type-dynamic { border-left: 3px solid #60a5fa; }
+  tr.type-migration-suspect { border-left: 3px solid #a78bfa; }
+  tr.type-gps-bias { border-left: 3px solid #f59e0b; }
+
+  /* High severity row tint */
+  tr.severity-high { background: #fef2f2; }
+  tr.severity-high:hover { background: #fee2e2; }
+
+  /* Key column */
+  .td-key {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+  }
+
+  /* Type badges */
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .type-badge.collision-suspect { background: #fff7ed; color: #ea580c; }
+  .type-badge.collision-confirmed { background: #fef2f2; color: #dc2626; }
+  .type-badge.dynamic { background: #eff6ff; color: #2563eb; }
+  .type-badge.migration-suspect { background: #f5f3ff; color: #7c3aed; }
+  .type-badge.gps-bias { background: #fffbeb; color: #d97706; }
+
+  /* Severity dots */
+  .severity-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+  }
+  .severity-dot::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .severity-dot.high::before { background: #ef4444; }
+  .severity-dot.medium::before { background: #f97316; }
+  .severity-dot.low::before { background: #fbbf24; }
+
+  /* Health state */
+  .health-state {
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .health-state.orange { color: #ea580c; }
+  .health-state.red { color: #dc2626; }
+  .health-state.blue { color: #2563eb; }
+  .health-state.purple { color: #7c3aed; }
+
+  /* Qualification badges */
+  .qual-badge {
+    font-size: 11.5px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .qual-badge.disabled { background: #fef2f2; color: #dc2626; }
+  .qual-badge.conditional { background: #fffbeb; color: #d97706; }
+
+  /* Action buttons */
+  .action-btns {
+    display: flex;
+    gap: 4px;
+  }
+  .abtn {
+    padding: 4px 10px;
+    font-size: 11.5px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .abtn-view {
+    background: transparent;
+    color: #6366f1;
+    border: 1px solid #e0e7ff;
+  }
+  .abtn-view:hover { background: #eef2ff; }
+  .abtn-confirm-collision {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+  .abtn-confirm-collision:hover { background: #fee2e2; }
+  .abtn-dismiss {
+    background: transparent;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+  }
+  .abtn-dismiss:hover { background: #f3f4f6; }
+  .abtn-confirm-migration {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ddd6fe;
+  }
+  .abtn-confirm-migration:hover { background: #ede9fe; }
+  .abtn-mark-static {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+  }
+  .abtn-mark-static:hover { background: #dbeafe; }
+  .abtn-review {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+  .abtn-review:hover { background: #fef3c7; }
+  .abtn-observe {
+    background: transparent;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+  }
+  .abtn-observe:hover { background: #f9fafb; }
+
+  /* ── Impact Summary ── */
+  .impact-summary {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .impact-summary .impact-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .impact-summary .impact-items {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .impact-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #4b5563;
+  }
+  .impact-item strong {
+    color: #111827;
+    font-size: 16px;
+  }
+  .impact-item .impact-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .impact-dot.red { background: #ef4444; }
+  .impact-dot.orange { background: #f97316; }
+  .impact-dot.gray { background: #9ca3af; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="01_dashboard.html"><span class="icon">📊</span> 仪表盘</a>
+    <a href="#"><span class="icon">▶️</span> 运行中心</a>
+    <a href="03_objects_list.html"><span class="icon">🗂</span> 对象浏览</a>
+    <a href="05_waiting_pool.html"><span class="icon">⏳</span> 等待池</a>
+    <a href="#" class="active"><span class="icon">⚠️</span> 异常看板</a>
+    <a href="#"><span class="icon">📋</span> 批次审查</a>
+    <a href="#"><span class="icon">📏</span> 基线管理</a>
+    <a href="#"><span class="icon">🔄</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <span class="topbar-title">异常看板</span>
+  <span class="topbar-context">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</span>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- Summary Cards -->
+  <section class="summary-row">
+    <div class="summary-card">
+      <div class="sc-icon orange">&#9888;</div>
+      <div>
+        <div class="sc-label">collision_suspect</div>
+        <div class="sc-value">12<span class="sc-unit">个</span></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-icon red">&#9940;</div>
+      <div>
+        <div class="sc-label">collision_confirmed</div>
+        <div class="sc-value">3<span class="sc-unit">个</span></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-icon blue">&#8644;</div>
+      <div>
+        <div class="sc-label">dynamic</div>
+        <div class="sc-value">8<span class="sc-unit">个</span></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-icon purple">&#8674;</div>
+      <div>
+        <div class="sc-label">migration_suspect</div>
+        <div class="sc-value">5<span class="sc-unit">个</span></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-icon orange-light">&#8982;</div>
+      <div>
+        <div class="sc-label">gps_bias</div>
+        <div class="sc-value">19<span class="sc-unit">个</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Bar -->
+  <section class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">类型</span>
+      <div class="filter-tabs">
+        <button class="filter-tab active">全部</button>
+        <button class="filter-tab">collision_suspect</button>
+        <button class="filter-tab">collision_confirmed</button>
+        <button class="filter-tab">dynamic</button>
+        <button class="filter-tab">migration_suspect</button>
+        <button class="filter-tab">gps_bias</button>
+      </div>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">严重级别</span>
+      <select class="filter-select">
+        <option>全部</option>
+        <option>高</option>
+        <option>中</option>
+        <option>低</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">对象类型</span>
+      <select class="filter-select">
+        <option>全部</option>
+        <option>Cell</option>
+        <option>BS</option>
+        <option>LAC</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">时间</span>
+      <select class="filter-select">
+        <option>全部</option>
+        <option>今日</option>
+        <option>近 7 天</option>
+        <option>近 30 天</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Anomaly Table -->
+  <div class="anomaly-table-wrap">
+    <table class="anomaly-table">
+      <thead>
+        <tr>
+          <th>对象主键</th>
+          <th>类型</th>
+          <th>异常类型</th>
+          <th>严重级别</th>
+          <th>健康状态</th>
+          <th>锚点</th>
+          <th>基线</th>
+          <th>发现时间</th>
+          <th>影响范围</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Row 1 -->
+        <tr class="type-collision-suspect severity-high">
+          <td class="td-key">BS-460001235</td>
+          <td>BS</td>
+          <td><span class="type-badge collision-suspect">&#9888; collision_suspect</span></td>
+          <td><span class="severity-dot high">高</span></td>
+          <td><span class="health-state orange">gps_bias</span></td>
+          <td><span class="qual-badge disabled">&#128274; 禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-03 06:00</td>
+          <td>3 个关联 Cell</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+              <button class="abtn abtn-confirm-collision">确认碰撞</button>
+              <button class="abtn abtn-dismiss">解除</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 2 -->
+        <tr class="type-collision-suspect">
+          <td class="td-key">BS-460001240</td>
+          <td>BS</td>
+          <td><span class="type-badge collision-suspect">&#9888; collision_suspect</span></td>
+          <td><span class="severity-dot medium">中</span></td>
+          <td><span class="health-state orange">collision_suspect</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-02 18:00</td>
+          <td>2 个关联 Cell</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+              <button class="abtn abtn-confirm-collision">确认</button>
+              <button class="abtn abtn-dismiss">解除</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 3 -->
+        <tr class="type-collision-confirmed severity-high">
+          <td class="td-key">BS-460001236</td>
+          <td>BS</td>
+          <td><span class="type-badge collision-confirmed">&#9940; collision_confirmed</span></td>
+          <td><span class="severity-dot high">高</span></td>
+          <td><span class="health-state red">collision_confirmed</span></td>
+          <td><span class="qual-badge disabled">&#128274; 禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-01 12:00</td>
+          <td>5 个关联 Cell</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+              <button class="abtn abtn-view">详情</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 4 -->
+        <tr class="type-dynamic">
+          <td class="td-key">46000-4G-55555-11111</td>
+          <td>Cell</td>
+          <td><span class="type-badge dynamic">&#8644; dynamic</span></td>
+          <td><span class="severity-dot medium">中</span></td>
+          <td><span class="health-state blue">dynamic</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-02 08:00</td>
+          <td>所属 BS</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+              <button class="abtn abtn-mark-static">标记静态</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 5 -->
+        <tr class="type-dynamic">
+          <td class="td-key">46000-4G-55556-11112</td>
+          <td>Cell</td>
+          <td><span class="type-badge dynamic">&#8644; dynamic</span></td>
+          <td><span class="severity-dot low">低</span></td>
+          <td><span class="health-state blue">dynamic</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-03 02:00</td>
+          <td>所属 BS</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 6 -->
+        <tr class="type-migration-suspect">
+          <td class="td-key">BS-460001250</td>
+          <td>BS</td>
+          <td><span class="type-badge migration-suspect">&#8674; migration_suspect</span></td>
+          <td><span class="severity-dot medium">中</span></td>
+          <td><span class="health-state purple">migration_suspect</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-02 14:00</td>
+          <td>关系变更</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+              <button class="abtn abtn-confirm-migration">确认迁移</button>
+              <button class="abtn abtn-observe">维持观察</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 7 -->
+        <tr class="type-gps-bias">
+          <td class="td-key">46001-4G-66666-22222</td>
+          <td>Cell</td>
+          <td><span class="type-badge gps-bias">&#8982; gps_bias</span></td>
+          <td><span class="severity-dot low">低</span></td>
+          <td><span class="health-state orange">gps_bias</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td>04-03 04:00</td>
+          <td>&mdash;</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 8 -->
+        <tr class="type-gps-bias">
+          <td class="td-key">BS-460001260</td>
+          <td>BS</td>
+          <td><span class="type-badge gps-bias">&#8982; gps_bias</span></td>
+          <td><span class="severity-dot medium">中</span></td>
+          <td><span class="health-state orange">gps_bias</span></td>
+          <td><span class="qual-badge disabled">禁用</span></td>
+          <td><span class="qual-badge conditional">有条件</span></td>
+          <td>04-01 20:00</td>
+          <td>2 个 Cell</td>
+          <td>
+            <div class="action-btns">
+              <button class="abtn abtn-view">查看</button>
+              <button class="abtn abtn-review">复核</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Impact Summary -->
+  <section class="impact-summary">
+    <span class="impact-title">当前异常影响</span>
+    <div class="impact-items">
+      <div class="impact-item">
+        <span class="impact-dot red"></span>
+        <strong>47</strong> 个对象锚点禁用
+      </div>
+      <div class="impact-item">
+        <span class="impact-dot orange"></span>
+        <strong>35</strong> 个基线禁用
+      </div>
+      <div class="impact-item">
+        <span class="impact-dot gray"></span>
+        涉及 <strong>12</strong> 个 BS
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

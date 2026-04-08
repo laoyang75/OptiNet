@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>样本研究 - 工作台</title>
+<link rel="stylesheet" href="wb.css"/>
+</head>
+<body>
+
+<div class="ctx-bar">
+  <span>Run: <strong>#0037</strong></span><span>Compare: <strong>#0034</strong></span>
+  <span>规则集: <strong>R2</strong></span>
+  <span class="spacer"></span>
+  <button class="ctx-btn" onclick="openDrawer('version')">版本抽屉</button>
+</div>
+
+<nav class="sidebar">
+  <div class="group-label">治理链路</div>
+  <a href="index.html"><span class="step-status done"></span><span>链路总览</span></a>
+  <a href="step-lac.html"><span class="step-status done"></span><span>可信 LAC</span><span class="step-count">45</span></a>
+  <a href="step-cell.html"><span class="step-status done"></span><span>Cell 统计</span><span class="step-count">9,654</span></a>
+  <a href="step-bs.html"><span class="step-status done"></span><span>可信 BS</span><span class="step-count">3,218</span></a>
+  <a href="step-gps.html"><span class="step-status done"></span><span>GPS 修正</span><span class="step-count">22%</span></a>
+  <a href="#"><span class="step-status done"></span><span>信号补齐</span><span class="step-count">8%</span></a>
+  <a href="#"><span class="step-status done"></span><span>完整回归</span><span class="step-count">10.8M</span></a>
+  <a href="#"><span class="step-status done"></span><span>画像/基线</span><span class="step-count">B1</span></a>
+  <a href="#"><span class="step-status pending"></span><span>伪日更</span><span class="step-count">—</span></a>
+  <div class="sep"></div>
+  <div class="group-label">辅助页面</div>
+  <a href="fields.html"><span>字段治理</span></a>
+  <a href="samples.html" class="active"><span>样本研究</span></a>
+</nav>
+
+<div class="main">
+  <div class="crumb"><a href="index.html">链路总览</a> / 样本研究</div>
+  <div class="page-header"><h1>样本研究</h1></div>
+
+  <!-- 问题类型筛选 -->
+  <div class="filter-bar">
+    <span class="filter-tag active" onclick="switchTag(this)">全部 (214)</span>
+    <span class="filter-tag" onclick="switchTag(this)">GPS漂移 (120)</span>
+    <span class="filter-tag" onclick="switchTag(this)">碰撞BS (50)</span>
+    <span class="filter-tag" onclick="switchTag(this)">移动Cell (34)</span>
+    <span class="filter-tag" onclick="switchTag(this)">映射异常 (8)</span>
+    <span class="filter-tag" onclick="switchTag(this)">字段变化 (2)</span>
+  </div>
+
+  <div class="filter-bar">
+    <label style="font-size:12px;color:#888">来源步骤</label>
+    <select><option>全部</option><option>可信LAC</option><option>Cell统计</option><option>可信BS</option><option>GPS修正</option><option>信号补齐</option></select>
+    <label style="font-size:12px;color:#888">Run</label>
+    <select><option>#0037</option><option>#0034</option></select>
+  </div>
+
+  <!-- 样本集列表 -->
+  <div class="card">
+    <h3>样本集列表</h3>
+    <table>
+      <thead><tr><th>样本集</th><th>问题类型</th><th>来源步骤</th><th>样本数</th><th>Run</th><th>状态</th><th></th></tr></thead>
+      <tbody>
+        <tr class="expandable" onclick="toggleSet('set-1')" style="background:#f8fbfc">
+          <td><strong>S-001</strong></td>
+          <td><span class="tag err">碰撞BS</span></td>
+          <td><a class="link" href="step-bs.html">可信BS</a></td>
+          <td>50</td><td>#0037</td>
+          <td><span class="tag ok">活跃</span></td>
+          <td><a class="link">展开 &#9660;</a></td>
+        </tr>
+        <tr class="expandable" onclick="toggleSet('set-2')">
+          <td><strong>S-002</strong></td>
+          <td><span class="tag warn">GPS漂移</span></td>
+          <td><a class="link" href="step-gps.html">GPS修正</a></td>
+          <td>120</td><td>#0037</td>
+          <td><span class="tag ok">活跃</span></td>
+          <td><a class="link">展开 &#9660;</a></td>
+        </tr>
+        <tr class="expandable" onclick="toggleSet('set-3')">
+          <td><strong>S-003</strong></td>
+          <td><span class="tag info">移动Cell</span></td>
+          <td><a class="link" href="step-cell.html">Cell统计</a></td>
+          <td>34</td><td>#0037</td>
+          <td><span class="tag ok">活跃</span></td>
+          <td><a class="link">展开 &#9660;</a></td>
+        </tr>
+        <tr class="expandable" onclick="toggleSet('set-4')">
+          <td><strong>S-004</strong></td>
+          <td><span class="tag warn">映射异常</span></td>
+          <td><a class="link" href="step-cell.html">Cell统计</a></td>
+          <td>8</td><td>#0037</td>
+          <td><span class="tag ok">活跃</span></td>
+          <td><a class="link">展开 &#9660;</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- S-001 样本集展开 -->
+  <div class="expand-zone" id="set-1">
+    <h4>S-001 碰撞BS 样本明细 (50条)</h4>
+    <table>
+      <thead><tr><th>对象ID</th><th>标签</th><th>簇数</th><th>簇间距</th><th>影响Cell</th><th>结论</th><th></th></tr></thead>
+      <tbody>
+        <tr class="expandable" onclick="openDrawer('sample')">
+          <td><strong>BS-2345</strong></td>
+          <td><span class="tag err">碰撞</span></td>
+          <td>2</td><td>1.7km</td><td>3</td>
+          <td>待验证</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr class="expandable" onclick="openDrawer('sample')">
+          <td><strong>BS-3456</strong></td>
+          <td><span class="tag err">碰撞</span></td>
+          <td>3</td><td>1.6km</td><td>4</td>
+          <td>待验证</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr class="expandable" onclick="openDrawer('sample')">
+          <td><strong>BS-5678</strong></td>
+          <td><span class="tag warn">边界</span></td>
+          <td>2</td><td>1.5km</td><td>3</td>
+          <td>恰好命中</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr class="expandable" onclick="openDrawer('sample')">
+          <td><strong>BS-1234</strong></td>
+          <td><span class="tag ok">已确认</span></td>
+          <td>2</td><td>2.3km</td><td>3</td>
+          <td>已确认碰撞</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>BS-4567</strong></td>
+          <td><span class="tag err">碰撞</span></td>
+          <td>2</td><td>1.8km</td><td>2</td>
+          <td>待验证</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px;font-size:12px;color:#888">显示 1-5 / 共 50 条</div>
+
+    <div style="margin-top:12px;display:flex;gap:10px">
+      <button class="btn btn-primary">用此样本集做样本重跑</button>
+      <button class="btn btn-ghost">导出样本</button>
+    </div>
+  </div>
+
+  <!-- S-002 样本集展开 -->
+  <div class="expand-zone" id="set-2" style="display:none">
+    <h4>S-002 GPS漂移 样本明细 (120条)</h4>
+    <table>
+      <thead><tr><th>记录ID</th><th>对象</th><th>原始GPS</th><th>BS中心</th><th>距离</th><th>处理</th><th></th></tr></thead>
+      <tbody>
+        <tr>
+          <td>rec-10234</td>
+          <td>Cell-8821 / BS-1234</td>
+          <td>(116.80, 40.20)</td>
+          <td>(116.39, 39.90)</td>
+          <td>4.2km</td>
+          <td><span class="tag warn">钉成中心</span></td>
+          <td><a class="link" onclick="openDrawer('sample')">详情</a></td>
+        </tr>
+        <tr>
+          <td>rec-10567</td>
+          <td>Cell-5501 / BS-2001</td>
+          <td>(117.10, 40.50)</td>
+          <td>(116.42, 39.95)</td>
+          <td>8.1km</td>
+          <td><span class="tag err">严重漂移</span></td>
+          <td><a class="link" onclick="openDrawer('sample')">详情</a></td>
+        </tr>
+        <tr>
+          <td>rec-10891</td>
+          <td>Cell-3302 / BS-1500</td>
+          <td>(116.41, 39.89)</td>
+          <td>(116.40, 39.88)</td>
+          <td>980m</td>
+          <td><span class="tag ok">保留原GPS</span></td>
+          <td><a class="link">详情</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px;font-size:12px;color:#888">显示 1-3 / 共 120 条 &middot; <a class="link" href="step-gps.html">回到GPS修正步骤 &rarr;</a></div>
+  </div>
+</div>
+
+<!-- 样本详情抽屉 -->
+<div class="drawer-overlay" id="overlay-sample" onclick="closeDrawer('sample')"></div>
+<div class="drawer" id="drawer-sample">
+  <button class="close" onclick="closeDrawer('sample')">&times;</button>
+  <h2>样本详情</h2>
+
+  <div class="card">
+    <h3>对象信息</h3>
+    <dl class="detail-grid">
+      <dt>对象</dt><dd>BS-2345 (移动 4G)</dd>
+      <dt>LAC</dt><dd>9501</dd>
+      <dt>下属Cell</dt><dd>3</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>原始值</h3>
+    <table>
+      <thead><tr><th>Cell</th><th>Lat</th><th>Lon</th></tr></thead>
+      <tbody>
+        <tr><td>Cell-A</td><td>39.9000</td><td>116.3200</td></tr>
+        <tr><td>Cell-B</td><td>39.9200</td><td>116.3500</td></tr>
+        <tr><td>Cell-C</td><td>39.9300</td><td>116.4100</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>处理后</h3>
+    <dl class="detail-grid">
+      <dt>簇数</dt><dd>2</dd>
+      <dt>簇A</dt><dd>Cell-A, Cell-B &middot; 中心(116.335, 39.91)</dd>
+      <dt>簇B</dt><dd>Cell-C &middot; 中心(116.41, 39.93)</dd>
+      <dt>簇间距</dt><dd><strong>1.7km</strong></dd>
+      <dt>判定</dt><dd><span class="tag err">碰撞BS</span></dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>命中规则</h3>
+    <dl class="detail-grid">
+      <dt>规则</dt><dd>碰撞检测</dd>
+      <dt>参数</dt><dd>threshold = 1.5km</dd>
+      <dt>判定</dt><dd>1.7km &gt; 1.5km &rarr; 命中</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>对比 Run#0034</h3>
+    <dl class="detail-grid">
+      <dt>当时阈值</dt><dd>2.0km</dd>
+      <dt>当时结果</dt><dd>未识别碰撞（1.7km &lt; 2.0km）</dd>
+      <dt>变化原因</dt><dd>阈值下调 2.0km &rarr; 1.5km</dd>
+    </dl>
+  </div>
+
+  <div style="margin-top:12px">
+    <a class="link" href="step-bs.html">回到可信BS步骤工作台 &rarr;</a>
+  </div>
+</div>
+
+<!-- 版本抽屉 -->
+<div class="drawer-overlay" id="overlay-version" onclick="closeDrawer('version')"></div>
+<div class="drawer" id="drawer-version">
+  <button class="close" onclick="closeDrawer('version')">&times;</button>
+  <h2>版本与运行</h2>
+  <div class="card"><dl class="detail-grid"><dt>run_id</dt><dd>#0037</dd><dt>compare</dt><dd>#0034</dd><dt>规则集</dt><dd>R2</dd></dl></div>
+</div>
+
+<script>
+function openDrawer(n){document.getElementById('drawer-'+n).classList.add('open');document.getElementById('overlay-'+n).classList.add('open')}
+function closeDrawer(n){document.getElementById('drawer-'+n).classList.remove('open');document.getElementById('overlay-'+n).classList.remove('open')}
+function toggleSet(id){
+  ['set-1','set-2','set-3','set-4'].forEach(function(s){
+    var el=document.getElementById(s);
+    if(el) el.style.display = s===id ? (el.style.display==='none'?'block':'none') : 'none';
+  });
+}
+function switchTag(el){
+  document.querySelectorAll('.filter-tag').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

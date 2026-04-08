@@ -1,0 +1,46 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: 望优数仓工作台
+      - heading "数据驱动的网优数仓重构" [level=1] [ref=e6]
+      - paragraph [ref=e7]: 先看数据，再建结构；每建一层，可视化确认一层。
+    - generic [ref=e9]:
+      - generic [ref=e10]: "当前层: 原始数据 · 字段挑选"
+      - generic [ref=e11]: "数据表: —"
+      - generic [ref=e12]: "状态: 就绪"
+  - generic [ref=e13]:
+    - complementary [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: 数仓层级
+        - link "原始数据 · 字段挑选" [ref=e17] [cursor=pointer]:
+          - /url: "#raw"
+          - generic [ref=e19]: 原始数据 · 字段挑选
+        - link "L0 字段审计" [ref=e20] [cursor=pointer]:
+          - /url: "#audit"
+          - generic [ref=e22]: L0 字段审计
+        - link "L0 数据概览" [ref=e23] [cursor=pointer]:
+          - /url: "#l0data"
+          - generic [ref=e25]: L0 数据概览
+        - link "L1 ODS 清洗规则" [ref=e26] [cursor=pointer]:
+          - /url: "#ods"
+          - generic [ref=e28]: L1 ODS 清洗规则
+        - link "L2 可信库" [ref=e29] [cursor=pointer]:
+          - /url: "#trusted"
+          - generic [ref=e31]: L2 可信库
+        - link "L3 BS+GPS+信号" [ref=e32] [cursor=pointer]:
+          - /url: "#bs-gps"
+          - generic [ref=e34]: L3 BS+GPS+信号
+        - link "L3 问题数据研究" [ref=e35] [cursor=pointer]:
+          - /url: "#anomaly"
+          - generic [ref=e37]: L3 问题数据研究
+        - link "L4 LAC 画像" [ref=e38] [cursor=pointer]:
+          - /url: "#profile"
+          - generic [ref=e40]: L4 LAC 画像
+        - link "L4 BS 画像" [ref=e41] [cursor=pointer]:
+          - /url: "#profile-bs"
+          - generic [ref=e43]: L4 BS 画像
+        - link "L4 Cell 画像" [ref=e44] [cursor=pointer]:
+          - /url: "#profile-cell"
+          - generic [ref=e46]: L4 Cell 画像
+    - main [ref=e47]:
+      - generic [ref=e48]: 加载原始数据总览...

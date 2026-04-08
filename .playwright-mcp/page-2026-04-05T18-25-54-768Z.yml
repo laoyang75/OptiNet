@@ -1,0 +1,342 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: 望优数仓工作台
+      - heading "数据驱动的网优数仓重构" [level=1] [ref=e6]
+      - paragraph [ref=e7]: 先看数据，再建结构；每建一层，可视化确认一层。
+    - generic [ref=e9]:
+      - generic [ref=e10]: "当前层: L1 ODS 标准化"
+      - generic [ref=e11]: RAW（27 列）
+      - generic [ref=e12]: "状态: 就绪"
+  - generic [ref=e13]:
+    - complementary [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: 数仓层级
+        - link "原始数据 · 字段挑选" [ref=e17] [cursor=pointer]:
+          - /url: "#raw"
+          - generic [ref=e19]: 原始数据 · 字段挑选
+        - link "L0 字段审计" [ref=e20] [cursor=pointer]:
+          - /url: "#audit"
+          - generic [ref=e22]: L0 字段审计
+        - link "L0 数据概览" [ref=e23] [cursor=pointer]:
+          - /url: "#l0data"
+          - generic [ref=e25]: L0 数据概览
+        - link "L1 ODS 清洗规则" [active] [ref=e26] [cursor=pointer]:
+          - /url: "#ods"
+          - generic [ref=e28]: L1 ODS 清洗规则
+        - link "L2 可信库" [ref=e29] [cursor=pointer]:
+          - /url: "#trusted"
+          - generic [ref=e31]: L2 可信库
+        - link "L3 BS+GPS+信号" [ref=e32] [cursor=pointer]:
+          - /url: "#bs-gps"
+          - generic [ref=e34]: L3 BS+GPS+信号
+        - link "L3 问题数据研究" [ref=e35] [cursor=pointer]:
+          - /url: "#anomaly"
+          - generic [ref=e37]: L3 问题数据研究
+        - link "L4 LAC 画像" [ref=e38] [cursor=pointer]:
+          - /url: "#profile"
+          - generic [ref=e40]: L4 LAC 画像
+        - link "L4 BS 画像" [ref=e41] [cursor=pointer]:
+          - /url: "#profile-bs"
+          - generic [ref=e43]: L4 BS 画像
+        - link "L4 Cell 画像" [ref=e44] [cursor=pointer]:
+          - /url: "#profile-cell"
+          - generic [ref=e46]: L4 Cell 画像
+    - main [ref=e47]:
+      - generic [ref=e1241]:
+        - heading "L1 ODS 标准化" [level=2] [ref=e1242]
+        - paragraph [ref=e1243]: 审核清洗规则，确认后执行。所有异常值将被置空或删除，时间字段统一为 timestamptz。
+      - generic [ref=e1244]:
+        - button "规则审核" [ref=e1245] [cursor=pointer]
+        - button "执行结果" [ref=e1246] [cursor=pointer]
+      - generic [ref=e1247]:
+        - generic [ref=e1248]:
+          - generic [ref=e1249]: 样本行数
+          - generic [ref=e1250]: 38,433,729
+        - generic [ref=e1251]:
+          - generic [ref=e1252]: 规则总数
+          - generic [ref=e1253]: "26"
+        - generic [ref=e1254]:
+          - generic [ref=e1255]: 删除规则
+          - generic [ref=e1256]: "1"
+        - generic [ref=e1257]:
+          - generic [ref=e1258]: 置空规则
+          - generic [ref=e1259]: "22"
+        - generic [ref=e1260]:
+          - generic [ref=e1261]: 转换规则
+          - generic [ref=e1262]: "3"
+        - generic [ref=e1263]:
+          - generic [ref=e1264]: 预计删除行
+          - generic [ref=e1265]: 11,530
+      - generic [ref=e1266]:
+        - generic [ref=e1267]:
+          - heading "删除行规则" [level=3] [ref=e1268]
+          - generic [ref=e1269]: 满足条件的整行删除
+        - table [ref=e1270]:
+          - rowgroup [ref=e1271]:
+            - row "规则编码 字段 说明 影响行数 占比 严重度" [ref=e1272]:
+              - columnheader "规则编码" [ref=e1273]
+              - columnheader "字段" [ref=e1274]
+              - columnheader "说明" [ref=e1275]
+              - columnheader "影响行数" [ref=e1276]
+              - columnheader "占比" [ref=e1277]
+              - columnheader "严重度" [ref=e1278]
+          - rowgroup [ref=e1279]:
+            - row "DEL_CI_MAIN_NO_CELLID CellID 主服务基站(is_connected=1)无有效CellID，数据异常，删除整行 11,530 0.03%" [ref=e1280]:
+              - cell "DEL_CI_MAIN_NO_CELLID" [ref=e1281]:
+                - code [ref=e1282]: DEL_CI_MAIN_NO_CELLID
+              - cell "CellID" [ref=e1283]
+              - cell "主服务基站(is_connected=1)无有效CellID，数据异常，删除整行" [ref=e1284]
+              - cell "11,530" [ref=e1285]
+              - cell "0.03%" [ref=e1286]:
+                - generic [ref=e1289]: 0.03%
+              - cell [ref=e1290]
+      - generic [ref=e1292]:
+        - generic [ref=e1293]:
+          - heading "置空规则（22 条）" [level=3] [ref=e1294]
+          - generic [ref=e1295]: 满足条件的字段值置为 NULL
+        - table [ref=e1296]:
+          - rowgroup [ref=e1297]:
+            - row "字段 说明 条件 影响行数 占比 严重度" [ref=e1298]:
+              - columnheader "字段" [ref=e1299]
+              - columnheader "说明" [ref=e1300]
+              - columnheader "条件" [ref=e1301]
+              - columnheader "影响行数" [ref=e1302]
+              - columnheader "占比" [ref=e1303]
+              - columnheader "严重度" [ref=e1304]
+          - rowgroup [ref=e1305]:
+            - row "CellID CellID=0 无效，置空（同时清空基站ID和扇区ID） \"CellID\" = 0 8,620,685 22.43%" [ref=e1306]:
+              - cell "CellID" [ref=e1307]
+              - cell "CellID=0 无效，置空（同时清空基站ID和扇区ID）" [ref=e1308]
+              - cell "\"CellID\" = 0" [ref=e1309]:
+                - code [ref=e1310]: "\"CellID\" = 0"
+              - cell "8,620,685" [ref=e1311]
+              - cell "22.43%" [ref=e1312]:
+                - generic [ref=e1315]: 22.43%
+              - cell [ref=e1316]
+            - row "CellID 5G CellID=268435455 为占位值，置空 \"CellID\" = 268435455 AND \"标准制式\" = '5G' 6,775,866 17.63%" [ref=e1318]:
+              - cell "CellID" [ref=e1319]
+              - cell "5G CellID=268435455 为占位值，置空" [ref=e1320]
+              - cell "\"CellID\" = 268435455 AND \"标准制式\" = '5G'" [ref=e1321]:
+                - code [ref=e1322]: "\"CellID\" = 268435455 AND \"标准制式\" = '5G'"
+              - cell "6,775,866" [ref=e1323]
+              - cell "17.63%" [ref=e1324]:
+                - generic [ref=e1327]: 17.63%
+              - cell [ref=e1328]
+            - row "LAC LAC=0 无效 \"LAC\" = 0 65,337 0.17%" [ref=e1330]:
+              - cell "LAC" [ref=e1331]
+              - cell "LAC=0 无效" [ref=e1332]
+              - cell "\"LAC\" = 0" [ref=e1333]:
+                - code [ref=e1334]: "\"LAC\" = 0"
+              - cell "65,337" [ref=e1335]
+              - cell "0.17%" [ref=e1336]:
+                - generic [ref=e1339]: 0.17%
+              - cell [ref=e1340]
+            - row "LAC 4G LAC 溢出值 65534/65535 \"LAC\" IN (65534, 65535) AND \"标准制式\" = '4G' 1,283,687 3.34%" [ref=e1342]:
+              - cell "LAC" [ref=e1343]
+              - cell "4G LAC 溢出值 65534/65535" [ref=e1344]
+              - cell "\"LAC\" IN (65534, 65535) AND \"标准制式\" = '4G'" [ref=e1345]:
+                - code [ref=e1346]: "\"LAC\" IN (65534, 65535) AND \"标准制式\" = '4G'"
+              - cell "1,283,687" [ref=e1347]
+              - cell "3.34%" [ref=e1348]:
+                - generic [ref=e1351]: 3.34%
+              - cell [ref=e1352]
+            - row "LAC LAC 占位值 268435455 \"LAC\" = 268435455 99,928 0.26%" [ref=e1354]:
+              - cell "LAC" [ref=e1355]
+              - cell "LAC 占位值 268435455" [ref=e1356]
+              - cell "\"LAC\" = 268435455" [ref=e1357]:
+                - code [ref=e1358]: "\"LAC\" = 268435455"
+              - cell "99,928" [ref=e1359]
+              - cell "0.26%" [ref=e1360]:
+                - generic [ref=e1363]: 0.26%
+              - cell [ref=e1364]
+            - row "运营商编码 无效运营商编码置空 \"运营商编码\" IN ('00000', '0', '000000', '(null)(null)', '') OR \"运营商编码\" IS NULL 18,721,069 48.71%" [ref=e1366]:
+              - cell "运营商编码" [ref=e1367]
+              - cell "无效运营商编码置空" [ref=e1368]
+              - cell "\"运营商编码\" IN ('00000', '0', '000000', '(null)(null)', '') OR \"运营商编码\" IS NULL" [ref=e1369]:
+                - code [ref=e1370]: "\"运营商编码\" IN ('00000', '0', '000000', '(null)(null)', '') OR \"运营商编码\" IS NULL"
+              - cell "18,721,069" [ref=e1371]
+              - cell "48.71%" [ref=e1372]:
+                - generic [ref=e1375]: 48.71%
+              - cell [ref=e1376]
+            - row "运营商编码 非五大运营商编码（如 45403 境外），置空 \"运营商编码\" NOT IN ('46000','46001','46002','46003','46005','46006','46007','46009', 7,687 0.02%" [ref=e1378]:
+              - cell "运营商编码" [ref=e1379]
+              - cell "非五大运营商编码（如 45403 境外），置空" [ref=e1380]
+              - cell "\"运营商编码\" NOT IN ('46000','46001','46002','46003','46005','46006','46007','46009'," [ref=e1381]:
+                - code [ref=e1382]: "\"运营商编码\" NOT IN ('46000','46001','46002','46003','46005','46006','46007','46009',"
+              - cell "7,687" [ref=e1383]
+              - cell "0.02%" [ref=e1384]:
+                - generic [ref=e1387]: 0.02%
+              - cell [ref=e1388]
+            - row "RSRP RSRP 正值（SDK 丢失负号），置空 \"RSRP\" > 0 295,940 0.77%" [ref=e1390]:
+              - cell "RSRP" [ref=e1391]
+              - cell "RSRP 正值（SDK 丢失负号），置空" [ref=e1392]
+              - cell "\"RSRP\" > 0" [ref=e1393]:
+                - code [ref=e1394]: "\"RSRP\" > 0"
+              - cell "295,940" [ref=e1395]
+              - cell "0.77%" [ref=e1396]:
+                - generic [ref=e1399]: 0.77%
+              - cell [ref=e1400]
+            - row "RSRP RSRP=0 无物理意义 \"RSRP\" = 0 11,530 0.03%" [ref=e1402]:
+              - cell "RSRP" [ref=e1403]
+              - cell "RSRP=0 无物理意义" [ref=e1404]
+              - cell "\"RSRP\" = 0" [ref=e1405]:
+                - code [ref=e1406]: "\"RSRP\" = 0"
+              - cell "11,530" [ref=e1407]
+              - cell "0.03%" [ref=e1408]:
+                - generic [ref=e1411]: 0.03%
+              - cell [ref=e1412]
+            - row "RSRP RSRP < -156 超出物理范围 \"RSRP\" < -156 553,446 1.44%" [ref=e1414]:
+              - cell "RSRP" [ref=e1415]
+              - cell "RSRP < -156 超出物理范围" [ref=e1416]
+              - cell "\"RSRP\" < -156" [ref=e1417]:
+                - code [ref=e1418]: "\"RSRP\" < -156"
+              - cell "553,446" [ref=e1419]
+              - cell "1.44%" [ref=e1420]:
+                - generic [ref=e1423]: 1.44%
+              - cell [ref=e1424]
+            - row "RSRQ RSRQ > 10 上报错误 \"RSRQ\" > 10 276,723 0.72%" [ref=e1426]:
+              - cell "RSRQ" [ref=e1427]
+              - cell "RSRQ > 10 上报错误" [ref=e1428]
+              - cell "\"RSRQ\" > 10" [ref=e1429]:
+                - code [ref=e1430]: "\"RSRQ\" > 10"
+              - cell "276,723" [ref=e1431]
+              - cell "0.72%" [ref=e1432]:
+                - generic [ref=e1435]: 0.72%
+              - cell [ref=e1436]
+            - row "RSRQ RSRQ < -34 超出物理范围 \"RSRQ\" < -34 791,735 2.06%" [ref=e1438]:
+              - cell "RSRQ" [ref=e1439]
+              - cell "RSRQ < -34 超出物理范围" [ref=e1440]
+              - cell "\"RSRQ\" < -34" [ref=e1441]:
+                - code [ref=e1442]: "\"RSRQ\" < -34"
+              - cell "791,735" [ref=e1443]
+              - cell "2.06%" [ref=e1444]:
+                - generic [ref=e1447]: 2.06%
+              - cell [ref=e1448]
+            - row "SINR SINR > 40 异常值（含 ss1 的 100~300 段） \"SINR\" > 40 649,530 1.69%" [ref=e1450]:
+              - cell "SINR" [ref=e1451]
+              - cell "SINR > 40 异常值（含 ss1 的 100~300 段）" [ref=e1452]
+              - cell "\"SINR\" > 40" [ref=e1453]:
+                - code [ref=e1454]: "\"SINR\" > 40"
+              - cell "649,530" [ref=e1455]
+              - cell "1.69%" [ref=e1456]:
+                - generic [ref=e1459]: 1.69%
+              - cell [ref=e1460]
+            - row "SINR SINR < -23 超出物理范围 \"SINR\" < -23 622,626 1.62%" [ref=e1462]:
+              - cell "SINR" [ref=e1463]
+              - cell "SINR < -23 超出物理范围" [ref=e1464]
+              - cell "\"SINR\" < -23" [ref=e1465]:
+                - code [ref=e1466]: "\"SINR\" < -23"
+              - cell "622,626" [ref=e1467]
+              - cell "1.62%" [ref=e1468]:
+                - generic [ref=e1471]: 1.62%
+              - cell [ref=e1472]
+            - row "Dbm Dbm 正值（与 RSRP 正值同源） \"Dbm\" > 0 199,855 0.52%" [ref=e1474]:
+              - cell "Dbm" [ref=e1475]
+              - cell "Dbm 正值（与 RSRP 正值同源）" [ref=e1476]
+              - cell "\"Dbm\" > 0" [ref=e1477]:
+                - code [ref=e1478]: "\"Dbm\" > 0"
+              - cell "199,855" [ref=e1479]
+              - cell "0.52%" [ref=e1480]:
+                - generic [ref=e1483]: 0.52%
+              - cell [ref=e1484]
+            - row "Dbm Dbm=0 无物理意义 \"Dbm\" = 0 30,747 0.08%" [ref=e1486]:
+              - cell "Dbm" [ref=e1487]
+              - cell "Dbm=0 无物理意义" [ref=e1488]
+              - cell "\"Dbm\" = 0" [ref=e1489]:
+                - code [ref=e1490]: "\"Dbm\" = 0"
+              - cell "30,747" [ref=e1491]
+              - cell "0.08%" [ref=e1492]:
+                - generic [ref=e1495]: 0.08%
+              - cell [ref=e1496]
+            - row "ASU等级 ASU 等级 <0 或 >99 无效 \"ASU等级\" < 0 OR \"ASU等级\" > 99 730,241 1.90%" [ref=e1498]:
+              - cell "ASU等级" [ref=e1499]
+              - cell "ASU 等级 <0 或 >99 无效" [ref=e1500]
+              - cell "\"ASU等级\" < 0 OR \"ASU等级\" > 99" [ref=e1501]:
+                - code [ref=e1502]: "\"ASU等级\" < 0 OR \"ASU等级\" > 99"
+              - cell "730,241" [ref=e1503]
+              - cell "1.90%" [ref=e1504]:
+                - generic [ref=e1507]: 1.90%
+              - cell [ref=e1508]
+            - row "SS原始值 INT_MAX 溢出或正值 \"SS原始值\" = 2147483647 OR \"SS原始值\" > 0 69,181 0.18%" [ref=e1510]:
+              - cell "SS原始值" [ref=e1511]
+              - cell "INT_MAX 溢出或正值" [ref=e1512]
+              - cell "\"SS原始值\" = 2147483647 OR \"SS原始值\" > 0" [ref=e1513]:
+                - code [ref=e1514]: "\"SS原始值\" = 2147483647 OR \"SS原始值\" > 0"
+              - cell "69,181" [ref=e1515]
+              - cell "0.18%" [ref=e1516]:
+                - generic [ref=e1519]: 0.18%
+              - cell [ref=e1520]
+            - row "时间提前量 时间提前量超出 0~63 正常范围 \"时间提前量\" > 63 OR \"时间提前量\" < 0 441,988 1.15%" [ref=e1522]:
+              - cell "时间提前量" [ref=e1523]
+              - cell "时间提前量超出 0~63 正常范围" [ref=e1524]
+              - cell "\"时间提前量\" > 63 OR \"时间提前量\" < 0" [ref=e1525]:
+                - code [ref=e1526]: "\"时间提前量\" > 63 OR \"时间提前量\" < 0"
+              - cell "441,988" [ref=e1527]
+              - cell "1.15%" [ref=e1528]:
+                - generic [ref=e1531]: 1.15%
+              - cell [ref=e1532]
+            - row "WiFi名称 WiFi 名称无效值（<unknown ssid> 等） \"WiFi名称\" IN ('<unknown ssid>', 'unknown', '') 0 0.00%" [ref=e1534]:
+              - cell "WiFi名称" [ref=e1535]
+              - cell "WiFi 名称无效值（<unknown ssid> 等）" [ref=e1536]
+              - cell "\"WiFi名称\" IN ('<unknown ssid>', 'unknown', '')" [ref=e1537]:
+                - code [ref=e1538]: "\"WiFi名称\" IN ('<unknown ssid>', 'unknown', '')"
+              - cell "0" [ref=e1539]
+              - cell "0.00%" [ref=e1540]:
+                - generic [ref=e1543]: 0.00%
+              - cell [ref=e1544]
+            - row "WiFi MAC WiFi MAC 隐私保护假地址或空值 \"WiFi_MAC\" IN ('02:00:00:00:00:00', '00:00:00:00:00:00', '') 0 0.00%" [ref=e1546]:
+              - cell "WiFi MAC" [ref=e1547]
+              - cell "WiFi MAC 隐私保护假地址或空值" [ref=e1548]
+              - cell "\"WiFi_MAC\" IN ('02:00:00:00:00:00', '00:00:00:00:00:00', '')" [ref=e1549]:
+                - code [ref=e1550]: "\"WiFi_MAC\" IN ('02:00:00:00:00:00', '00:00:00:00:00:00', '')"
+              - cell "0" [ref=e1551]
+              - cell "0.00%" [ref=e1552]:
+                - generic [ref=e1555]: 0.00%
+              - cell [ref=e1556]
+            - 'row "基站时间 cell_infos 的 timeStamp 为相对时间，不可用作绝对时间，置空 \"Cell来源\" = ''cell_infos'' AND \"基站时间原始\" !~ ''^\\d{10}$'' 4,366,072 11.36%" [ref=e1558]':
+              - cell "基站时间" [ref=e1559]
+              - cell "cell_infos 的 timeStamp 为相对时间，不可用作绝对时间，置空" [ref=e1560]
+              - 'cell "\"Cell来源\" = ''cell_infos'' AND \"基站时间原始\" !~ ''^\\d{10}$''" [ref=e1561]':
+                - code [ref=e1562]: "\"Cell来源\" = 'cell_infos' AND \"基站时间原始\" !~ '^\\d{10}$'"
+              - cell "4,366,072" [ref=e1563]
+              - cell "11.36%" [ref=e1564]:
+                - generic [ref=e1567]: 11.36%
+              - cell [ref=e1568]
+      - generic [ref=e1570]:
+        - generic [ref=e1571]:
+          - heading "转换规则（3 条）" [level=3] [ref=e1572]
+          - generic [ref=e1573]: 时间格式统一
+        - table [ref=e1574]:
+          - rowgroup [ref=e1575]:
+            - row "字段 说明 转换表达式 匹配行数 占比" [ref=e1576]:
+              - columnheader "字段" [ref=e1577]
+              - columnheader "说明" [ref=e1578]
+              - columnheader "转换表达式" [ref=e1579]
+              - columnheader "匹配行数" [ref=e1580]
+              - columnheader "占比" [ref=e1581]
+          - rowgroup [ref=e1582]:
+            - row "上报时间 上报时间：标准文本 → timestamptz \"上报时间原始\"::timestamptz 38,433,729 100.00%" [ref=e1583]:
+              - cell "上报时间" [ref=e1584]
+              - cell "上报时间：标准文本 → timestamptz" [ref=e1585]
+              - cell "\"上报时间原始\"::timestamptz" [ref=e1586]:
+                - code [ref=e1587]: "\"上报时间原始\"::timestamptz"
+              - cell "38,433,729" [ref=e1588]
+              - cell "100.00%" [ref=e1589]:
+                - generic [ref=e1592]: 100.00%
+            - row "基站时间 ss1 基站时间：10位unix秒 → timestamptz to_timestamp(\"基站时间原始\"::bigint) 4,911,831 12.78%" [ref=e1593]:
+              - cell "基站时间" [ref=e1594]
+              - cell "ss1 基站时间：10位unix秒 → timestamptz" [ref=e1595]
+              - cell "to_timestamp(\"基站时间原始\"::bigint)" [ref=e1596]:
+                - code [ref=e1597]: to_timestamp("基站时间原始"::bigint)
+              - cell "4,911,831" [ref=e1598]
+              - cell "12.78%" [ref=e1599]:
+                - generic [ref=e1602]: 12.78%
+            - row "GPS时间 GPS 上报时间：13位毫秒 → timestamptz to_timestamp(\"GPS上报时间\"::bigint / 1000.0) 37,196,163 96.78%" [ref=e1603]:
+              - cell "GPS时间" [ref=e1604]
+              - cell "GPS 上报时间：13位毫秒 → timestamptz" [ref=e1605]
+              - cell "to_timestamp(\"GPS上报时间\"::bigint / 1000.0)" [ref=e1606]:
+                - code [ref=e1607]: to_timestamp("GPS上报时间"::bigint / 1000.0)
+              - cell "37,196,163" [ref=e1608]
+              - cell "96.78%" [ref=e1609]:
+                - generic [ref=e1612]: 96.78%

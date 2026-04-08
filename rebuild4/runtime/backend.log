@@ -1,0 +1,1509 @@
+INFO:     Started server process [50576]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:63746 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63753 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63760 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63763 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63787 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63788 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63772 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63774 - "GET /api/profiles/lac?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63801 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63804 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63803 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63826 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63831 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63834 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63849 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63852 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63857 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63861 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63863 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63876 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63882 - "GET /api/flow-snapshot?batch_id=BATCH-INIT-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63884 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-002 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63883 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63898 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63903 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63911 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-002 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63909 - "GET /api/flow-snapshot?batch_id=BATCH-INIT-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63910 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63927 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63926 - "GET /api/flow-snapshot?batch_id=BATCH-INIT-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63928 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-002 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63941 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63940 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63964 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63965 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63970 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63981 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63982 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63988 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63989 - "GET /api/objects?type=cell&page=1&page_size=20&sort=object_key HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64000 - "GET /api/observation-workspace?page=1&page_size=20&sort=first_seen HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64012 - "GET /api/anomaly-workspace?view=object HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64011 - "GET /api/anomaly-workspace/summary?view=object HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64029 - "GET /api/baseline/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64028 - "GET /api/baseline/current/diff HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64024 - "GET /api/baseline/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64044 - "GET /api/profiles/lac?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64064 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64065 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64067 - "GET /api/profiles/bs?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64075 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64084 - "GET /api/initialization/latest HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64112 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64117 - "GET /api/governance/tables HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64127 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64128 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [50576]
+INFO:     Started server process [61624]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:58769 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58774 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58782 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58784 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58791 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58794 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58803 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58828 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58805 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58826 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58830 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58829 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58859 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58860 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58864 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58877 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58884 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58889 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58891 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58893 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58906 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58909 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58917 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58916 - "GET /api/flow-snapshot?batch_id=BATCH-INIT-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58918 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-002 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58930 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58937 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58938 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58952 - "GET /api/flow-snapshot?batch_id=BATCH-INIT-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58953 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58954 - "GET /api/flow-snapshot?batch_id=BATCH-ROLL-002 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58970 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58971 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58976 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58977 - "GET /api/objects?type=cell&page=1&page_size=20&sort=object_key HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58988 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59000 - "GET /api/system/status HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/main.py", line 46, in system_status
+    cp = get_current_pointer()
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/context.py", line 8, in get_current_pointer
+    return fetchone("""
+        SELECT cp.pointer_name, cp.current_run_id, cp.current_batch_id,
+    ...<6 lines>...
+        WHERE cp.pointer_name = 'main'
+    """)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 42, in fetchone
+    rows = fetchall(sql, params)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 32, in fetchall
+    with get_conn() as conn:
+         ~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.3/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 14, in get_conn
+    conn = psycopg.connect(DSN, autocommit=True)
+  File "/Users/yangcongan/Library/Python/3.14/lib/python/site-packages/psycopg/connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+psycopg.OperationalError: connection failed: connection to server at "192.168.200.217", port 5433 failed: could not receive data from server: Operation timed out
+INFO:     127.0.0.1:59002 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/routers/profiles.py", line 206, in profile_cell
+    ctx = _profile_ctx("cell", filter_operator=operator, filter_rat=rat,
+                       filter_lac=lac, filter_bs=bs_id, filter_health_state=health_state,
+                       filter_qualification=qualification)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/routers/profiles.py", line 11, in _profile_ctx
+    ctx = base_context()
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/context.py", line 21, in base_context
+    cp = get_current_pointer()
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/context.py", line 8, in get_current_pointer
+    return fetchone("""
+        SELECT cp.pointer_name, cp.current_run_id, cp.current_batch_id,
+    ...<6 lines>...
+        WHERE cp.pointer_name = 'main'
+    """)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 42, in fetchone
+    rows = fetchall(sql, params)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 32, in fetchall
+    with get_conn() as conn:
+         ~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.3/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 14, in get_conn
+    conn = psycopg.connect(DSN, autocommit=True)
+  File "/Users/yangcongan/Library/Python/3.14/lib/python/site-packages/psycopg/connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+psycopg.OperationalError: connection failed: connection to server at "192.168.200.217", port 5433 failed: could not receive data from server: Operation timed out
+INFO:     127.0.0.1:60816 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60815 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60940 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61358 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61359 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61818 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61822 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62349 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62350 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62412 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62414 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62455 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62456 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62475 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62481 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62484 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62489 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62496 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62510 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62524 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62549 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62567 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62587 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62589 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62599 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62607 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62625 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62606 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62645 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62662 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62675 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62705 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62717 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62764 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62777 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62778 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62797 - "GET /api/validation/compare?scope=sample HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62816 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62867 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62927 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62944 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63385 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [61624]
+INFO:     Started server process [73316]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:50290 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50297 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50304 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50311 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50314 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50317 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50325 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50328 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50327 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50347 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50348 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50357 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50365 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50373 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50384 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50376 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50394 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50397 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50401 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50406 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50409 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50412 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50417 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50421 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50426 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50446 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50726 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50727 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50733 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50740 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50744 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50749 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53615 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53665 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53666 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53931 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53932 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53997 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53998 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54001 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54006 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54020 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54007 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54023 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54030 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54032 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54044 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54054 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54109 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54122 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54111 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54124 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54135 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54138 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54142 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54136 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54164 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54173 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54191 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54194 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54196 - "GET /api/governance/foundation/trusted-summary HTTP/1.1" 404 Not Found
+INFO:     Started server process [14266]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55670 - "GET /api/health HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:55673 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55679 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55686 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55689 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55695 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55702 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55705 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55704 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55726 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55729 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55738 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55741 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55730 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55745 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55821 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55825 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55824 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55878 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55890 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56843 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56846 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56868 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56885 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56885 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56887 - "GET /api/governance/foundation/trusted-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57003 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57004 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57009 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [14266]
+INFO:     Started server process [18228]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57019 - "GET /api/health HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:57022 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57027 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57031 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57038 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57041 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57044 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57054 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57059 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57078 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57058 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57091 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57105 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57109 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57093 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57124 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57140 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57145 - "GET /api/governance/foundation/trusted-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57151 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57180 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57182 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57200 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57195 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57221 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57314 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57315 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57318 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57327 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57333 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57342 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57320 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57717 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57753 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57779 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57754 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57780 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58263 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58247 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58369 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58416 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58427 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58965 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58966 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18228]
+INFO:     Started server process [19328]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:59244 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59251 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59286 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59290 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59297 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59300 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59343 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59341 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59384 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59422 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59494 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59570 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59722 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59879 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60543 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60724 - "GET /api/governance/foundation/trusted-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60820 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61084 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63160 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63208 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63450 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63469 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63647 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51830 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61692 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61693 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61743 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61759 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61998 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62000 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62010 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62013 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62016 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62031 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62056 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62057 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19328]
+INFO:     Started server process [24889]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62082 - "GET /api/health HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:62085 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62090 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62094 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62101 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62104 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62115 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62117 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62125 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62128 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62130 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62140 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62146 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62147 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62153 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62154 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62158 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62159 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62169 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62181 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62191 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62197 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62285 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62288 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62505 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62506 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62515 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62521 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62523 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62893 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62894 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24889]
+INFO:     Started server process [27021]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:62909 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62912 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62917 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62921 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62928 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62931 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62940 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62951 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62960 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62942 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62962 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62966 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62973 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62975 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62985 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62997 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63009 - "GET /api/governance/foundation/trusted-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63928 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63946 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64102 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27021]
+INFO:     Started server process [28858]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:64114 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64121 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64125 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64132 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64135 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64138 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64148 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64154 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64157 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64163 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64169 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64170 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64178 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64186 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64216 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64240 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64258 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64267 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64279 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64383 - "GET /api/governance/foundation/etl/run HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:64383 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/etl/pipeline.py:328: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  "field": "operator_code", "action": "delete",
+INFO:     127.0.0.1:64387 - "POST /api/governance/foundation/etl/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64480 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64482 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64713 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64715 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64759 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64760 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [28858]
+INFO:     Started server process [30352]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:64776 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64783 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64787 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64791 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64798 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64801 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64804 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64819 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64826 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64839 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64840 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64846 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64848 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/etl/pipeline.py:328: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  # 每条规则独立，方便后续增删
+INFO:     127.0.0.1:64863 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64871 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64875 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64881 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64885 - "GET /api/governance/foundation/l0-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64929 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64857 - "POST /api/governance/foundation/etl/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65185 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65206 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65209 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65218 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65235 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65244 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65274 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65286 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65301 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65302 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [30352]
+INFO:     Started server process [31539]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:65313 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65320 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65324 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65331 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65334 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65337 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65346 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65348 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65360 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65367 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65374 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65377 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65379 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65382 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65397 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65401 - "POST /api/governance/foundation/etl/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65479 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65492 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65501 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65511 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65533 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49158 - "GET /api/governance/foundation/ods-rules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49191 - "GET /api/governance/foundation/etl/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49200 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49323 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49371 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49391 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49397 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49402 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49417 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49725 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49726 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31539]
+INFO:     Started server process [33483]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:49740 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49747 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49751 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49758 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49761 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49764 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49773 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49775 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49786 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49789 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49794 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49797 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49807 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49809 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49817 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49839 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49853 - "POST /api/governance/foundation/etl/run HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49858 - "POST /api/governance/foundation/etl/run HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50060 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50072 - "GET /api/profiles/bs?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50090 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50096 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50046 - "GET /api/profiles/lac?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50121 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50150 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50184 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50188 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50193 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50196 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50201 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50204 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50227 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50225 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50262 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50257 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50434 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50431 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50438 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50443 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50446 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50451 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50456 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50477 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50475 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50485 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50533 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50571 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50577 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50695 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50723 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50721 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50737 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50736 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33483]
+INFO:     Started server process [36805]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:50758 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50771 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50779 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50786 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50791 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50802 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50800 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50816 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50814 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50822 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50827 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50832 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50830 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50838 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50842 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50852 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50867 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50974 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50986 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50984 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50995 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51004 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51002 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51012 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51022 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51020 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51029 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51045 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51080 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51306 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51335 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51336 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [36805]
+INFO:     Started server process [38369]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:51361 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51368 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51386 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51393 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51396 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51399 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51407 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51401 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51412 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51419 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51423 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51431 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51432 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51437 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51447 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51450 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51456 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51464 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51471 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51480 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51478 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51492 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51495 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51496 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51504 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51508 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51514 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51522 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51527 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51744 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51745 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52251 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52261 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52263 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52266 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52271 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52293 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52301 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52302 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52312 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [38369]
+INFO:     Started server process [39261]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52324 - "GET /api/health HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:52327 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52334 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52347 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52360 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52363 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52366 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52368 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52385 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52383 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52391 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52396 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52401 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52399 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52407 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52409 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52417 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52424 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52425 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52445 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52450 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52640 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52650 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52649 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52644 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52665 - "GET /api/governance/foundation/etl/parse-fields HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52664 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52693 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52696 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52707 - "GET /api/governance/foundation/etl/parse-fields HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52706 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52710 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52748 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52863 - "GET /api/baseline/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52862 - "GET /api/baseline/current/diff HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52861 - "GET /api/baseline/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53002 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53003 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53009 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53014 - "GET /api/profiles/cell?page=1&page_size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53024 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53027 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53032 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53035 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53064 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     Started server process [18133]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:50844 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50851 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50855 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50862 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50865 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50881 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50883 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50885 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50898 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50913 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50916 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50926 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50933 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50934 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50939 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50944 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50946 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50960 - "GET /api/flow-snapshot?snapshot_seq=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50961 - "GET /api/flow-snapshot?snapshot_seq=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50975 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50986 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc&lifecycle=waiting HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50995 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc&lifecycle=observing HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51007 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51019 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51027 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51042 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51050 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51058 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51060 - "GET /api/objects?type=cell&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51070 - "GET /api/objects/summary?type=bs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51071 - "GET /api/objects?type=bs&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51088 - "GET /api/objects/summary?type=lac HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/routers/objects.py", line 82, in objects_summary
+    summary = fetchone(f"""
+        SELECT
+    ...<6 lines>...
+        FROM rebuild4.{tbl}
+    """)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 42, in fetchone
+    rows = fetchall(sql, params)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 34, in fetchall
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/yangcongan/Library/Python/3.14/lib/python/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column "anchorable" does not exist
+LINE 7:             COUNT(*) FILTER (WHERE anchorable = true) as anc...
+                                           ^
+INFO:     127.0.0.1:51089 - "GET /api/objects?type=lac&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51099 - "GET /api/objects/102401/detail HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51107 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51119 - "GET /api/baseline/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51117 - "GET /api/baseline/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51127 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51137 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51143 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51157 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51164 - "GET /api/flow-snapshot?snapshot_seq=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51165 - "GET /api/flow-snapshot?snapshot_seq=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51186 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51198 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc&lifecycle=observing HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51210 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc&lifecycle=waiting HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51232 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51321 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51327 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51330 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51342 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51376 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51396 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51397 - "GET /api/objects?type=cell&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51409 - "GET /api/objects/10014965762/detail HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51417 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51425 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51491 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51501 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51520 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51536 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51547 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51565 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51645 - "GET /api/baseline/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51644 - "GET /api/baseline/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51653 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51659 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51668 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51676 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51696 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51698 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51711 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51731 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51732 - "GET /api/objects?type=cell&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51744 - "GET /api/objects/summary?type=bs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51745 - "GET /api/objects?type=bs&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51755 - "GET /api/objects/summary?type=lac HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/routers/objects.py", line 82, in objects_summary
+    summary = fetchone(f"""
+        SELECT
+    ...<6 lines>...
+        FROM rebuild4.{tbl}
+    """)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 42, in fetchone
+    rows = fetchall(sql, params)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 34, in fetchall
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/yangcongan/Library/Python/3.14/lib/python/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column "anchorable" does not exist
+LINE 7:             COUNT(*) FILTER (WHERE anchorable = true) as anc...
+                                           ^
+INFO:     127.0.0.1:51756 - "GET /api/objects?type=lac&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51765 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51779 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51788 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51798 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52011 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52037 - "GET /api/profiles/bs?page=2&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52045 - "GET /api/profiles/bs?page=3&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52053 - "GET /api/profiles/bs?page=4&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52061 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52327 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52339 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52349 - "GET /api/governance/foundation/raw-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52353 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52357 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52358 - "GET /api/governance/foundation/etl/parse-fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52364 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52374 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52401 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52485 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52557 - "GET /api/profiles/cell?page=1&size=20&grade=excellent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52673 - "GET /api/profiles/cell?page=2&size=20&grade=excellent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52699 - "GET /api/profiles/cell?page=3&size=20&grade=excellent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52707 - "GET /api/profiles/cell?page=4&size=20&grade=excellent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52716 - "GET /api/profiles/cell?page=5&size=20&grade=excellent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52760 - "GET /api/profiles/cell?page=6&size=20&grade=excellent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52771 - "GET /api/profiles/cell?page=7&size=20&grade=excellent HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/routers/profiles.py", line 253, in profile_cell
+    rows = fetchall(f"""
+        SELECT o.operator_code, o.operator_cn, o.lac, o.bs_id, o.cell_id,
+    ...<25 lines>...
+        LIMIT %s OFFSET %s
+    """, (*params, size, offset))
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 34, in fetchall
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/yangcongan/Library/Python/3.14/lib/python/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "rebuild4.etl_dim_cell" does not exist
+LINE 25:         FROM rebuild4.etl_dim_cell o
+                      ^
+INFO:     127.0.0.1:52811 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52819 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52861 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52886 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52987 - "GET /api/profiles/bs?page=2&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53022 - "GET /api/profiles/bs?page=3&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53030 - "GET /api/profiles/bs?page=4&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53049 - "GET /api/profiles/bs?page=5&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53080 - "GET /api/profiles/bs?page=4&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53090 - "GET /api/profiles/bs?page=3&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53099 - "GET /api/profiles/bs?page=2&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53120 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53179 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53206 - "GET /api/profiles/cell?page=1&size=20&bs_id=351239 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53435 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53437 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53449 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53459 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53465 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53488 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53489 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18133]
+INFO:     Started server process [22504]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:53516 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53524 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53530 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53546 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53553 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53556 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53559 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53562 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53578 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53580 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53591 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53596 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53597 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53604 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53605 - "GET /api/observation-workspace?page=1&size=20&sort=anchorable_desc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53617 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53621 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53624 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53634 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53652 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53663 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53672 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53673 - "GET /api/objects?type=cell&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53694 - "GET /api/objects/summary?type=lac HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/routers/objects.py", line 82, in objects_summary
+    summary = fetchone(f"""
+        SELECT
+    ...<6 lines>...
+        FROM rebuild4.{tbl}
+    """)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 42, in fetchone
+    rows = fetchall(sql, params)
+  File "/Users/yangcongan/cursor/WangYou_Data/rebuild4/backend/app/core/database.py", line 34, in fetchall
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/yangcongan/Library/Python/3.14/lib/python/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column "anchorable" does not exist
+LINE 7:             COUNT(*) FILTER (WHERE anchorable = true) as anc...
+                                           ^
+INFO:     127.0.0.1:53695 - "GET /api/objects?type=lac&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53714 - "GET /api/objects/2097233/detail HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53734 - "GET /api/objects/summary?type=cell HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53735 - "GET /api/objects?type=cell&page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53779 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53813 - "GET /api/baseline/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53812 - "GET /api/baseline/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53827 - "GET /api/governance/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53837 - "GET /api/governance/fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53843 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53851 - "GET /api/profiles/bs?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53859 - "GET /api/profiles/lac?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53868 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53879 - "GET /api/flow-snapshot/timepoints HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53886 - "GET /api/flow-snapshot?snapshot_seq=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53887 - "GET /api/flow-snapshot?snapshot_seq=6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53916 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54039 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54040 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22504]
+INFO:     Started server process [23104]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:47131 (Press CTRL+C to quit)
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:54064 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54071 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54077 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54084 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54087 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54090 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54105 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54107 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54118 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54124 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54134 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54136 - "GET /api/runs/current HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54145 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54146 - "GET /api/flow-overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54161 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54164 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54168 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54173 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54639 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54644 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58425 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58426 - "GET /api/governance/foundation/etl/parse-fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58431 - "GET /api/governance/foundation/etl/clean-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58434 - "GET /api/governance/foundation/etl/fill-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58440 - "GET /api/governance/foundation/etl/parse-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58441 - "GET /api/governance/foundation/etl/parse-fields HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58445 - "GET /api/governance/foundation/l0-audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61800 - "GET /api/system/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61803 - "GET /api/profiles/cell?page=1&size=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63924 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63933 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64496 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64504 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51602 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51607 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53092 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53097 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53620 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53625 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54946 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54953 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58477 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58490 - "GET /api/health HTTP/1.1" 200 OK

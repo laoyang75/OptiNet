@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初始化数据 — rebuild3</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-200:#C7D2FE;
+    --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA;
+    --c-indigo-900:#312E81; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-500:#3B82F6; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB;
+    --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280;
+    --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --sidebar-w:240px; --topbar-h:56px; --radius:12px;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover:0 4px 12px rgba(0,0,0,.08);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;color:var(--c-gray-800);background:var(--c-gray-50);min-width:1100px;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--c-indigo-950);color:var(--c-indigo-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-brand{height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;font-size:15px;font-weight:600;color:var(--c-white);border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-nav{padding:12px 8px;flex:1}
+  .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--c-indigo-200);transition:background .15s,color .15s;margin-bottom:2px}
+  .sidebar-nav a:hover{background:rgba(255,255,255,.08);color:var(--c-white)}
+  .sidebar-nav a.active{background:var(--c-indigo-600);color:var(--c-white);font-weight:500}
+  .sidebar-nav .ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:8px 14px}
+  .sidebar-group-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);padding:8px 14px 4px;text-transform:uppercase;letter-spacing:.06em}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+  .topbar{height:var(--topbar-h);background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:16px;font-weight:600;color:var(--c-gray-900)}
+  .topbar-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-gray-500)}
+
+  .content{padding:24px 32px 48px}
+  .section-title{font-size:15px;font-weight:600;color:var(--c-gray-900);margin-bottom:12px}
+  .section+.section{margin-top:28px}
+
+  /* 上下文条 */
+  .context-bar{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:14px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;box-shadow:var(--shadow-card)}
+  .ctx-item{display:flex;align-items:center;gap:6px}
+  .ctx-label{font-size:11px;color:var(--c-gray-400);letter-spacing:.04em}
+  .ctx-value{font-size:13px;font-weight:600;color:var(--c-gray-800);font-family:"SF Mono","JetBrains Mono",monospace}
+  .ctx-divider{width:1px;height:24px;background:var(--c-gray-200)}
+  .ctx-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--c-green-50);color:var(--c-green-600);border:1px solid var(--c-green-500)}
+
+  /* 初始化流程步骤 */
+  .init-flow{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:28px 32px}
+  .init-step{display:flex;align-items:flex-start;gap:14px;position:relative;padding:14px 0}
+  .init-step+.init-step{border-top:1px solid var(--c-gray-100)}
+
+  .step-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:var(--c-green-50);color:var(--c-green-600);font-weight:700}
+  .step-num{font-size:11px;color:var(--c-gray-400);font-weight:600;min-width:24px;margin-top:6px;flex-shrink:0}
+  .step-body{flex:1;min-width:0}
+  .step-name{font-size:14px;font-weight:600;color:var(--c-gray-900)}
+  .step-detail{font-size:12px;color:var(--c-gray-500);margin-top:2px;font-family:"SF Mono","JetBrains Mono",monospace}
+  .step-connector{position:absolute;left:39px;top:0;bottom:0;width:2px;background:var(--c-green-500);opacity:.2;z-index:0}
+  .init-step:first-child .step-connector{top:50%}
+  .init-step:last-child .step-connector{bottom:50%}
+
+  /* 汇总卡片网格 */
+  .summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .summary-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card);transition:box-shadow .15s}
+  .summary-card:hover{box-shadow:var(--shadow-card-hover)}
+  .summary-card .label{font-size:12px;color:var(--c-gray-500);margin-bottom:4px}
+  .summary-card .value{font-size:24px;font-weight:700;color:var(--c-gray-900)}
+  .summary-card .value.green{color:var(--c-green-600)}
+  .summary-card .value.amber{color:var(--c-amber-500)}
+  .summary-card .value.orange{color:var(--c-orange-600)}
+  .summary-card .value.red{color:var(--c-red-600)}
+  .summary-card .value.indigo{color:var(--c-indigo-600)}
+
+  /* 横向条形图 */
+  .bar-chart{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:24px 28px}
+  .bar-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .bar-row:last-child{margin-bottom:0}
+  .bar-label{width:260px;font-size:13px;font-weight:500;color:var(--c-gray-700);text-align:right;flex-shrink:0}
+  .bar-track{flex:1;height:32px;background:var(--c-gray-100);border-radius:6px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 12px;transition:width .6s ease}
+  .bar-fill.green{background:var(--c-green-500)}
+  .bar-fill.amber{background:var(--c-amber-400)}
+  .bar-fill.orange{background:var(--c-orange-500)}
+  .bar-fill.red{background:var(--c-red-500)}
+  .bar-fill-text{font-size:12px;font-weight:600;color:var(--c-white);white-space:nowrap}
+  .bar-value{width:160px;font-size:13px;color:var(--c-gray-600);font-family:"SF Mono","JetBrains Mono",monospace;flex-shrink:0}
+
+  /* 说明框 */
+  .note-box{background:var(--c-indigo-50);border:1px solid var(--c-indigo-200);border-radius:var(--radius);padding:20px 24px}
+  .note-box .note-title{font-size:14px;font-weight:600;color:var(--c-indigo-700);margin-bottom:10px}
+  .note-box ul{list-style:none;padding:0}
+  .note-box li{font-size:13px;color:var(--c-gray-700);padding:4px 0;padding-left:16px;position:relative}
+  .note-box li::before{content:'';position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:50%;background:var(--c-indigo-500)}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <!-- 主流程层 -->
+      <a href="01_flow_overview.html"><span class="ico">&#9678;</span> 流转总览</a>
+      <a href="01_flow_overview_timeline.html"><span class="ico">&#9202;</span> 流转快照</a>
+      <a href="02_run_batch_center.html"><span class="ico">&#9881;</span> 运行/批次中心</a>
+      <a href="03_objects.html"><span class="ico">&#9724;</span> 对象浏览</a>
+      <a href="05_observation_workspace.html"><span class="ico">&#9201;</span> 等待/观察工作台</a>
+      <a href="06_anomaly_workspace.html"><span class="ico">&#9888;</span> 异常工作台</a>
+      <a href="07_baseline_profile.html"><span class="ico">&#9733;</span> 基线/画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 画像视角层 -->
+      <a href="09_lac_profile.html"><span class="ico">&#9636;</span> LAC 画像</a>
+      <a href="10_bs_profile.html"><span class="ico">&#9635;</span> BS 画像</a>
+      <a href="11_cell_profile.html"><span class="ico">&#9632;</span> Cell 画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 支撑治理层 -->
+      <a href="13_data_governance.html"><span class="ico">&#9776;</span> 基础数据治理</a>
+      <a href="08_validation_compare.html"><span class="ico">&#9745;</span> 验证/对照</a>
+      <a href="12_initialization.html" class="active"><span class="ico">&#9654;</span> 初始化数据</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">初始化数据 — 冷启动批量处理结果</div>
+      <div class="topbar-status">
+        <span class="ctx-badge">&#10003; 已完成</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 上下文条 -->
+      <div class="section">
+        <div class="section-title">初始化上下文</div>
+        <div class="context-bar">
+          <div class="ctx-item"><span class="ctx-label">run_id</span><span class="ctx-value">RUN-20260403-001</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">初始化窗口</span><span class="ctx-value">2026-04-01 ~ 2026-04-03 (3天)</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">状态</span><span class="ctx-badge">&#10003; 已完成</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">完成时间</span><span class="ctx-value">2026-04-03 00:15:32</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item"><span class="ctx-label">rule_set_version</span><span class="ctx-value">v3.2</span></div>
+        </div>
+      </div>
+
+      <!-- 初始化流程 -->
+      <div class="section">
+        <div class="section-title">初始化流程</div>
+        <div class="init-flow">
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-name">冻结 run_id 与版本绑定</div>
+              <div class="step-detail">run_id: RUN-20260403-001 &nbsp;|&nbsp; 契约版本: v2.1 &nbsp;|&nbsp; rule_set_version: v3.2</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-name">全量标准化事件</div>
+              <div class="step-detail">输入 2,847,103 条 → 标准化 2,841,290 条 (99.8%)</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-name">记录级合规检查</div>
+              <div class="step-detail">合规 2,786,787 (98.1%) &nbsp;|&nbsp; 不合规 54,503 (1.9%)</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-name">研究期 LAC 预边界 / 区域缩边界</div>
+              <div class="step-detail">北京区域, 152 个 LAC</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-name">Cell 候选累计与晋升</div>
+              <div class="step-detail">候选 14,938 → 晋升 12,782 (85.6%)</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-name">由 active Cell 派生 BS</div>
+              <div class="step-detail">3,382 个 BS</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">7</div>
+            <div class="step-body">
+              <div class="step-name">由 active BS 派生 LAC</div>
+              <div class="step-detail">152 个 LAC</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">8</div>
+            <div class="step-body">
+              <div class="step-name">首轮事实治理</div>
+              <div class="step-detail">governed 2,388,652 (84.1%) &nbsp;|&nbsp; 观察 312,894 (11.0%) &nbsp;|&nbsp; 问题 85,241 (3.0%) &nbsp;|&nbsp; 拒收 54,503 (1.9%)</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">9</div>
+            <div class="step-body">
+              <div class="step-name">异常检测与资格收敛</div>
+              <div class="step-detail">38 个异常对象</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">10</div>
+            <div class="step-body">
+              <div class="step-name">完整回归一次</div>
+              <div class="step-detail">消除"先粗后细"语义混杂</div>
+            </div>
+          </div>
+
+          <div class="init-step">
+            <div class="step-icon">&#10003;</div>
+            <div class="step-num">11</div>
+            <div class="step-body">
+              <div class="step-name">生成 baseline v1</div>
+              <div class="step-detail">首版基线, 覆盖 12,782 Cell / 3,382 BS / 152 LAC</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 初始化结果汇总 -->
+      <div class="section">
+        <div class="section-title">初始化结果汇总</div>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">活跃 Cell</div>
+            <div class="value green">12,782</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">等待中 Cell</div>
+            <div class="value amber">1,156</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">观察中 Cell</div>
+            <div class="value amber">823</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">拒收 Cell</div>
+            <div class="value red">177</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">BS</div>
+            <div class="value">3,382</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">LAC</div>
+            <div class="value">152</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">锚点可用</div>
+            <div class="value">11,403</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">基线可用</div>
+            <div class="value">10,987</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">异常对象</div>
+            <div class="value orange">38</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">首版基线</div>
+            <div class="value indigo">v1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 进入增量链路说明 -->
+      <div class="section">
+        <div style="background:var(--c-green-50);border:1px solid var(--c-green-500);border-radius:var(--radius);padding:20px 24px">
+          <div style="font-size:14px;font-weight:600;color:var(--c-green-600);margin-bottom:8px">进入增量链路</div>
+          <div style="font-size:13px;color:var(--c-gray-700);line-height:1.7">初始化完成后，系统自动进入增量治理模式。后续每 2 小时一个批次，使用本次生成的 baseline v1 作为首个参考基线。初始化运行在运行/批次中心中标记为特殊 run 类型。</div>
+        </div>
+      </div>
+
+      <!-- 四分流分布 -->
+      <div class="section">
+        <div class="section-title">四分流分布</div>
+        <div class="bar-chart">
+
+          <div class="bar-row">
+            <div class="bar-label">已治理事实 (fact_governed)</div>
+            <div class="bar-track">
+              <div class="bar-fill green" style="width:84.1%">
+                <span class="bar-fill-text">84.1%</span>
+              </div>
+            </div>
+            <div class="bar-value">2,388,652 条</div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">观察事实 (fact_pending_observation)</div>
+            <div class="bar-track">
+              <div class="bar-fill amber" style="width:11%">
+                <span class="bar-fill-text">11.0%</span>
+              </div>
+            </div>
+            <div class="bar-value">312,894 条</div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">问题事实 (fact_pending_issue)</div>
+            <div class="bar-track">
+              <div class="bar-fill orange" style="width:3%">
+                <span class="bar-fill-text">3.0%</span>
+              </div>
+            </div>
+            <div class="bar-value">85,241 条</div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">拒收事实 (fact_rejected)</div>
+            <div class="bar-track">
+              <div class="bar-fill red" style="width:1.9%">
+                <span class="bar-fill-text">1.9%</span>
+              </div>
+            </div>
+            <div class="bar-value">54,503 条</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 研究期口径说明 -->
+      <div class="section">
+        <div class="section-title">研究期口径说明</div>
+        <div class="note-box">
+          <div class="note-title">当前初始化采用的特殊策略</div>
+          <ul>
+            <li>北京 GPS 边界框 = 研究期特殊策略，非长期规则</li>
+            <li>LAC 预边界 = 冷启动策略</li>
+            <li>严格 GPS 过滤 = 当前北京样本验证阶段</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

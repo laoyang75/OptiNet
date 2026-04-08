@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>运行中心 - 治理观察台</title>
+<link rel="stylesheet" href="wireframe.css"/>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo"><span>治理观察台</span></div>
+  <a href="index.html"><span>首页</span></a>
+  <a href="runs.html" class="active"><span>运行中心</span></a>
+  <a href="daily-review.html"><span>日更审查</span></a>
+  <a href="objects.html"><span>对象中心</span></a>
+  <a href="issues.html"><span>问题中心</span></a>
+  <a href="fields.html"><span>字段治理</span></a>
+  <div class="sep"></div>
+  <a href="experiments.html"><span>规则实验</span></a>
+</nav>
+
+<div class="main">
+  <div class="crumb"><a href="index.html">首页</a> / 运行中心</div>
+  <div class="page-header">
+    <h1>运行中心</h1>
+    <button class="btn btn-primary" onclick="toggleDetail()">+ 发起新运行</button>
+  </div>
+
+  <!-- 全局过滤 -->
+  <div class="global-filter">
+    <label>运营商</label>
+    <select><option>全部</option><option>移动</option><option>联通</option><option>电信</option></select>
+    <label>制式</label>
+    <select><option>全部</option><option>4G</option><option>5G</option></select>
+    <label>运行类型</label>
+    <select><option>全部</option><option>冷启动</option><option>伪日更</option><option>局部重算</option></select>
+    <label>状态</label>
+    <select><option>全部</option><option>运行中</option><option>已完成</option><option>失败</option></select>
+  </div>
+
+  <!-- 运行列表 -->
+  <div class="card">
+    <h3>运行列表</h3>
+    <table>
+      <thead>
+        <tr><th>Run ID</th><th>类型</th><th>状态</th><th>阶段进度</th><th>版本摘要</th><th>输入窗口</th><th>耗时</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr onclick="showDetail()" style="cursor:pointer">
+          <td><strong>#0037</strong></td>
+          <td>冷启动</td>
+          <td><span class="tag ok">已完成</span></td>
+          <td>8/8</td>
+          <td><span class="tag muted">C1-R2-B1</span></td>
+          <td>3/1 ~ 3/14</td>
+          <td>2h 17m</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>#0036</strong></td>
+          <td>伪日更</td>
+          <td><span class="tag warn">运行中</span></td>
+          <td>3/5</td>
+          <td><span class="tag muted">C1-R2-B1</span></td>
+          <td>3/15</td>
+          <td>进行中</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>#0035</strong></td>
+          <td>局部重算</td>
+          <td><span class="tag err">失败</span></td>
+          <td>2/4</td>
+          <td><span class="tag muted">C1-R1-B1</span></td>
+          <td>3/14</td>
+          <td>0h 34m</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><strong>#0034</strong></td>
+          <td>冷启动</td>
+          <td><span class="tag ok">已完成</span></td>
+          <td>8/8</td>
+          <td><span class="tag muted">C1-R1-B0</span></td>
+          <td>2/15 ~ 2/28</td>
+          <td>3h 05m</td>
+          <td><a class="link">详情 &rarr;</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Run 详情区（点击展开示意） -->
+  <div id="run-detail" style="display:none">
+    <div class="crumb" style="margin-top:20px"><a href="runs.html">运行中心</a> / Run #0037 冷启动</div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>运行概览</h3>
+        <dl class="detail-grid">
+          <dt>类型</dt><dd>冷启动</dd>
+          <dt>状态</dt><dd><span class="tag ok">已完成</span></dd>
+          <dt>输入窗口</dt><dd>2026-03-01 ~ 03-14</dd>
+          <dt>总输入行</dt><dd>12,345,678</dd>
+          <dt>耗时</dt><dd>2h 17m</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>版本绑定</h3>
+        <dl class="detail-grid">
+          <dt>run_id</dt><dd>#0037</dd>
+          <dt>contract</dt><dd>C1</dd>
+          <dt>rule_set</dt><dd>R2</dd>
+          <dt>baseline</dt><dd>B1</dd>
+        </dl>
+        <div style="margin-top:10px"><a class="link" onclick="openDrawer()">查看版本历史 &rarr;</a></div>
+      </div>
+    </div>
+
+    <!-- 阶段进度 -->
+    <div class="card">
+      <h3>阶段进度</h3>
+      <div class="steps">
+        <div class="step">LAC筛选</div>
+        <div class="step">Cell统计</div>
+        <div class="step">BS聚合</div>
+        <div class="step">GPS修正</div>
+        <div class="step">信号补齐</div>
+        <div class="step">反向纯化</div>
+        <div class="step">完整回归</div>
+        <div class="step">基线画像</div>
+      </div>
+    </div>
+
+    <!-- 行数瀑布 -->
+    <div class="card">
+      <h3>行数变化瀑布</h3>
+      <div class="waterfall">
+        <div class="wf-row"><span class="wf-label">原始输入</span><div class="wf-bar" style="width:100%"><span>12,345,678</span></div></div>
+        <div class="wf-row"><span class="wf-label">LAC过滤</span><div class="wf-bar" style="width:91%"><span>11,200,000 (-9.3%)</span></div></div>
+        <div class="wf-row"><span class="wf-label">Cell关联</span><div class="wf-bar" style="width:87%"><span>10,800,000 (-3.6%)</span></div></div>
+        <div class="wf-row"><span class="wf-label">GPS修正</span><div class="wf-bar" style="width:87%"><span>10,800,000 (修正22%)</span></div></div>
+        <div class="wf-row"><span class="wf-label">信号补齐</span><div class="wf-bar" style="width:87%"><span>10,800,000 (补齐8%)</span></div></div>
+        <div class="wf-row"><span class="wf-label">最终落库</span><div class="wf-bar" style="width:87%"><span>10,800,000</span></div></div>
+      </div>
+    </div>
+
+    <!-- 告警摘要 -->
+    <div class="card">
+      <h3>告警与问题摘要</h3>
+      <table>
+        <thead><tr><th>类型</th><th>数量</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>碰撞 BS</td><td><span class="tag err">12</span></td><td><a class="link" href="issues.html">跳转问题中心 &rarr;</a></td></tr>
+          <tr><td>移动 Cell</td><td><span class="tag warn">34</span></td><td><a class="link" href="issues.html">跳转问题中心 &rarr;</a></td></tr>
+          <tr><td>GPS 漂移率</td><td>22%</td><td></td></tr>
+          <tr><td>字段 rsrq 空值率偏高</td><td><span class="tag warn">15%</span></td><td><a class="link" href="fields.html">跳转字段治理 &rarr;</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 版本抽屉 -->
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <button class="close" onclick="closeDrawer()">&times;</button>
+  <h2>版本与审计</h2>
+  <div class="card">
+    <h3>当前版本体系</h3>
+    <dl class="detail-grid">
+      <dt>contract</dt><dd>C1</dd>
+      <dt>rule_set</dt><dd>R2</dd>
+      <dt>baseline</dt><dd>B1</dd>
+      <dt>最近 run</dt><dd>#0037</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h3>版本变更历史</h3>
+    <table>
+      <tbody>
+        <tr><td><span class="tag info">R2</span></td><td>&larr; R1</td><td>3/14</td><td>+碰撞BS拆分规则</td></tr>
+        <tr><td><span class="tag info">C1</span></td><td>初始</td><td>3/10</td><td>初始契约版本</td></tr>
+        <tr><td><span class="tag info">B1</span></td><td>初始</td><td>3/15</td><td>冷启动基线</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function toggleDetail() { document.getElementById('run-detail').style.display = 'block'; }
+function showDetail() { document.getElementById('run-detail').style.display = 'block'; window.scrollTo({top: 500, behavior:'smooth'}); }
+function openDrawer() { document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+</script>
+</body>
+</html>

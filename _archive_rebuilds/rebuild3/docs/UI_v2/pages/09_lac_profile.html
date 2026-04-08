@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAC 画像 — rebuild3</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-200:#C7D2FE;
+    --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA;
+    --c-indigo-900:#312E81; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-500:#3B82F6; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB;
+    --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280;
+    --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --sidebar-w:240px; --topbar-h:56px; --radius:12px;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover:0 4px 12px rgba(0,0,0,.08);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;color:var(--c-gray-800);background:var(--c-gray-50);min-width:1100px;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--c-indigo-950);color:var(--c-indigo-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-brand{height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;font-size:15px;font-weight:600;color:var(--c-white);border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-nav{padding:12px 8px;flex:1}
+  .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--c-indigo-200);transition:background .15s,color .15s;margin-bottom:2px}
+  .sidebar-nav a:hover{background:rgba(255,255,255,.08);color:var(--c-white)}
+  .sidebar-nav a.active{background:var(--c-indigo-600);color:var(--c-white);font-weight:500}
+  .sidebar-nav .ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+  .topbar{height:var(--topbar-h);background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:16px;font-weight:600;color:var(--c-gray-900)}
+  .topbar-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-gray-500)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-green-600);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  .content{padding:24px 32px 48px}
+  .section-title{font-size:15px;font-weight:600;color:var(--c-gray-900);margin-bottom:12px}
+  .section+.section{margin-top:28px}
+
+  /* 搜索栏 */
+  .search-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .search-input{flex:1;max-width:420px;height:40px;padding:0 16px;border:1px solid var(--c-gray-300);border-radius:8px;font-size:14px;color:var(--c-gray-800);background:var(--c-white);outline:none;transition:border-color .15s}
+  .search-input:focus{border-color:var(--c-indigo-500)}
+  .search-input::placeholder{color:var(--c-gray-400)}
+  .search-btn{height:40px;padding:0 20px;border:none;border-radius:8px;background:var(--c-indigo-600);color:var(--c-white);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s}
+  .search-btn:hover{background:var(--c-indigo-700)}
+
+  /* 汇总卡片 */
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px}
+  .summary-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card)}
+  .summary-card .label{font-size:12px;color:var(--c-gray-500);margin-bottom:4px}
+  .summary-card .value{font-size:24px;font-weight:700;color:var(--c-gray-900)}
+  .summary-card .meta{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--c-gray-500);flex-wrap:wrap}
+  .meta-tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+  .tag-green{background:var(--c-green-50);color:var(--c-green-600)}
+  .tag-orange{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .tag-red{background:var(--c-red-50);color:var(--c-red-600)}
+  .tag-blue{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .tag-gray{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .tag-amber{background:var(--c-amber-50);color:var(--c-amber-500)}
+
+  /* 表格 */
+  .table-wrap{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:900px}
+  thead{background:var(--c-gray-50)}
+  th{padding:6px 8px;text-align:left;font-size:11px;font-weight:600;color:var(--c-gray-500);border-bottom:1px solid var(--c-gray-200);white-space:nowrap}
+  td{padding:6px 8px;font-size:12px;color:var(--c-gray-700);border-bottom:1px solid var(--c-gray-100);white-space:nowrap}
+  td.num,th.num{white-space:nowrap}
+  tr.clickable{cursor:pointer;transition:background .12s}
+  tr.clickable:hover{background:var(--c-indigo-50)}
+  .mono{font-family:"SF Mono","JetBrains Mono",monospace;font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+  .badge-active{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-dormant{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .badge-retired{background:var(--c-red-50);color:var(--c-red-500)}
+  .badge-healthy{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-anomaly{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .badge-collision{background:var(--c-red-50);color:var(--c-red-600)}
+  .badge-coverage{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .badge-na{background:var(--c-gray-100);color:var(--c-gray-400)}
+  .badge-data-insufficient{background:var(--c-gray-100);color:var(--c-gray-500)}
+  .badge-collision-suspect{background:var(--c-orange-50);color:var(--c-orange-600)}
+  .badge-collision-confirmed{background:var(--c-red-50);color:var(--c-red-600)}
+  .badge-dynamic{background:var(--c-purple-50);color:var(--c-purple-600)}
+  .badge-migration{background:var(--c-blue-50);color:var(--c-blue-600)}
+  .badge-gps-drift{background:var(--c-amber-50);color:var(--c-amber-500)}
+  .badge-region-quality{background:var(--c-gray-100);color:var(--c-gray-500);font-weight:400}
+  .badge-anchorable{background:var(--c-green-50);color:var(--c-green-600)}
+  .badge-not-anchorable{background:var(--c-gray-100);color:var(--c-gray-400)}
+
+  /* 详情面板 */
+  .detail-panel{display:none;background:var(--c-gray-50);border-top:2px solid var(--c-indigo-200)}
+  .detail-panel.open{display:table-row}
+  .detail-panel td{padding:0}
+  .detail-content{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;max-width:100%;overflow:hidden;font-size:12px}
+  .detail-block{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:8px;padding:12px;min-width:0;overflow:hidden}
+  .detail-block-title{font-size:12px;font-weight:600;color:var(--c-gray-800);margin-bottom:8px}
+  .detail-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+  .detail-row .dl{color:var(--c-gray-500)}
+  .detail-row .dv{color:var(--c-gray-800);font-weight:500}
+
+  /* 堆叠条 */
+  .stacked-bar{display:flex;height:16px;border-radius:4px;overflow:hidden;margin-top:4px}
+  .stacked-bar .seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--c-white);min-width:20px}
+  .seg-primary{background:var(--c-indigo-500)}
+  .seg-cell{background:var(--c-blue-500)}
+  .seg-bs{background:var(--c-purple-400)}
+  .seg-risk{background:var(--c-orange-500)}
+
+  .stacked-legend{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:4px;font-size:10px;color:var(--c-gray-500)}
+  .stacked-legend span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+  .leg-primary::before{background:var(--c-indigo-500)}
+  .leg-cell::before{background:var(--c-blue-500)}
+  .leg-bs::before{background:var(--c-purple-400)}
+  .leg-risk::before{background:var(--c-orange-500)}
+
+  /* 口径说明 */
+  .calibration{margin-top:12px;padding:10px 14px;background:var(--c-amber-50);border:1px solid var(--c-amber-400);border-radius:6px;font-size:11px;color:var(--c-gray-600);line-height:1.5}
+
+  /* 分页 */
+  .pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--c-gray-200);background:var(--c-white)}
+  .pagination-info{font-size:12px;color:var(--c-gray-500)}
+  .pagination-btns{display:flex;gap:4px}
+  .pagination-btns button{width:32px;height:32px;border:1px solid var(--c-gray-200);border-radius:6px;background:var(--c-white);font-size:13px;color:var(--c-gray-600);cursor:pointer;transition:all .12s}
+  .pagination-btns button:hover{border-color:var(--c-indigo-300);color:var(--c-indigo-600)}
+  .pagination-btns button.active{background:var(--c-indigo-600);color:var(--c-white);border-color:var(--c-indigo-600)}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <a href="01_flow_overview.html"><span class="ico">&#9678;</span> 流转总览</a>
+      <a href="01_flow_overview_timeline.html"><span class="ico">&#9202;</span> 流转快照</a>
+      <a href="02_run_batch_center.html"><span class="ico">&#9881;</span> 运行/批次中心</a>
+      <a href="03_objects.html" class="active"><span class="ico">&#9724;</span> 对象浏览</a>
+      <a href="05_observation_workspace.html"><span class="ico">&#9201;</span> 等待/观察工作台</a>
+      <a href="06_anomaly_workspace.html"><span class="ico">&#9888;</span> 异常工作台</a>
+      <a href="07_baseline_profile.html"><span class="ico">&#9733;</span> 基线/画像</a>
+      <a href="08_validation_compare.html"><span class="ico">&#9745;</span> 验证/对照</a>
+      <a href="09_lac_profile.html" class="active"><span class="ico">&#9636;</span> LAC 画像</a>
+      <a href="10_bs_profile.html"><span class="ico">&#9635;</span> BS 画像</a>
+      <a href="11_cell_profile.html"><span class="ico">&#9632;</span> Cell 画像</a>
+      <a href="12_initialization.html"><span class="ico">&#9654;</span> 初始化数据</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">LAC 画像</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 搜索栏 -->
+      <div class="section">
+        <div class="search-bar">
+          <input type="text" class="search-input" placeholder="输入 LAC 编号搜索，如 12848">
+          <button class="search-btn">搜索</button>
+        </div>
+      </div>
+
+      <!-- 汇总卡片 -->
+      <div class="section">
+        <div class="section-title">LAC 总览</div>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">LAC 总数</div>
+            <div class="value">156</div>
+            <div class="meta">
+              <span class="meta-tag tag-green">活跃 148</span>
+              <span class="meta-tag tag-gray">休眠 5</span>
+              <span class="meta-tag tag-red">退役 3</span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="label">区域健康状态</div>
+            <div class="value" style="font-size:18px">
+              <span class="meta-tag tag-green">健康 132</span>
+              <span class="meta-tag tag-gray">数据不足 6</span>
+              <span class="meta-tag tag-orange">碰撞嫌疑 4</span>
+              <span class="meta-tag tag-red">碰撞确认 2</span>
+            </div>
+            <div class="meta" style="margin-top:8px">
+              <span style="font-size:11px;color:var(--c-gray-400)">区域质量标签另见表格列</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主表格 -->
+      <div class="section">
+        <div class="section-title">LAC 列表</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>运营商</th>
+                <th>制式</th>
+                <th>LAC</th>
+                <th>位置</th>
+                <th>生命周期</th>
+                <th>健康状态</th>
+                <th>区域质量标签</th>
+                <th>资格</th>
+                <th>Cell 数</th>
+                <th>BS 数</th>
+                <th>面积 km²</th>
+                <th>异常 BS 占比</th>
+                <th>GPS 原始率</th>
+                <th>信号原始率</th>
+                <th>RSRP 均值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 行 1 -->
+              <tr class="clickable" onclick="toggleDetail('d1')">
+                <td>中国移动</td>
+                <td>4G</td>
+                <td class="mono">12848</td>
+                <td>北京朝阳</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span></td>
+                <td class="mono">232</td>
+                <td class="mono">58</td>
+                <td class="mono">45.2</td>
+                <td class="mono">3.4%</td>
+                <td class="mono">78.5%</td>
+                <td class="mono">92.3%</td>
+                <td class="mono">-95.2</td>
+              </tr>
+              <tr class="detail-panel" id="d1">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国移动</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">4G (LTE)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京朝阳</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">45.2 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">232</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">58</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">218</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">55</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-green-600)">3.4%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:78.5%">78.5%</div>
+                        <div class="seg seg-cell" style="width:12.3%">12.3%</div>
+                        <div class="seg seg-bs" style="width:7.8%">7.8%</div>
+                        <div class="seg seg-risk" style="width:1.4%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 78.5%</span>
+                        <span class="leg-cell">Cell 补齐 12.3%</span>
+                        <span class="leg-bs">BS 补齐 7.8%</span>
+                        <span class="leg-risk">BS 风险补齐 1.4%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:92.3%">92.3%</div>
+                        <div class="seg seg-cell" style="width:5.4%">5.4%</div>
+                        <div class="seg seg-bs" style="width:2.3%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 92.3%</span>
+                        <span class="leg-cell">Cell 补齐 5.4%</span>
+                        <span class="leg-bs">BS 补齐 2.3%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：GPS 原始率 = 有原始 GPS 坐标的记录数 / 总记录数；信号原始率 = 有原始信号值的记录数 / 总记录数。来源构成按补齐层级统计，同一记录仅计最高优先级来源。异常 BS 占比 = 区域内异常分类 BS 数 / 区域内 BS 总数。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 2 -->
+              <tr class="clickable" onclick="toggleDetail('d2')">
+                <td>中国移动</td>
+                <td>5G</td>
+                <td class="mono">12849</td>
+                <td>北京海淀</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span></td>
+                <td class="mono">189</td>
+                <td class="mono">47</td>
+                <td class="mono">38.7</td>
+                <td class="mono">2.1%</td>
+                <td class="mono">82.1%</td>
+                <td class="mono">94.7%</td>
+                <td class="mono">-91.8</td>
+              </tr>
+              <tr class="detail-panel" id="d2">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国移动</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">5G (NR)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京海淀</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">38.7 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">189</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">47</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">183</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">46</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-green-600)">2.1%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:82.1%">82.1%</div>
+                        <div class="seg seg-cell" style="width:10.5%">10.5%</div>
+                        <div class="seg seg-bs" style="width:6.2%">6.2%</div>
+                        <div class="seg seg-risk" style="width:1.2%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 82.1%</span>
+                        <span class="leg-cell">Cell 补齐 10.5%</span>
+                        <span class="leg-bs">BS 补齐 6.2%</span>
+                        <span class="leg-risk">BS 风险补齐 1.2%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:94.7%">94.7%</div>
+                        <div class="seg seg-cell" style="width:3.8%">3.8%</div>
+                        <div class="seg seg-bs" style="width:1.5%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 94.7%</span>
+                        <span class="leg-cell">Cell 补齐 3.8%</span>
+                        <span class="leg-bs">BS 补齐 1.5%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：GPS 原始率 = 有原始 GPS 坐标的记录数 / 总记录数；信号原始率 = 有原始信号值的记录数 / 总记录数。来源构成按补齐层级统计，同一记录仅计最高优先级来源。异常 BS 占比 = 区域内异常分类 BS 数 / 区域内 BS 总数。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 3 -->
+              <tr class="clickable" onclick="toggleDetail('d3')">
+                <td>中国联通</td>
+                <td>4G</td>
+                <td class="mono">9921</td>
+                <td>北京西城</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-collision-confirmed">碰撞确认</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span></td>
+                <td class="mono">156</td>
+                <td class="mono">39</td>
+                <td class="mono">28.3</td>
+                <td class="mono" style="color:var(--c-red-600)">12.8%</td>
+                <td class="mono">71.2%</td>
+                <td class="mono">88.9%</td>
+                <td class="mono">-98.7</td>
+              </tr>
+              <tr class="detail-panel" id="d3">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国联通</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">4G (LTE)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京西城</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">28.3 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">156</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">39</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">148</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">37</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">2</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-red-600)">12.8%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:71.2%">71.2%</div>
+                        <div class="seg seg-cell" style="width:14.8%">14.8%</div>
+                        <div class="seg seg-bs" style="width:10.5%">10.5%</div>
+                        <div class="seg seg-risk" style="width:3.5%">3.5%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 71.2%</span>
+                        <span class="leg-cell">Cell 补齐 14.8%</span>
+                        <span class="leg-bs">BS 补齐 10.5%</span>
+                        <span class="leg-risk">BS 风险补齐 3.5%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:88.9%">88.9%</div>
+                        <div class="seg seg-cell" style="width:7.2%">7.2%</div>
+                        <div class="seg seg-bs" style="width:3.9%">3.9%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 88.9%</span>
+                        <span class="leg-cell">Cell 补齐 7.2%</span>
+                        <span class="leg-bs">BS 补齐 3.9%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：GPS 原始率 = 有原始 GPS 坐标的记录数 / 总记录数；信号原始率 = 有原始信号值的记录数 / 总记录数。来源构成按补齐层级统计，同一记录仅计最高优先级来源。异常 BS 占比 = 区域内异常分类 BS 数 / 区域内 BS 总数。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 4 -->
+              <tr class="clickable" onclick="toggleDetail('d4')">
+                <td>中国电信</td>
+                <td>4G</td>
+                <td class="mono">8834</td>
+                <td>北京东城</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span></td>
+                <td class="mono">98</td>
+                <td class="mono">24</td>
+                <td class="mono">15.6</td>
+                <td class="mono">1.5%</td>
+                <td class="mono">85.3%</td>
+                <td class="mono">95.1%</td>
+                <td class="mono">-93.4</td>
+              </tr>
+              <tr class="detail-panel" id="d4">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国电信</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">4G (LTE)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京东城</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">15.6 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">98</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">24</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">95</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">24</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-green-600)">1.5%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:85.3%">85.3%</div>
+                        <div class="seg seg-cell" style="width:9.2%">9.2%</div>
+                        <div class="seg seg-bs" style="width:4.7%">4.7%</div>
+                        <div class="seg seg-risk" style="width:0.8%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 85.3%</span>
+                        <span class="leg-cell">Cell 补齐 9.2%</span>
+                        <span class="leg-bs">BS 补齐 4.7%</span>
+                        <span class="leg-risk">BS 风险补齐 0.8%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:95.1%">95.1%</div>
+                        <div class="seg seg-cell" style="width:3.4%">3.4%</div>
+                        <div class="seg seg-bs" style="width:1.5%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 95.1%</span>
+                        <span class="leg-cell">Cell 补齐 3.4%</span>
+                        <span class="leg-bs">BS 补齐 1.5%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：GPS 原始率 = 有原始 GPS 坐标的记录数 / 总记录数；信号原始率 = 有原始信号值的记录数 / 总记录数。来源构成按补齐层级统计，同一记录仅计最高优先级来源。异常 BS 占比 = 区域内异常分类 BS 数 / 区域内 BS 总数。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 5 -->
+              <tr class="clickable" onclick="toggleDetail('d5')">
+                <td>中国移动</td>
+                <td>4G</td>
+                <td class="mono">7723</td>
+                <td>北京丰台</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-collision-suspect">碰撞嫌疑</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span></td>
+                <td class="mono">178</td>
+                <td class="mono">45</td>
+                <td class="mono">42.1</td>
+                <td class="mono" style="color:var(--c-orange-600)">8.9%</td>
+                <td class="mono">74.8%</td>
+                <td class="mono">90.2%</td>
+                <td class="mono">-96.5</td>
+              </tr>
+              <tr class="detail-panel" id="d5">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国移动</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">4G (LTE)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京丰台</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">42.1 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">178</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">45</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">170</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">42</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">2</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">1</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-orange-600)">8.9%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:74.8%">74.8%</div>
+                        <div class="seg seg-cell" style="width:13.2%">13.2%</div>
+                        <div class="seg seg-bs" style="width:9.1%">9.1%</div>
+                        <div class="seg seg-risk" style="width:2.9%">2.9%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 74.8%</span>
+                        <span class="leg-cell">Cell 补齐 13.2%</span>
+                        <span class="leg-bs">BS 补齐 9.1%</span>
+                        <span class="leg-risk">BS 风险补齐 2.9%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:90.2%">90.2%</div>
+                        <div class="seg seg-cell" style="width:6.5%">6.5%</div>
+                        <div class="seg seg-bs" style="width:3.3%">3.3%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 90.2%</span>
+                        <span class="leg-cell">Cell 补齐 6.5%</span>
+                        <span class="leg-bs">BS 补齐 3.3%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：GPS 原始率 = 有原始 GPS 坐标的记录数 / 总记录数；信号原始率 = 有原始信号值的记录数 / 总记录数。来源构成按补齐层级统计，同一记录仅计最高优先级来源。异常 BS 占比 = 区域内异常分类 BS 数 / 区域内 BS 总数。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 6 -->
+              <tr class="clickable" onclick="toggleDetail('d6')">
+                <td>中国联通</td>
+                <td>5G</td>
+                <td class="mono">6612</td>
+                <td>北京通州</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span></td>
+                <td class="mono">67</td>
+                <td class="mono">17</td>
+                <td class="mono">22.4</td>
+                <td class="mono">0.0%</td>
+                <td class="mono">88.7%</td>
+                <td class="mono">96.3%</td>
+                <td class="mono">-89.5</td>
+              </tr>
+              <tr class="detail-panel" id="d6">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国联通</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">5G (NR)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京通州</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">22.4 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">67</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">17</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">65</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">17</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-green-600)">0.0%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:88.7%">88.7%</div>
+                        <div class="seg seg-cell" style="width:7.5%">7.5%</div>
+                        <div class="seg seg-bs" style="width:3.8%">3.8%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 88.7%</span>
+                        <span class="leg-cell">Cell 补齐 7.5%</span>
+                        <span class="leg-bs">BS 补齐 3.8%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:96.3%">96.3%</div>
+                        <div class="seg seg-cell" style="width:2.8%">2.8%</div>
+                        <div class="seg seg-bs" style="width:0.9%"></div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 96.3%</span>
+                        <span class="leg-cell">Cell 补齐 2.8%</span>
+                        <span class="leg-bs">BS 补齐 0.9%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：GPS 原始率 = 有原始 GPS 坐标的记录数 / 总记录数；信号原始率 = 有原始信号值的记录数 / 总记录数。来源构成按补齐层级统计，同一记录仅计最高优先级来源。异常 BS 占比 = 区域内异常分类 BS 数 / 区域内 BS 总数。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 7 -->
+              <tr class="clickable" onclick="toggleDetail('d7')">
+                <td>中国移动</td>
+                <td>4G</td>
+                <td class="mono">5501</td>
+                <td style="color:var(--c-gray-400)">&mdash;</td>
+                <td><span class="badge badge-dormant">休眠</span></td>
+                <td><span class="badge badge-data-insufficient">数据不足</span></td>
+                <td><span style="color:var(--c-gray-400)">&mdash;</span></td>
+                <td><span class="badge badge-not-anchorable">不可锚定</span></td>
+                <td class="mono">12</td>
+                <td class="mono">3</td>
+                <td class="mono">3.2</td>
+                <td class="mono">0.0%</td>
+                <td class="mono">45.2%</td>
+                <td class="mono">78.3%</td>
+                <td class="mono">-102.1</td>
+              </tr>
+              <tr class="detail-panel" id="d7">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国移动</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">4G (LTE)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">未知</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">3.2 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">12</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">3</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">0</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv">0.0%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:45.2%">45.2%</div>
+                        <div class="seg seg-cell" style="width:22.1%">22.1%</div>
+                        <div class="seg seg-bs" style="width:18.4%">18.4%</div>
+                        <div class="seg seg-risk" style="width:14.3%">14.3%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 45.2%</span>
+                        <span class="leg-cell">Cell 补齐 22.1%</span>
+                        <span class="leg-bs">BS 补齐 18.4%</span>
+                        <span class="leg-risk">BS 风险补齐 14.3%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:78.3%">78.3%</div>
+                        <div class="seg seg-cell" style="width:13.2%">13.2%</div>
+                        <div class="seg seg-bs" style="width:8.5%">8.5%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 78.3%</span>
+                        <span class="leg-cell">Cell 补齐 13.2%</span>
+                        <span class="leg-bs">BS 补齐 8.5%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：该 LAC 已休眠，最近 7 天无新增记录。历史数据仅供参考，不参与当前基线计算。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 行 8 -->
+              <tr class="clickable" onclick="toggleDetail('d8')">
+                <td>中国电信</td>
+                <td>4G</td>
+                <td class="mono">4490</td>
+                <td>北京昌平</td>
+                <td><span class="badge badge-active">活跃</span></td>
+                <td><span class="badge badge-healthy">健康</span></td>
+                <td><span class="badge badge-region-quality">覆盖不足</span></td>
+                <td><span class="badge badge-anchorable">可锚定</span></td>
+                <td class="mono">34</td>
+                <td class="mono">8</td>
+                <td class="mono">8.9</td>
+                <td class="mono">5.9%</td>
+                <td class="mono">62.3%</td>
+                <td class="mono">84.5%</td>
+                <td class="mono">-99.8</td>
+              </tr>
+              <tr class="detail-panel" id="d8">
+                <td colspan="15">
+                  <div class="detail-content">
+                    <div class="detail-block">
+                      <div class="detail-block-title">基本信息</div>
+                      <div class="detail-row"><span class="dl">运营商</span><span class="dv">中国电信</span></div>
+                      <div class="detail-row"><span class="dl">制式</span><span class="dv">4G (LTE)</span></div>
+                      <div class="detail-row"><span class="dl">位置</span><span class="dv">北京昌平</span></div>
+                      <div class="detail-row"><span class="dl">面积</span><span class="dv">8.9 km²</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">区域内 Cell / BS 统计</div>
+                      <div class="detail-row"><span class="dl">Cell 总数</span><span class="dv">34</span></div>
+                      <div class="detail-row"><span class="dl">BS 总数</span><span class="dv">8</span></div>
+                      <div class="detail-row"><span class="dl">活跃 Cell</span><span class="dv">30</span></div>
+                      <div class="detail-row"><span class="dl">活跃 BS</span><span class="dv">7</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">异常 BS 命中</div>
+                      <div class="detail-row"><span class="dl">动态 BS</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞确认</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">碰撞嫌疑</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">面积大</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">GPS 噪声</span><span class="dv">0</span></div>
+                      <div class="detail-row"><span class="dl">异常 BS 占比</span><span class="dv" style="color:var(--c-orange-600)">5.9%</span></div>
+                    </div>
+                    <div class="detail-block">
+                      <div class="detail-block-title">GPS 来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:62.3%">62.3%</div>
+                        <div class="seg seg-cell" style="width:17.8%">17.8%</div>
+                        <div class="seg seg-bs" style="width:13.4%">13.4%</div>
+                        <div class="seg seg-risk" style="width:6.5%">6.5%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 62.3%</span>
+                        <span class="leg-cell">Cell 补齐 17.8%</span>
+                        <span class="leg-bs">BS 补齐 13.4%</span>
+                        <span class="leg-risk">BS 风险补齐 6.5%</span>
+                      </div>
+                      <div class="detail-block-title" style="margin-top:14px">信号来源构成</div>
+                      <div class="stacked-bar">
+                        <div class="seg seg-primary" style="width:84.5%">84.5%</div>
+                        <div class="seg seg-cell" style="width:9.8%">9.8%</div>
+                        <div class="seg seg-bs" style="width:5.7%">5.7%</div>
+                      </div>
+                      <div class="stacked-legend">
+                        <span class="leg-primary">原始 84.5%</span>
+                        <span class="leg-cell">Cell 补齐 9.8%</span>
+                        <span class="leg-bs">BS 补齐 5.7%</span>
+                      </div>
+                      <div class="calibration">
+                        口径说明：覆盖不足 = 区域内活跃 BS 密度低于同制式同运营商 P10 水平。GPS 原始率偏低可能与区域 GPS 信号遮挡有关。
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <!-- 分页 -->
+          <div class="pagination">
+            <div class="pagination-info">共 156 条，第 1 / 20 页</div>
+            <div class="pagination-btns">
+              <button class="active">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button>4</button>
+              <button>5</button>
+              <button>...</button>
+              <button>20</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleDetail(id) {
+  const row = document.getElementById(id);
+  if (row) row.classList.toggle('open');
+}
+</script>
+</body>
+</html>

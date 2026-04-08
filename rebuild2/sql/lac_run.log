@@ -1,0 +1,10 @@
+SET
+SET
+psql:exec_l0_lac.sql:5: NOTICE:  table "l0_lac_ci" does not exist, skipping
+DROP TABLE
+SELECT 26117411
+psql:exec_l0_lac.sql:80: NOTICE:  table "l0_lac_ss1" does not exist, skipping
+DROP TABLE
+SELECT 17737765
+psql:exec_l0_lac.sql:201: NOTICE:  table "l0_lac_new" does not exist, skipping
+DROP TABLE

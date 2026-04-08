@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 共享组件库</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f3f4f6;
+    line-height: 1.5;
+  }
+
+  /* ── Page Header ── */
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 28px 40px 24px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+  .page-header p {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  /* ── Container ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 40px 60px;
+  }
+
+  /* ── Section ── */
+  .section {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+  }
+  .section-header {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .section-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .section-header .section-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6366f1;
+    background: #eef2ff;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .section-body {
+    padding: 20px;
+  }
+  .section-desc {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 16px;
+  }
+
+  /* ── Sub Section ── */
+  .sub-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 10px;
+    margin-top: 16px;
+  }
+  .sub-label:first-child { margin-top: 0; }
+
+  /* ── Flex row ── */
+  .flex-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .flex-row-lg { gap: 16px; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* lifecycle_state */
+  .badge-waiting { background: #fef3c7; color: #92400e; }
+  .badge-waiting .badge-dot { background: #fbbf24; }
+  .badge-observing { background: #fef3c7; color: #92400e; }
+  .badge-observing .badge-dot { background: #f59e0b; }
+  .badge-active { background: #dcfce7; color: #166534; }
+  .badge-active .badge-dot { background: #22c55e; }
+  .badge-dormant { background: #f3f4f6; color: #6b7280; }
+  .badge-dormant .badge-dot { background: #9ca3af; }
+  .badge-retired { background: #f9fafb; color: #9ca3af; text-decoration: line-through; }
+  .badge-retired .badge-dot { background: #d1d5db; }
+  .badge-rejected { background: #fee2e2; color: #991b1b; }
+  .badge-rejected .badge-dot { background: #ef4444; }
+
+  /* health_state */
+  .badge-healthy { background: #dcfce7; color: #166534; }
+  .badge-insufficient { background: #f3f4f6; color: #6b7280; }
+  .badge-gps-bias { background: #ffedd5; color: #9a3412; }
+  .badge-collision-suspect { background: #ffedd5; color: #9a3412; }
+  .badge-collision-confirmed { background: #fee2e2; color: #991b1b; }
+  .badge-dynamic { background: #dbeafe; color: #1e40af; }
+  .badge-migration { background: #ede9fe; color: #5b21b6; }
+
+  /* ── Tags ── */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .tag-red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+  /* ── WATCH indicator ── */
+  .watch-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #f97316;
+    border-radius: 0 6px 6px 0;
+    gap: 12px;
+  }
+  .watch-badge {
+    background: #ffedd5;
+    color: #9a3412;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .watch-explain {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  /* ── Fact Layer Badges ── */
+  .fact-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+  }
+  .fact-governed { background: #f0fdf4; border-left-color: #22c55e; color: #166534; }
+  .fact-pending-obs { background: #fffbeb; border-left-color: #fbbf24; color: #92400e; }
+  .fact-pending-issue { background: #fff7ed; border-left-color: #f97316; color: #9a3412; }
+  .fact-rejected { background: #fef2f2; border-left-color: #ef4444; color: #991b1b; }
+
+  /* ── Metric Cards ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .metric-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 16px 18px;
+    border-left: 4px solid transparent;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+  .metric-card.green { border-left-color: #22c55e; }
+  .metric-card.amber { border-left-color: #fbbf24; }
+  .metric-card.orange { border-left-color: #f97316; }
+  .metric-card.indigo { border-left-color: #6366f1; }
+  .metric-label { font-size: 12px; color: #9ca3af; margin-bottom: 4px; font-weight: 500; }
+  .metric-value { font-size: 26px; font-weight: 700; color: #111827; line-height: 1.1; }
+  .metric-change {
+    font-size: 12px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .metric-change.up-green { color: #16a34a; }
+  .metric-change.down-green { color: #16a34a; }
+  .metric-change.up-red { color: #dc2626; }
+  .metric-change.stable { color: #9ca3af; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    gap: 6px;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  /* Sizes */
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-md { padding: 7px 16px; font-size: 13px; }
+  .btn-lg { padding: 10px 22px; font-size: 14px; }
+  /* Variants */
+  .btn-primary { background: #6366f1; color: #fff; border-color: #6366f1; }
+  .btn-primary:hover:not(:disabled) { background: #4f46e5; border-color: #4f46e5; }
+  .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; }
+  .btn-secondary:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
+  .btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .btn-danger:hover:not(:disabled) { background: #dc2626; border-color: #dc2626; }
+  .btn-ghost { background: transparent; color: #6366f1; border-color: transparent; }
+  .btn-ghost:hover:not(:disabled) { background: #eef2ff; }
+
+  /* ── Progress Bars ── */
+  .progress-wrapper { margin-bottom: 14px; }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #4b5563;
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .progress-fill.gray { background: #9ca3af; }
+  .progress-fill.amber { background: #f59e0b; }
+  .progress-fill.green { background: #22c55e; }
+  .progress-fill.red { background: #ef4444; }
+
+  /* ── Version Bind Bar ── */
+  .version-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #4b5563;
+  }
+  .version-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .version-item .v-icon {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+  .version-item .v-label { color: #9ca3af; }
+  .version-item .v-value { font-weight: 600; color: #111827; }
+  .version-sep { color: #d1d5db; }
+
+  /* ── Empty / Error / Loading States ── */
+  .state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .state-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    color: #d1d5db;
+  }
+  .state-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+  .state-desc {
+    font-size: 12.5px;
+    color: #9ca3af;
+    margin-bottom: 16px;
+    max-width: 280px;
+  }
+
+  .state-box.error .state-icon { color: #f97316; }
+  .state-box.loading .state-icon { color: #6366f1; }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  /* ── Table ── */
+  .demo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .demo-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+  }
+  .demo-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #111827;
+  }
+  .demo-table td.mono {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 12px;
+  }
+
+  /* ── Helpers ── */
+  .mt-0 { margin-top: 0; }
+  .divider { border-top: 1px solid #f3f4f6; margin: 16px 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+</style>
+</head>
+<body>
+
+<!-- ── Page Header ── -->
+<div class="page-header">
+  <h1>rebuild3 共享组件库</h1>
+  <p>所有可复用 UI 组件的参考目录 &mdash; 状态徽标、指标卡、按钮、进度条、空状态等</p>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 1: Status Badges -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>状态徽标 (Status Badges)</h2>
+    </div>
+    <div class="section-body">
+      <div class="sub-label mt-0">lifecycle_state 生命周期状态</div>
+      <div class="flex-row">
+        <span class="badge badge-waiting"><span class="badge-dot"></span> waiting</span>
+        <span class="badge badge-observing"><span class="badge-dot"></span> observing</span>
+        <span class="badge badge-active"><span class="badge-dot"></span> active</span>
+        <span class="badge badge-dormant"><span class="badge-dot"></span> dormant</span>
+        <span class="badge badge-retired"><span class="badge-dot"></span> retired</span>
+        <span class="badge badge-rejected"><span class="badge-dot"></span> rejected</span>
+      </div>
+
+      <div class="sub-label">health_state 健康状态</div>
+      <div class="flex-row">
+        <span class="badge badge-healthy">&#x2713; healthy</span>
+        <span class="badge badge-insufficient">? insufficient</span>
+        <span class="badge badge-gps-bias">&#x2316; gps_bias</span>
+        <span class="badge badge-collision-suspect">&#x26A0; collision_suspect</span>
+        <span class="badge badge-collision-confirmed">&#x26D4; collision_confirmed</span>
+        <span class="badge badge-dynamic">&#x2192; dynamic</span>
+        <span class="badge badge-migration">&#x21D2; migration_suspect</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 2: Qualification Tags -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>资格标签 (Qualification Tags)</h2>
+    </div>
+    <div class="section-body">
+      <div class="sub-label mt-0">anchorable 锚定资格</div>
+      <div class="flex-row" style="margin-bottom: 14px;">
+        <span class="tag tag-green">&#x2713; 可锚定</span>
+        <span class="tag tag-red">&#x1F512; 锚点禁用</span>
+      </div>
+
+      <div class="sub-label">baseline_eligible 基线资格</div>
+      <div class="flex-row">
+        <span class="tag tag-green">&#x2713; 可进基线</span>
+        <span class="tag tag-red">&#x2298; 基线禁用</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 3: WATCH Indicator -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>WATCH 指示器</h2>
+    </div>
+    <div class="section-body">
+      <div class="watch-row">
+        <span class="watch-badge">WATCH</span>
+        <span class="badge badge-active"><span class="badge-dot"></span> active</span>
+        <span class="badge badge-collision-suspect">&#x26A0; collision_suspect</span>
+        <span style="font-size: 13px; color: #4b5563;">46000-4G-12345-67890</span>
+        <span style="font-size: 12px; color: #9ca3af; margin-left: auto;">需要关注</span>
+      </div>
+      <div class="watch-explain">当 lifecycle=active 且 health&#x2260;healthy 时显示 WATCH 标记，提示该对象需要持续关注。</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 4: Fact Layer Badges -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>事实层徽标 (Fact Layer Badges)</h2>
+    </div>
+    <div class="section-body">
+      <div class="flex-row flex-row-lg">
+        <span class="fact-badge fact-governed">&#x2713; 已治理</span>
+        <span class="fact-badge fact-pending-obs">&#x1F552; 观察中</span>
+        <span class="fact-badge fact-pending-issue">&#x26A0; 待复核</span>
+        <span class="fact-badge fact-rejected">&#x26D4; 已拒收</span>
+      </div>
+      <div class="section-desc" style="margin-top: 12px; margin-bottom: 0;">
+        fact_governed: 绿色左线 &nbsp;|&nbsp; fact_pending_observation: 琥珀左线 &nbsp;|&nbsp; fact_pending_issue: 橙色左线 &nbsp;|&nbsp; fact_rejected: 红色左线
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 5: Metric Cards -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>指标卡 (Metric Cards)</h2>
+    </div>
+    <div class="section-body">
+      <div class="metric-grid">
+        <div class="metric-card green">
+          <div class="metric-label">活跃对象</div>
+          <div class="metric-value">12,847</div>
+          <div class="metric-change up-green">&#x2191; +2.3%</div>
+        </div>
+        <div class="metric-card amber">
+          <div class="metric-label">等待池</div>
+          <div class="metric-value">1,283</div>
+          <div class="metric-change down-green">&#x2193; -5.1%</div>
+        </div>
+        <div class="metric-card orange">
+          <div class="metric-label">异常对象</div>
+          <div class="metric-value">47</div>
+          <div class="metric-change up-red">&#x2191; +12.5%</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">GPS 可信度</div>
+          <div class="metric-value">95.2%</div>
+          <div class="metric-change stable">&#x2194; 稳定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 6: Buttons -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>按钮 (Buttons)</h2>
+    </div>
+    <div class="section-body">
+      <div class="sub-label mt-0">变体 (Variants)</div>
+      <div class="flex-row" style="margin-bottom: 16px;">
+        <button class="btn btn-primary btn-md">Primary</button>
+        <button class="btn btn-secondary btn-md">Secondary</button>
+        <button class="btn btn-danger btn-md">Danger</button>
+        <button class="btn btn-ghost btn-md">Ghost</button>
+      </div>
+
+      <div class="sub-label">禁用状态 (Disabled)</div>
+      <div class="flex-row" style="margin-bottom: 16px;">
+        <button class="btn btn-primary btn-md" disabled>Primary</button>
+        <button class="btn btn-secondary btn-md" disabled>Secondary</button>
+        <button class="btn btn-danger btn-md" disabled>Danger</button>
+        <button class="btn btn-ghost btn-md" disabled>Ghost</button>
+      </div>
+
+      <div class="sub-label">尺寸 (Sizes)</div>
+      <div class="flex-row" style="align-items: flex-end;">
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary btn-md">Medium</button>
+        <button class="btn btn-primary btn-lg">Large</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 7: Progress Bars -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2>进度条 (Progress Bars)</h2>
+    </div>
+    <div class="section-body">
+      <div class="progress-wrapper">
+        <div class="progress-info">
+          <span>数据导入</span>
+          <span>300 / 1,000</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill gray" style="width: 30%;"></div>
+        </div>
+      </div>
+
+      <div class="progress-wrapper">
+        <div class="progress-info">
+          <span>治理进度</span>
+          <span>6,500 / 10,000</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill amber" style="width: 65%;"></div>
+        </div>
+      </div>
+
+      <div class="progress-wrapper">
+        <div class="progress-info">
+          <span>基线验证</span>
+          <span>9,000 / 10,000</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill green" style="width: 90%;"></div>
+        </div>
+      </div>
+
+      <div class="progress-wrapper">
+        <div class="progress-info">
+          <span>存储用量 (超限!)</span>
+          <span style="color: #dc2626; font-weight: 600;">110 / 100 GB</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill red" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 8: Version Bind Display -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <h2>版本绑定栏 (Version Bind Display)</h2>
+    </div>
+    <div class="section-body">
+      <div class="version-bar">
+        <span class="version-item">
+          <span class="v-icon">&#x25B6;</span>
+          <span class="v-label">Run</span>
+          <span class="v-value">#R-20260403</span>
+        </span>
+        <span class="version-sep">|</span>
+        <span class="version-item">
+          <span class="v-icon">&#x25A3;</span>
+          <span class="v-label">Batch</span>
+          <span class="v-value">#B-0403-05</span>
+        </span>
+        <span class="version-sep">|</span>
+        <span class="version-item">
+          <span class="v-icon">&#x25C7;</span>
+          <span class="v-label">Baseline</span>
+          <span class="v-value">v12</span>
+        </span>
+        <span class="version-sep">|</span>
+        <span class="version-item">
+          <span class="v-icon">&#x25CB;</span>
+          <span class="v-label">Contract</span>
+          <span class="v-value">v3.1</span>
+        </span>
+        <span class="version-sep">|</span>
+        <span class="version-item">
+          <span class="v-icon">&#x2699;</span>
+          <span class="v-label">Rules</span>
+          <span class="v-value">v2.4</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 9: Empty & Error States -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">09</span>
+      <h2>空状态 / 错误状态 (Empty & Error States)</h2>
+    </div>
+    <div class="section-body">
+      <div class="grid-3">
+        <!-- Empty -->
+        <div style="border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div class="state-box">
+            <div class="state-icon">&#x1F4E6;</div>
+            <div class="state-title">暂无数据</div>
+            <div class="state-desc">当前筛选条件下没有找到匹配的对象，请调整筛选条件后重试</div>
+            <button class="btn btn-secondary btn-sm">清除筛选</button>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div style="border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div class="state-box error">
+            <div class="state-icon">&#x26A0;</div>
+            <div class="state-title">加载失败</div>
+            <div class="state-desc">无法获取数据，请检查网络连接后重试</div>
+            <button class="btn btn-primary btn-sm">重试</button>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div style="border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div class="state-box loading">
+            <div class="spinner"></div>
+            <div class="state-title">加载中...</div>
+            <div class="state-desc">正在获取最新数据，请稍候</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Section 10: Table Row Example -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">10</span>
+      <h2>表格行示例 (Table Row Example)</h2>
+    </div>
+    <div class="section-body" style="padding: 0;">
+      <div class="section-desc" style="padding: 16px 20px 0; margin-bottom: 8px;">展示一个完整的对象行，包含所有行内状态元素</div>
+      <table class="demo-table">
+        <thead>
+          <tr>
+            <th>对象 ID</th>
+            <th>类型</th>
+            <th>生命周期</th>
+            <th>健康状态</th>
+            <th>关注</th>
+            <th>锚定</th>
+            <th>基线</th>
+            <th>记录数</th>
+            <th>天数</th>
+            <th>更新</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">46000-4G-12345-67890</td>
+            <td>Cell</td>
+            <td><span class="badge badge-active"><span class="badge-dot"></span> active</span></td>
+            <td><span class="badge badge-collision-suspect">&#x26A0; collision_suspect</span></td>
+            <td><span class="watch-badge">WATCH</span></td>
+            <td><span class="tag tag-red">&#x1F512; 禁用</span></td>
+            <td><span class="tag tag-red">&#x2298; 禁用</span></td>
+            <td>2,341</td>
+            <td>47</td>
+            <td style="color: #9ca3af; font-size: 12px;">2h前</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 设计系统 v2</title>
+<style>
+  :root {
+    /* Primary */
+    --primary-600: #4F46E5;
+    --primary-500: #6366F1;
+    --primary-100: #E0E7FF;
+    --primary-50: #EEF2FF;
+
+    /* Semantic: Lifecycle & Health */
+    --green-500: #22C55E;
+    --green-100: #DCFCE7;
+    --green-50: #F0FDF4;
+    --amber-400: #FBBF24;
+    --amber-500: #F59E0B;
+    --amber-100: #FEF3C7;
+    --amber-50: #FFFBEB;
+    --orange-400: #FB923C;
+    --orange-500: #F97316;
+    --orange-100: #FFEDD5;
+    --orange-50: #FFF7ED;
+    --gray-400: #9CA3AF;
+    --gray-300: #D1D5DB;
+    --gray-200: #E5E7EB;
+    --gray-100: #F3F4F6;
+    --gray-50: #F9FAFB;
+    --red-500: #EF4444;
+    --red-100: #FEE2E2;
+    --red-50: #FEF2F2;
+    --blue-400: #60A5FA;
+    --blue-100: #DBEAFE;
+    --blue-50: #EFF6FF;
+    --purple-400: #A78BFA;
+    --purple-100: #EDE9FE;
+    --purple-50: #F5F3FF;
+
+    /* Surfaces */
+    --surface-bg: #FFFFFF;
+    --surface-secondary: #F9FAFB;
+    --surface-border: #E5E7EB;
+
+    /* Text */
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-tertiary: #9CA3AF;
+
+    /* Spacing */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-12: 48px;
+
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --font-h1: 32px;
+    --font-h2: 24px;
+    --font-h3: 18px;
+    --font-body: 14px;
+    --font-small: 12px;
+
+    /* Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-full: 9999px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-family);
+    font-size: var(--font-body);
+    color: var(--text-primary);
+    background: var(--surface-secondary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-wrapper {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: var(--sp-12) var(--sp-6);
+  }
+
+  .page-title {
+    font-size: var(--font-h1);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: var(--sp-1);
+  }
+
+  .page-subtitle {
+    font-size: var(--font-body);
+    color: var(--text-secondary);
+    margin-bottom: var(--sp-12);
+  }
+
+  /* Section */
+  .section {
+    background: var(--surface-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-8);
+    margin-bottom: var(--sp-6);
+  }
+
+  .section-title {
+    font-size: var(--font-h2);
+    font-weight: 600;
+    margin-bottom: var(--sp-2);
+    letter-spacing: -0.3px;
+  }
+
+  .section-desc {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    margin-bottom: var(--sp-6);
+  }
+
+  .subsection-title {
+    font-size: var(--font-h3);
+    font-weight: 600;
+    margin-bottom: var(--sp-4);
+    margin-top: var(--sp-6);
+  }
+
+  .subsection-title:first-of-type { margin-top: 0; }
+
+  /* Flex helpers */
+  .flex-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+  .flex-col { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .gap-2 { gap: var(--sp-2); }
+  .gap-4 { gap: var(--sp-4); }
+  .gap-6 { gap: var(--sp-6); }
+
+  /* ===== COLOR SYSTEM ===== */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .color-swatch {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--surface-border);
+  }
+
+  .color-swatch-block {
+    height: 56px;
+  }
+
+  .color-swatch-label {
+    padding: var(--sp-2) var(--sp-2);
+    font-size: var(--font-small);
+    line-height: 1.3;
+  }
+
+  .color-swatch-label .hex {
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 11px;
+  }
+
+  /* ===== TYPOGRAPHY ===== */
+  .type-sample { padding: var(--sp-2) 0; border-bottom: 1px solid var(--surface-border); }
+  .type-sample:last-child { border-bottom: none; }
+  .type-meta { font-size: var(--font-small); color: var(--text-secondary); margin-top: 2px; }
+
+  /* ===== SPACING ===== */
+  .spacing-row { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-2); }
+  .spacing-block { background: var(--primary-100); border-radius: 2px; height: 20px; }
+  .spacing-label { font-size: var(--font-small); color: var(--text-secondary); min-width: 60px; font-family: monospace; }
+
+  /* ===== BADGES (shared) ===== */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: var(--font-small);
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1.5;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-hollow {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    flex-shrink: 0;
+  }
+
+  /* Lifecycle badges */
+  .badge-waiting { background: #FEF3C7; color: #92400E; }
+  .badge-waiting .dot { background: var(--amber-400); }
+
+  .badge-observing { background: #FEF3C7; color: #78350F; }
+  .badge-observing .dot { background: var(--amber-500); }
+
+  .mini-progress {
+    width: 28px;
+    height: 4px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .mini-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--amber-500);
+  }
+
+  .badge-active { background: var(--green-100); color: #166534; }
+  .badge-active .dot { background: var(--green-500); }
+
+  .badge-dormant { background: var(--gray-100); color: #4B5563; }
+  .badge-dormant .dot-hollow { color: var(--gray-400); }
+
+  .badge-retired { background: var(--gray-100); color: var(--gray-400); text-decoration: line-through; }
+
+  .badge-rejected { background: var(--red-100); color: #991B1B; }
+  .badge-rejected .dot { background: var(--red-500); }
+
+  /* Health badges */
+  .badge-healthy { background: var(--green-100); color: #166534; }
+  .badge-insufficient { background: var(--gray-100); color: #4B5563; }
+  .badge-gps-bias { background: var(--orange-100); color: #9A3412; }
+  .badge-collision-suspect { background: var(--orange-100); color: #9A3412; }
+  .badge-collision-confirmed { background: var(--red-100); color: #991B1B; }
+  .badge-dynamic { background: var(--blue-100); color: #1E40AF; }
+  .badge-migration { background: var(--purple-100); color: #5B21B6; }
+
+  .badge-icon {
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  /* ===== QUALIFICATION TAGS ===== */
+  .qual-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid;
+  }
+
+  .qual-true { background: var(--green-50); border-color: #BBF7D0; color: #166534; }
+  .qual-false { background: var(--gray-100); border-color: var(--gray-200); color: var(--text-secondary); }
+
+  /* ===== WATCH INDICATOR ===== */
+  .watch-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    border-left: 3px solid var(--orange-500);
+    background: var(--orange-50);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    position: relative;
+  }
+
+  .watch-badge {
+    background: var(--orange-500);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== FACT LAYER BADGES ===== */
+  .fact-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-small);
+    font-weight: 500;
+    border-left: 3px solid;
+  }
+
+  .fact-governed { background: var(--green-50); border-left-color: var(--green-500); color: #166534; }
+  .fact-pending-obs { background: var(--amber-50); border-left-color: var(--amber-500); color: #92400E; }
+  .fact-pending-issue { background: var(--orange-50); border-left-color: var(--orange-500); color: #9A3412; }
+  .fact-rejected { background: var(--red-50); border-left-color: var(--red-500); color: #991B1B; }
+
+  .fact-icon { font-size: 14px; }
+
+  /* ===== DELTA INDICATOR ===== */
+  .delta-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    font-size: var(--font-small);
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    background: var(--surface-secondary);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .delta-current {
+    padding: 4px 10px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--font-body);
+    font-family: var(--font-family);
+    background: white;
+    border-right: 1px solid var(--surface-border);
+  }
+
+  .delta-batch {
+    padding: 4px 10px;
+    border-right: 1px solid var(--surface-border);
+  }
+
+  .delta-vs {
+    padding: 4px 10px;
+    font-weight: 600;
+  }
+
+  .delta-green { color: #16A34A; }
+  .delta-red { color: #DC2626; }
+  .delta-gray { color: var(--text-secondary); }
+
+  .delta-label {
+    font-family: var(--font-family);
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-right: 4px;
+  }
+
+  /* ===== BATCH FLOW DIAGRAM ===== */
+  .batch-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: var(--sp-4) 0;
+  }
+
+  .flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--radius-md);
+    border: 1.5px solid;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .flow-node-label {
+    font-size: var(--font-small);
+    font-weight: 500;
+  }
+
+  .flow-node-count {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Menlo', monospace;
+  }
+
+  .flow-input { border-color: var(--primary-600); background: var(--primary-50); }
+  .flow-input .flow-node-label { color: var(--primary-600); }
+  .flow-input .flow-node-count { color: var(--primary-600); }
+
+  .flow-governed { border-color: var(--green-500); background: var(--green-50); }
+  .flow-governed .flow-node-label { color: #166534; }
+  .flow-governed .flow-node-count { color: #166534; }
+
+  .flow-pending-obs { border-color: var(--amber-500); background: var(--amber-50); }
+  .flow-pending-obs .flow-node-label { color: #92400E; }
+  .flow-pending-obs .flow-node-count { color: #92400E; }
+
+  .flow-pending-issue { border-color: var(--orange-500); background: var(--orange-50); }
+  .flow-pending-issue .flow-node-label { color: #9A3412; }
+  .flow-pending-issue .flow-node-count { color: #9A3412; }
+
+  .flow-rejected { border-color: var(--red-500); background: var(--red-50); }
+  .flow-rejected .flow-node-label { color: #991B1B; }
+  .flow-rejected .flow-node-count { color: #991B1B; }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    color: var(--text-tertiary);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .flow-split {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+
+  .flow-split-line {
+    width: 24px;
+    height: 1.5px;
+    background: var(--gray-300);
+    flex-shrink: 0;
+  }
+
+  .flow-branches {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    position: relative;
+  }
+
+  .flow-branch {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .flow-branch-line {
+    width: 20px;
+    height: 1.5px;
+    flex-shrink: 0;
+  }
+
+  .flow-branch-line.green { background: var(--green-500); }
+  .flow-branch-line.amber { background: var(--amber-500); }
+  .flow-branch-line.orange { background: var(--orange-500); }
+  .flow-branch-line.red { background: var(--red-500); }
+
+  .flow-vertical {
+    position: absolute;
+    left: 0;
+    top: 18px;
+    bottom: 18px;
+    width: 1.5px;
+    background: var(--gray-300);
+  }
+
+  /* ===== RERUN BADGE ===== */
+  .rerun-badge-normal {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-small);
+    border: 1.5px solid var(--surface-border);
+    background: white;
+    color: var(--text-secondary);
+  }
+
+  .rerun-badge-rerun {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-small);
+    border: 2px dashed var(--purple-400);
+    background: var(--purple-50);
+    color: #5B21B6;
+    font-weight: 600;
+  }
+
+  .rerun-tag {
+    background: var(--purple-400);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ===== METRIC CARD ===== */
+  .metric-card {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4) var(--sp-6);
+    background: white;
+    min-width: 240px;
+  }
+
+  .metric-label {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    margin-bottom: var(--sp-2);
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: var(--sp-2);
+  }
+
+  .metric-delta-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    font-size: var(--font-small);
+    font-family: 'SF Mono', 'Menlo', monospace;
+  }
+
+  .metric-delta-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .metric-delta-label {
+    font-family: var(--font-family);
+    color: var(--text-secondary);
+  }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-bar-container {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .progress-bar-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-small);
+    margin-bottom: 4px;
+  }
+
+  .progress-bar-track {
+    height: 8px;
+    background: var(--gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-bar-fill.green { background: var(--green-500); }
+  .progress-bar-fill.amber { background: var(--amber-500); }
+  .progress-bar-fill.orange { background: var(--orange-500); }
+
+  /* ===== GLOBAL STATUS BAR ===== */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--radius-md);
+    font-size: var(--font-small);
+    font-weight: 500;
+  }
+
+  .status-bar-normal {
+    background: var(--surface-secondary);
+    border: 1px solid var(--surface-border);
+    color: var(--text-secondary);
+  }
+
+  .status-bar-processing {
+    background: var(--blue-50);
+    border: 1px solid #93C5FD;
+    color: #1E40AF;
+  }
+
+  .status-bar-rerun {
+    background: var(--purple-50);
+    border: 1px solid #C4B5FD;
+    color: #5B21B6;
+  }
+
+  .status-bar-validation {
+    background: #F0F4F8;
+    border: 1px solid #CBD5E1;
+    color: #475569;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+
+  .pulse-dot.blue { background: #3B82F6; }
+  .pulse-dot.purple { background: var(--purple-400); }
+  .pulse-dot.gray { background: #94A3B8; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    font-family: var(--font-family);
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--primary-600);
+    color: white;
+    border-color: var(--primary-600);
+  }
+  .btn-primary:hover { background: #4338CA; border-color: #4338CA; }
+
+  .btn-secondary {
+    background: white;
+    color: var(--text-primary);
+    border-color: var(--surface-border);
+  }
+  .btn-secondary:hover { background: var(--gray-50); border-color: var(--gray-300); }
+
+  .btn-danger {
+    background: white;
+    color: var(--red-500);
+    border: 1.5px dashed var(--red-500);
+  }
+  .btn-danger:hover { background: var(--red-50); }
+
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: var(--font-small);
+  }
+
+  /* ===== TABLE ===== */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-small);
+  }
+
+  .data-table thead th {
+    text-align: left;
+    padding: var(--sp-2) var(--sp-3);
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1.5px solid var(--surface-border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .data-table tbody td {
+    padding: var(--sp-3);
+    border-bottom: 1px solid var(--surface-border);
+    vertical-align: middle;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--gray-50);
+  }
+
+  .data-table tbody tr.watch-row-table {
+    border-left: 3px solid var(--orange-500);
+    background: #FFF8F0;
+  }
+  .data-table tbody tr.watch-row-table:hover {
+    background: #FFF3E6;
+  }
+
+  .cell-key {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 12px;
+    color: var(--primary-600);
+    font-weight: 500;
+  }
+
+  .inline-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  /* ===== DIVIDER ===== */
+  .divider {
+    height: 1px;
+    background: var(--surface-border);
+    margin: var(--sp-6) 0;
+  }
+
+  /* ===== LABEL ===== */
+  .label-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--sp-2);
+  }
+
+  /* New badge marker */
+  .new-marker {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--primary-600);
+    color: white;
+    letter-spacing: 0.3px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- Page Header -->
+  <h1 class="page-title">rebuild3 设计系统 v2</h1>
+  <p class="page-subtitle">流式治理工作台 -- 视觉规范与组件参考 / Cell - BS - LAC 数据治理</p>
+
+  <!-- =========================================== -->
+  <!-- 1. COLOR SYSTEM -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">色彩系统</h2>
+    <p class="section-desc">基于语义状态的色彩体系，所有颜色通过 CSS 自定义属性统一管理</p>
+
+    <h3 class="subsection-title">主色 -- 蓝靛光谱</h3>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#4F46E5"></div>
+        <div class="color-swatch-label">Primary 600<br><span class="hex">#4F46E5</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#6366F1"></div>
+        <div class="color-swatch-label">Primary 500<br><span class="hex">#6366F1</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#E0E7FF"></div>
+        <div class="color-swatch-label">Primary 100<br><span class="hex">#E0E7FF</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#EEF2FF"></div>
+        <div class="color-swatch-label">Primary 50<br><span class="hex">#EEF2FF</span></div>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">语义状态色</h3>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#22C55E"></div>
+        <div class="color-swatch-label">活跃 / 健康<br><span class="hex">#22C55E</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#FBBF24"></div>
+        <div class="color-swatch-label">等待 Amber-400<br><span class="hex">#FBBF24</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#F59E0B"></div>
+        <div class="color-swatch-label">观察 Amber-500<br><span class="hex">#F59E0B</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#F97316"></div>
+        <div class="color-swatch-label">问题 / 异常<br><span class="hex">#F97316</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#9CA3AF"></div>
+        <div class="color-swatch-label">休眠<br><span class="hex">#9CA3AF</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#D1D5DB"></div>
+        <div class="color-swatch-label">退役<br><span class="hex">#D1D5DB</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#EF4444"></div>
+        <div class="color-swatch-label">拒收<br><span class="hex">#EF4444</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#60A5FA"></div>
+        <div class="color-swatch-label">动态<br><span class="hex">#60A5FA</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#A78BFA"></div>
+        <div class="color-swatch-label">迁移<br><span class="hex">#A78BFA</span></div>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">表面与文字</h3>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#FFFFFF; border-bottom: 1px solid #E5E7EB"></div>
+        <div class="color-swatch-label">表面 / 白色<br><span class="hex">#FFFFFF</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#F9FAFB"></div>
+        <div class="color-swatch-label">表面 / 浅灰<br><span class="hex">#F9FAFB</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#111827"></div>
+        <div class="color-swatch-label">主文字<br><span class="hex">#111827</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#6B7280"></div>
+        <div class="color-swatch-label">次要文字<br><span class="hex">#6B7280</span></div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#E5E7EB"></div>
+        <div class="color-swatch-label">边框<br><span class="hex">#E5E7EB</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 2. TYPOGRAPHY -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">字体排版</h2>
+    <p class="section-desc">系统字体栈，清晰的层次结构。中西文混排优化。</p>
+
+    <div class="flex-col gap-2">
+      <div class="type-sample">
+        <div style="font-size:32px; font-weight:700; letter-spacing:-0.5px">流转总览 -- 流式治理工作台</div>
+        <div class="type-meta">H1 / 32px / Bold / letter-spacing: -0.5px</div>
+      </div>
+      <div class="type-sample">
+        <div style="font-size:24px; font-weight:600; letter-spacing:-0.3px">运行批次中心</div>
+        <div class="type-meta">H2 / 24px / Semibold / letter-spacing: -0.3px</div>
+      </div>
+      <div class="type-sample">
+        <div style="font-size:18px; font-weight:600">生命周期状态分布</div>
+        <div class="type-meta">H3 / 18px / Semibold</div>
+      </div>
+      <div class="type-sample">
+        <div style="font-size:14px">当前批次已处理 2,847 条记录，其中 governed 占比 89.3%，较上批次提升 1.2 个百分点。</div>
+        <div class="type-meta">Body / 14px / Regular / line-height: 1.6</div>
+      </div>
+      <div class="type-sample">
+        <div style="font-size:12px; color:var(--text-secondary)">最后更新: 2026-04-03 14:32:01 | batch-20260403-001</div>
+        <div class="type-meta">Small / 12px / Regular / color: secondary</div>
+      </div>
+      <div class="type-sample">
+        <div style="font-size:14px; font-family:'SF Mono','Menlo','Consolas',monospace">cell_460-00-12847-33</div>
+        <div class="type-meta">Mono / 14px / SF Mono, Menlo, Consolas / 用于对象键、数值、代码</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 3. SPACING -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">间距系统</h2>
+    <p class="section-desc">4px 基准单位，所有间距均为 4 的倍数</p>
+
+    <div class="flex-col gap-2">
+      <div class="spacing-row">
+        <span class="spacing-label">4px</span>
+        <div class="spacing-block" style="width:4px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-1 / 最小间距</span>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-label">8px</span>
+        <div class="spacing-block" style="width:8px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-2 / 紧凑间距</span>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-label">12px</span>
+        <div class="spacing-block" style="width:12px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-3 / 元素内间距</span>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-label">16px</span>
+        <div class="spacing-block" style="width:16px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-4 / 标准间距</span>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-label">24px</span>
+        <div class="spacing-block" style="width:24px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-6 / 分组间距</span>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-label">32px</span>
+        <div class="spacing-block" style="width:32px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-8 / 区块内间距</span>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-label">48px</span>
+        <div class="spacing-block" style="width:48px"></div>
+        <span style="font-size:12px; color:var(--text-secondary)">--sp-12 / 区块间间距</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 4. LIFECYCLE STATE BADGES -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">1. 生命周期状态徽标</h2>
+    <p class="section-desc">lifecycle_state -- 对象从注册到退出的全生命周期状态表达</p>
+
+    <div class="flex-row gap-4">
+      <span class="badge badge-waiting"><span class="dot"></span>等待</span>
+      <span class="badge badge-observing">
+        <span class="dot"></span>观察
+        <span class="mini-progress"><span class="mini-progress-fill" style="width:65%"></span></span>
+      </span>
+      <span class="badge badge-active"><span class="dot"></span>活跃</span>
+      <span class="badge badge-dormant"><span class="dot-hollow"></span>休眠</span>
+      <span class="badge badge-retired">退役</span>
+      <span class="badge badge-rejected"><span class="dot"></span>拒收</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="label-tag">状态区分说明</div>
+    <div style="font-size:var(--font-small); color:var(--text-secondary); line-height:1.8">
+      <strong>等待 vs 观察</strong>：等待仅有圆点，观察带迷你进度条暗示"接近门槛"，且黄色略深<br>
+      <strong>观察 vs 问题</strong>：观察是黄色 + 时钟（正在积累），问题是橙色 + 警告（有异常待处理）<br>
+      <strong>问题 vs 拒收</strong>：问题是橙色（仍可流转），拒收是红色 + 删除线（已终结）
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 5. HEALTH STATE BADGES -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">2. 健康状态徽标</h2>
+    <p class="section-desc">health_state -- 对象当前的数据质量与空间可信度</p>
+
+    <div class="flex-row gap-4">
+      <span class="badge badge-healthy"><span class="badge-icon">&#10003;</span>健康</span>
+      <span class="badge badge-insufficient"><span class="badge-icon">?</span>数据不足</span>
+      <span class="badge badge-gps-bias"><span class="badge-icon">&oplus;</span>GPS偏差</span>
+      <span class="badge badge-collision-suspect"><span class="badge-icon">&#9651;</span>碰撞嫌疑</span>
+      <span class="badge badge-collision-confirmed"><span class="badge-icon">&oslash;</span>碰撞确认</span>
+      <span class="badge badge-dynamic"><span class="badge-icon">&rarr;</span>动态</span>
+      <span class="badge badge-migration"><span class="badge-icon">&rArr;</span>迁移嫌疑</span>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 6. QUALIFICATION TAGS -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">3. 资格标签</h2>
+    <p class="section-desc">anchorable / baseline_eligible -- 对象是否具备锚点和基线参与资格</p>
+
+    <div class="flex-row gap-4">
+      <span class="qual-tag qual-true">&#9875; 锚点可用</span>
+      <span class="qual-tag qual-false">&#128274; 锚点禁用</span>
+      <span class="qual-tag qual-true">&#9899; 基线合格</span>
+      <span class="qual-tag qual-false">&#10005; 基线排除</span>
+    </div>
+
+    <div style="margin-top:var(--sp-4)">
+      <div class="label-tag">组合示例</div>
+      <div class="flex-row gap-2" style="margin-top:var(--sp-2)">
+        <span class="badge badge-active"><span class="dot"></span>活跃</span>
+        <span class="badge badge-healthy"><span class="badge-icon">&#10003;</span>健康</span>
+        <span class="qual-tag qual-true">&#9875; 锚点可用</span>
+        <span class="qual-tag qual-true">&#9899; 基线合格</span>
+      </div>
+      <div class="flex-row gap-2" style="margin-top:var(--sp-2)">
+        <span class="badge badge-active"><span class="dot"></span>活跃</span>
+        <span class="badge badge-gps-bias"><span class="badge-icon">&oplus;</span>GPS偏差</span>
+        <span class="qual-tag qual-false">&#128274; 锚点禁用</span>
+        <span class="qual-tag qual-false">&#10005; 基线排除</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 7. WATCH INDICATOR -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">4. Watch 观察指示器</h2>
+    <p class="section-desc">当 lifecycle_state = active 且 health_state != healthy 时触发：橙色左边框 + WATCH 徽标</p>
+
+    <div class="flex-col gap-4">
+      <div class="watch-row">
+        <span class="badge badge-active"><span class="dot"></span>活跃</span>
+        <span class="badge badge-gps-bias"><span class="badge-icon">&oplus;</span>GPS偏差</span>
+        <span style="font-family:monospace; font-size:12px; color:var(--text-secondary)">cell_460-00-12847-33</span>
+        <span class="watch-badge">WATCH</span>
+      </div>
+      <div class="watch-row">
+        <span class="badge badge-active"><span class="dot"></span>活跃</span>
+        <span class="badge badge-collision-suspect"><span class="badge-icon">&#9651;</span>碰撞嫌疑</span>
+        <span style="font-family:monospace; font-size:12px; color:var(--text-secondary)">cell_460-00-9281-17</span>
+        <span class="watch-badge">WATCH</span>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-4)">
+      <div class="label-tag">对比：正常活跃（无 Watch）</div>
+      <div style="display:flex; align-items:center; gap:var(--sp-4); padding:var(--sp-3) var(--sp-4); border-left:3px solid var(--green-500); background:var(--green-50); border-radius:0 var(--radius-md) var(--radius-md) 0; margin-top:var(--sp-2)">
+        <span class="badge badge-active"><span class="dot"></span>活跃</span>
+        <span class="badge badge-healthy"><span class="badge-icon">&#10003;</span>健康</span>
+        <span style="font-family:monospace; font-size:12px; color:var(--text-secondary)">cell_460-00-5523-08</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 8. FACT LAYER BADGES -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">5. 事实层徽标</h2>
+    <p class="section-desc">四分流事实层表达 -- 左边框色 + 背景底色 + 图标</p>
+
+    <div class="flex-col gap-4">
+      <span class="fact-badge fact-governed"><span class="fact-icon">&#10003;</span>已治理 governed</span>
+      <span class="fact-badge fact-pending-obs"><span class="fact-icon">&#9201;</span>观察中 pending_observation</span>
+      <span class="fact-badge fact-pending-issue"><span class="fact-icon">&#9888;</span>待复核 pending_issue</span>
+      <span class="fact-badge fact-rejected"><span class="fact-icon">&oslash;</span>已拒收 rejected</span>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 9. DELTA INDICATOR (v2 NEW) -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">6. Delta 变化指示器 <span class="new-marker">v2 NEW</span></h2>
+    <p class="section-desc">DeltaIndicator -- 展示当前值、本批次增量、较上批变化。颜色根据语义方向而非数值方向决定。</p>
+
+    <div class="flex-col gap-4">
+      <div>
+        <div class="label-tag">正向变化（活跃对象增加 = 改善）</div>
+        <div class="delta-indicator">
+          <span class="delta-current">活跃对象 12,847</span>
+          <span class="delta-batch"><span class="delta-label">本批</span><span class="delta-green">+3</span></span>
+          <span class="delta-vs delta-green"><span class="delta-label">较上批</span>+1 &#8593;</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">负向变化（异常对象增加 = 恶化）</div>
+        <div class="delta-indicator">
+          <span class="delta-current">异常对象 47</span>
+          <span class="delta-batch"><span class="delta-label">本批</span><span class="delta-red">+2</span></span>
+          <span class="delta-vs delta-red"><span class="delta-label">较上批</span>+2 &#8593;</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">正向变化（等待池减少 = 改善）</div>
+        <div class="delta-indicator">
+          <span class="delta-current">等待池 1,283</span>
+          <span class="delta-batch"><span class="delta-label">本批</span><span class="delta-green">+15</span></span>
+          <span class="delta-vs delta-green"><span class="delta-label">较上批</span>-3 &#8595;</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">中性变化（无明显变化方向）</div>
+        <div class="delta-indicator">
+          <span class="delta-current">观察中 328</span>
+          <span class="delta-batch"><span class="delta-label">本批</span><span class="delta-gray">+0</span></span>
+          <span class="delta-vs delta-gray"><span class="delta-label">较上批</span>0 &mdash;</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">首次初始化（无历史数据）</div>
+        <div class="delta-indicator">
+          <span class="delta-current">拒收 12</span>
+          <span class="delta-batch"><span class="delta-label">本批</span><span class="delta-gray">+12</span></span>
+          <span class="delta-vs delta-gray"><span class="delta-label">较上批</span>&mdash;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 10. BATCH FLOW DIAGRAM (v2 NEW) -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">7. 批次四分流图 <span class="new-marker">v2 NEW</span></h2>
+    <p class="section-desc">BatchFlowDiagram -- 水平流向可视化：输入 -> 四路分流，每条分支标注计数</p>
+
+    <div style="overflow-x:auto; padding:var(--sp-4) 0">
+      <div class="batch-flow">
+        <!-- Input node -->
+        <div class="flow-node flow-input">
+          <span class="flow-node-label">输入</span>
+          <span class="flow-node-count">2,847</span>
+        </div>
+
+        <!-- Arrow to split -->
+        <div class="flow-arrow">&rarr;</div>
+
+        <!-- Split into 4 branches -->
+        <div style="display:flex; flex-direction:column; gap:var(--sp-2); position:relative">
+          <div style="position:absolute; left:0; top:22px; bottom:22px; width:1.5px; background:var(--gray-300)"></div>
+
+          <div style="display:flex; align-items:center; gap:0">
+            <div style="width:24px; height:1.5px; background:var(--green-500)"></div>
+            <div class="flow-node flow-governed" style="min-width:160px">
+              <span class="flow-node-label">&#10003; 已治理</span>
+              <span class="flow-node-count">2,541</span>
+              <span style="font-size:11px; color:#166534">89.3%</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0">
+            <div style="width:24px; height:1.5px; background:var(--amber-500)"></div>
+            <div class="flow-node flow-pending-obs" style="min-width:160px">
+              <span class="flow-node-label">&#9201; 观察中</span>
+              <span class="flow-node-count">198</span>
+              <span style="font-size:11px; color:#92400E">7.0%</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0">
+            <div style="width:24px; height:1.5px; background:var(--orange-500)"></div>
+            <div class="flow-node flow-pending-issue" style="min-width:160px">
+              <span class="flow-node-label">&#9888; 待复核</span>
+              <span class="flow-node-count">84</span>
+              <span style="font-size:11px; color:#9A3412">3.0%</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0">
+            <div style="width:24px; height:1.5px; background:var(--red-500)"></div>
+            <div class="flow-node flow-rejected" style="min-width:160px">
+              <span class="flow-node-label">&oslash; 已拒收</span>
+              <span class="flow-node-count">24</span>
+              <span style="font-size:11px; color:#991B1B">0.8%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 11. RERUN BADGE (v2 NEW) -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">8. 重跑标记 <span class="new-marker">v2 NEW</span></h2>
+    <p class="section-desc">RerunBadge -- 区分正常批次与重跑批次的视觉表达</p>
+
+    <div class="flex-row gap-6">
+      <div>
+        <div class="label-tag">正常批次</div>
+        <div class="rerun-badge-normal" style="margin-top:var(--sp-2)">
+          <span style="font-size:13px">&#9679;</span>
+          batch-20260403-001
+        </div>
+      </div>
+      <div>
+        <div class="label-tag">重跑批次</div>
+        <div class="rerun-badge-rerun" style="margin-top:var(--sp-2)">
+          <span class="rerun-tag">重跑</span>
+          batch-20260403-001-rerun
+          <span style="font-size:11px; font-weight:400; color:var(--purple-400)">源: batch-20260402-003</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 12. METRIC CARD WITH DELTA -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">9. 指标卡（含 Delta）</h2>
+    <p class="section-desc">MetricCardWithDelta -- 硬性三行格式：当前值 / 本批新增 / 较上批 delta</p>
+
+    <div class="flex-row gap-4" style="align-items:stretch">
+      <div class="metric-card">
+        <div class="metric-label">活跃对象</div>
+        <div class="metric-value" style="color:var(--green-500)">12,847</div>
+        <div class="metric-delta-row">
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">本批</span>
+            <span class="delta-green">+3</span>
+          </div>
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">较上批</span>
+            <span class="delta-green">+1 &#8593;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">等待池</div>
+        <div class="metric-value" style="color:var(--amber-500)">1,283</div>
+        <div class="metric-delta-row">
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">本批</span>
+            <span class="delta-gray">+15</span>
+          </div>
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">较上批</span>
+            <span class="delta-green">-3 &#8595;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">异常对象</div>
+        <div class="metric-value" style="color:var(--orange-500)">47</div>
+        <div class="metric-delta-row">
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">本批</span>
+            <span class="delta-red">+2</span>
+          </div>
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">较上批</span>
+            <span class="delta-red">+2 &#8593;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">已拒收</div>
+        <div class="metric-value" style="color:var(--red-500)">24</div>
+        <div class="metric-delta-row">
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">本批</span>
+            <span class="delta-gray">+0</span>
+          </div>
+          <div class="metric-delta-item">
+            <span class="metric-delta-label">较上批</span>
+            <span class="delta-gray">0 &mdash;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 13. PROGRESS BAR -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">10. 进度条</h2>
+    <p class="section-desc">ProgressBar -- 等待池门槛进度展示，不同进度阶段有不同颜色</p>
+
+    <div class="flex-col gap-6">
+      <div class="progress-bar-container">
+        <div class="progress-bar-header">
+          <span style="font-weight:500">GPS 采样点</span>
+          <span style="font-family:monospace; font-weight:600; color:var(--green-500)">8 / 10</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill green" style="width:80%"></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px">接近门槛，预计下一批次可晋升</div>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-header">
+          <span style="font-weight:500">独立设备数</span>
+          <span style="font-family:monospace; font-weight:600; color:var(--amber-500)">3 / 5</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill amber" style="width:60%"></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px">推进中，尚需 2 个设备</div>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-header">
+          <span style="font-weight:500">活跃天数</span>
+          <span style="font-family:monospace; font-weight:600; color:var(--orange-500)">1 / 7</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill orange" style="width:14%"></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px">进度缓慢，可能停滞</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 14. GLOBAL STATUS BAR -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">11. 全局状态条</h2>
+    <p class="section-desc">GlobalStatusBar -- 顶部全局状态指示，展示系统当前运行模式</p>
+
+    <div class="flex-col gap-4">
+      <div>
+        <div class="label-tag">正常状态</div>
+        <div class="status-bar status-bar-normal">
+          <span style="color:var(--green-500); font-size:10px">&#9679;</span>
+          <span>系统正常</span>
+          <span style="color:var(--text-tertiary)">|</span>
+          <span style="color:var(--text-tertiary)">run-20260403 / batch-001 / baseline-v47 / rule-v12</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">批次处理中</div>
+        <div class="status-bar status-bar-processing">
+          <span class="pulse-dot blue"></span>
+          <span style="font-weight:600">批次处理中</span>
+          <span>batch-20260403-002</span>
+          <span style="opacity:0.6">|</span>
+          <span style="opacity:0.6">已处理 1,247 / 2,847</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">重跑中</div>
+        <div class="status-bar status-bar-rerun">
+          <span class="pulse-dot purple"></span>
+          <span style="font-weight:600">重跑中</span>
+          <span>batch-20260402-003 &rarr; batch-20260403-001</span>
+          <span style="opacity:0.6">|</span>
+          <span style="opacity:0.6">影响对象 342</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label-tag">验证模式</div>
+        <div class="status-bar status-bar-validation">
+          <span class="pulse-dot gray"></span>
+          <span style="font-weight:600">验证模式</span>
+          <span>对照: run-20260401 vs run-20260403</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 15. BUTTONS -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">12. 按钮</h2>
+    <p class="section-desc">三种按钮样式 -- 主操作 / 辅助操作 / 危险操作（虚线红色边框用于破坏性操作）</p>
+
+    <h3 class="subsection-title">标准尺寸</h3>
+    <div class="flex-row gap-4">
+      <button class="btn btn-primary">触发批次处理</button>
+      <button class="btn btn-secondary">查看详情</button>
+      <button class="btn btn-danger">&#9888; 终止端口</button>
+    </div>
+
+    <h3 class="subsection-title">紧凑尺寸</h3>
+    <div class="flex-row gap-4">
+      <button class="btn btn-primary btn-sm">刷新</button>
+      <button class="btn btn-secondary btn-sm">导出</button>
+      <button class="btn btn-danger btn-sm">&#10005; 杀掉端口</button>
+    </div>
+
+    <h3 class="subsection-title">组合示例</h3>
+    <div class="flex-row gap-4">
+      <button class="btn btn-primary">&#9654; 开始重跑</button>
+      <button class="btn btn-secondary">&#8635; 重新加载</button>
+      <button class="btn btn-secondary">&#8681; 导出 CSV</button>
+      <button class="btn btn-danger">&#9632; 停止处理</button>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 16. TABLE -->
+  <!-- =========================================== -->
+  <div class="section">
+    <h2 class="section-title">13. 数据表格</h2>
+    <p class="section-desc">DataTable -- 集成生命周期徽标、健康徽标、资格标签和 Delta 指示器的综合表格示例</p>
+
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>对象键</th>
+            <th>类型</th>
+            <th>生命周期</th>
+            <th>健康状态</th>
+            <th>资格</th>
+            <th>GPS 采样点变化</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="cell-key">cell_460-00-12847-33</span></td>
+            <td>Cell</td>
+            <td><span class="badge badge-active"><span class="dot"></span>活跃</span></td>
+            <td><span class="badge badge-healthy"><span class="badge-icon">&#10003;</span>健康</span></td>
+            <td>
+              <div class="inline-tags">
+                <span class="qual-tag qual-true">&#9875; 锚点</span>
+                <span class="qual-tag qual-true">&#9899; 基线</span>
+              </div>
+            </td>
+            <td>
+              <div class="delta-indicator" style="font-size:11px">
+                <span class="delta-current" style="font-size:12px; padding:2px 8px">847</span>
+                <span class="delta-batch" style="padding:2px 6px"><span class="delta-label">批</span><span class="delta-green">+3</span></span>
+                <span class="delta-vs delta-green" style="padding:2px 6px">+1&#8593;</span>
+              </div>
+            </td>
+            <td><button class="btn btn-secondary btn-sm">详情</button></td>
+          </tr>
+          <tr class="watch-row-table">
+            <td><span class="cell-key">cell_460-00-9281-17</span> <span class="watch-badge">WATCH</span></td>
+            <td>Cell</td>
+            <td><span class="badge badge-active"><span class="dot"></span>活跃</span></td>
+            <td><span class="badge badge-collision-suspect"><span class="badge-icon">&#9651;</span>碰撞嫌疑</span></td>
+            <td>
+              <div class="inline-tags">
+                <span class="qual-tag qual-false">&#128274; 锚点</span>
+                <span class="qual-tag qual-false">&#10005; 基线</span>
+              </div>
+            </td>
+            <td>
+              <div class="delta-indicator" style="font-size:11px">
+                <span class="delta-current" style="font-size:12px; padding:2px 8px">412</span>
+                <span class="delta-batch" style="padding:2px 6px"><span class="delta-label">批</span><span class="delta-red">+8</span></span>
+                <span class="delta-vs delta-red" style="padding:2px 6px">+5&#8593;</span>
+              </div>
+            </td>
+            <td><button class="btn btn-secondary btn-sm">详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="cell-key">cell_460-00-5523-08</span></td>
+            <td>Cell</td>
+            <td>
+              <span class="badge badge-observing">
+                <span class="dot"></span>观察
+                <span class="mini-progress"><span class="mini-progress-fill" style="width:75%"></span></span>
+              </span>
+            </td>
+            <td><span class="badge badge-insufficient"><span class="badge-icon">?</span>数据不足</span></td>
+            <td>
+              <div class="inline-tags">
+                <span class="qual-tag qual-false">&#128274; 锚点</span>
+                <span class="qual-tag qual-false">&#10005; 基线</span>
+              </div>
+            </td>
+            <td>
+              <div class="delta-indicator" style="font-size:11px">
+                <span class="delta-current" style="font-size:12px; padding:2px 8px">7</span>
+                <span class="delta-batch" style="padding:2px 6px"><span class="delta-label">批</span><span class="delta-green">+2</span></span>
+                <span class="delta-vs delta-green" style="padding:2px 6px">+1&#8593;</span>
+              </div>
+            </td>
+            <td><button class="btn btn-secondary btn-sm">详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="cell-key">bs_460-00-3421</span></td>
+            <td>BS</td>
+            <td><span class="badge badge-dormant"><span class="dot-hollow"></span>休眠</span></td>
+            <td><span class="badge badge-insufficient"><span class="badge-icon">?</span>数据不足</span></td>
+            <td>
+              <div class="inline-tags">
+                <span class="qual-tag qual-false">&#128274; 锚点</span>
+                <span class="qual-tag qual-false">&#10005; 基线</span>
+              </div>
+            </td>
+            <td>
+              <div class="delta-indicator" style="font-size:11px">
+                <span class="delta-current" style="font-size:12px; padding:2px 8px">23</span>
+                <span class="delta-batch" style="padding:2px 6px"><span class="delta-label">批</span><span class="delta-gray">+0</span></span>
+                <span class="delta-vs delta-gray" style="padding:2px 6px">0&mdash;</span>
+              </div>
+            </td>
+            <td><button class="btn btn-secondary btn-sm">详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="cell-key">cell_460-00-1102-44</span></td>
+            <td>Cell</td>
+            <td><span class="badge badge-retired">退役</span></td>
+            <td><span class="badge badge-insufficient"><span class="badge-icon">?</span>数据不足</span></td>
+            <td>
+              <div class="inline-tags">
+                <span class="qual-tag qual-false" style="opacity:0.5">&#128274; 锚点</span>
+                <span class="qual-tag qual-false" style="opacity:0.5">&#10005; 基线</span>
+              </div>
+            </td>
+            <td>
+              <div class="delta-indicator" style="font-size:11px; opacity:0.5">
+                <span class="delta-current" style="font-size:12px; padding:2px 8px">0</span>
+                <span class="delta-batch" style="padding:2px 6px"><span class="delta-label">批</span><span class="delta-gray">+0</span></span>
+                <span class="delta-vs delta-gray" style="padding:2px 6px">&mdash;</span>
+              </div>
+            </td>
+            <td><button class="btn btn-secondary btn-sm" style="opacity:0.5">详情</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- FOOTER -->
+  <!-- =========================================== -->
+  <div style="text-align:center; padding:var(--sp-8) 0 var(--sp-4); color:var(--text-tertiary); font-size:var(--font-small)">
+    rebuild3 设计系统 v2 &mdash; 流式治理工作台视觉规范<br>
+    生成于 2026-04-03 &mdash; 基于 .impeccable.md 设计上下文
+  </div>
+
+</div>
+
+</body>
+</html>

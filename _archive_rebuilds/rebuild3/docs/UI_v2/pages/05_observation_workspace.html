@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>等待/观察工作台 — rebuild3 流式治理工作台</title>
+<style>
+  /* ── CSS Custom Properties (与 01_flow_overview.html 对齐) ── */
+  :root {
+    --c-indigo-50:  #EEF2FF;
+    --c-indigo-100: #E0E7FF;
+    --c-indigo-200: #C7D2FE;
+    --c-indigo-500: #6366F1;
+    --c-indigo-600: #4F46E5;
+    --c-indigo-700: #4338CA;
+    --c-indigo-900: #312E81;
+    --c-indigo-950: #1E1B4B;
+
+    --c-green-50:  #F0FDF4;
+    --c-green-600: #16A34A;
+    --c-red-50:    #FEF2F2;
+    --c-red-600:   #DC2626;
+    --c-orange-50: #FFF7ED;
+    --c-orange-600:#EA580C;
+    --c-blue-50:   #EFF6FF;
+    --c-blue-600:  #2563EB;
+    --c-gray-50:   #F9FAFB;
+    --c-gray-100:  #F3F4F6;
+    --c-gray-200:  #E5E7EB;
+    --c-gray-300:  #D1D5DB;
+    --c-gray-400:  #9CA3AF;
+    --c-gray-500:  #6B7280;
+    --c-gray-600:  #4B5563;
+    --c-gray-700:  #374151;
+    --c-gray-800:  #1F2937;
+    --c-gray-900:  #111827;
+    --c-white:     #FFFFFF;
+
+    --c-amber-50:  #FFFBEB;
+    --c-amber-100: #FEF3C7;
+    --c-amber-400: #FBBF24;
+    --c-amber-500: #F59E0B;
+    --c-amber-600: #D97706;
+    --c-amber-700: #B45309;
+
+    --c-purple-50: #FAF5FF;
+    --c-purple-400:#A78BFA;
+    --c-purple-600:#9333EA;
+
+    /* semantic */
+    --delta-improve: var(--c-green-600);
+    --delta-worsen:  var(--c-red-600);
+    --delta-warn:    var(--c-orange-600);
+    --delta-neutral: var(--c-gray-400);
+
+    --sidebar-w: 240px;
+    --topbar-h: 56px;
+    --radius: 12px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover: 0 4px 12px rgba(0,0,0,.08);
+  }
+
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    color: var(--c-gray-800);
+    background: var(--c-gray-50);
+    min-width: 1200px;
+    line-height: 1.6;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── Layout Shell ── */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar (三组) ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--c-indigo-950);
+    color: var(--c-indigo-200);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-brand {
+    height: var(--topbar-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-white);
+    letter-spacing: .02em;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .sidebar-nav { padding: 12px 8px; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--c-indigo-200);
+    transition: background .15s, color .15s;
+    margin-bottom: 2px;
+  }
+  .sidebar-nav a:hover { background: rgba(255,255,255,.08); color: var(--c-white); }
+  .sidebar-nav a.active {
+    background: var(--c-indigo-600);
+    color: var(--c-white);
+    font-weight: 500;
+  }
+  .sidebar-nav .nav-icon {
+    width: 20px; height: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(199,210,254,.45);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 14px 14px 4px;
+  }
+
+  /* ── Main Area ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    height: var(--topbar-h);
+    background: var(--c-white);
+    border-bottom: 1px solid var(--c-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-title { font-size: 16px; font-weight: 600; color: var(--c-gray-900); }
+  .topbar-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--c-gray-500);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--c-green-600);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
+  }
+
+  /* ── Content ── */
+  .content { padding: 24px 32px 48px; }
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-gray-900);
+    margin-bottom: 12px;
+  }
+  .section + .section { margin-top: 28px; }
+
+  /* ── Summary Bar ── */
+  .summary-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .summary-item {
+    flex: 1;
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-right: 1px solid var(--c-gray-100);
+  }
+  .summary-item:last-child { border-right: none; }
+  .summary-item-label {
+    font-size: 12px;
+    color: var(--c-gray-400);
+    font-weight: 500;
+  }
+  .summary-item-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--c-gray-900);
+    line-height: 1.2;
+  }
+  .summary-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--c-gray-500);
+    margin-top: 2px;
+  }
+  .summary-item-delta { font-weight: 600; }
+  .summary-item-delta.green { color: var(--delta-improve); }
+  .summary-item-delta.red { color: var(--delta-worsen); }
+  .summary-item-delta.gray { color: var(--delta-neutral); }
+
+  .summary-item.warning-box {
+    background: var(--c-orange-50);
+    border-right: none;
+    flex: 1.5;
+    justify-content: center;
+  }
+  .warning-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-orange-600);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .warning-icon { font-size: 16px; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--c-gray-200);
+    margin-bottom: 16px;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--c-gray-500);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+  }
+  .tab:hover { color: var(--c-gray-700); }
+  .tab.active {
+    color: var(--c-indigo-600);
+    border-bottom-color: var(--c-indigo-600);
+    font-weight: 600;
+  }
+  .tab-count {
+    font-size: 12px;
+    background: var(--c-gray-100);
+    color: var(--c-gray-600);
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .tab.active .tab-count {
+    background: var(--c-indigo-50);
+    color: var(--c-indigo-600);
+  }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    margin-bottom: 16px;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-label {
+    font-size: 12px;
+    color: var(--c-gray-400);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .filter-select {
+    font-size: 13px;
+    padding: 5px 10px;
+    border: 1px solid var(--c-gray-200);
+    border-radius: 6px;
+    background: var(--c-white);
+    color: var(--c-gray-700);
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+  }
+  .filter-select:focus { border-color: var(--c-indigo-500); }
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--c-gray-200);
+  }
+
+  /* ── Card Grid ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  /* ── Candidate Card ── */
+  .candidate-card {
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow .15s, border-color .15s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .candidate-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--c-indigo-200);
+  }
+  .candidate-card.suggest-promote {
+    border-color: var(--c-green-600);
+    border-width: 2px;
+  }
+  .candidate-card.suggest-issue {
+    border-color: var(--c-orange-600);
+    border-width: 2px;
+  }
+  .candidate-card.suggest-attention {
+    border-color: #EAB308;
+    border-width: 2px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-pk {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-gray-900);
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+  }
+  .lifecycle-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .lifecycle-badge.waiting {
+    color: var(--c-amber-700);
+    background: var(--c-amber-100);
+  }
+  .lifecycle-badge.observing {
+    color: #92400E;
+    background: #FDE68A;
+  }
+
+  /* ── 三层资格进度区 ── */
+  .qual-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .qual-layer {
+    background: var(--c-gray-50);
+    border: 1px solid var(--c-gray-200);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .qual-layer.locked {
+    opacity: .5;
+    border-style: dashed;
+  }
+  .qual-layer.met {
+    border-color: var(--c-green-600);
+    background: var(--c-green-50);
+  }
+  .qual-layer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .qual-layer-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .qual-layer-icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--c-white); flex-shrink: 0;
+  }
+  .qual-layer-icon.existence { background: var(--c-indigo-500); }
+  .qual-layer-icon.anchorable { background: var(--c-amber-500); }
+  .qual-layer-icon.baseline { background: var(--c-purple-600); }
+  .qual-layer-icon.done { background: var(--c-green-600); }
+
+  .qual-layer-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-gray-800);
+  }
+  .qual-layer-pct {
+    font-size: 12px;
+    font-weight: 700;
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    color: var(--c-gray-700);
+  }
+  .qual-layer-pct.complete { color: var(--c-green-600); }
+
+  /* 指标明细（折叠） */
+  .qual-details {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .qual-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .qual-detail-label {
+    font-size: 11px;
+    color: var(--c-gray-500);
+    width: 90px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .qual-detail-track {
+    flex: 1;
+    height: 5px;
+    background: var(--c-gray-200);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .qual-detail-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .3s;
+  }
+  .qual-detail-fill.met { background: var(--c-green-600); }
+  .qual-detail-fill.close { background: #EAB308; }
+  .qual-detail-fill.far { background: var(--c-red-600); }
+  .qual-detail-value {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--c-gray-600);
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    width: 56px;
+    flex-shrink: 0;
+  }
+  .qual-locked-text {
+    font-size: 11px;
+    color: var(--c-gray-400);
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  /* ── 推进趋势 + 建议动作 ── */
+  .card-trend-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .trend-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .trend-badge.advancing { color: var(--c-green-600); background: var(--c-green-50); }
+  .trend-badge.stagnant { color: var(--c-gray-500); background: var(--c-gray-100); }
+  .trend-badge.regressing { color: var(--c-red-600); background: var(--c-red-50); }
+  .trend-badge.new-entry { color: var(--c-blue-600); background: var(--c-blue-50); }
+
+  .mini-trend {
+    font-size: 11px;
+    color: var(--c-gray-400);
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+  }
+
+  /* Suggested action */
+  .action-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    max-width: 100%;
+  }
+  .action-badge.continue { color: var(--c-gray-500); background: var(--c-gray-100); }
+  .action-badge.near-promote { color: var(--c-green-600); background: var(--c-green-50); border: 1px solid var(--c-green-600); }
+  .action-badge.attention { color: #A16207; background: var(--c-amber-50); border: 1px solid #EAB308; }
+  .action-badge.to-issue { color: var(--c-orange-600); background: var(--c-orange-50); border: 1px solid var(--c-orange-600); }
+
+  /* Quality line */
+  .card-quality {
+    font-size: 11px;
+    color: var(--c-gray-500);
+  }
+
+  /* Card footer */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--c-gray-400);
+    padding-top: 8px;
+    border-top: 1px solid var(--c-gray-100);
+  }
+
+  /* ── Accumulation Analysis ── */
+  .accumulation-section {
+    background: var(--c-white);
+    border: 1px solid var(--c-gray-200);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    gap: 32px;
+  }
+  .accum-chart-area {
+    flex: 1;
+  }
+  .accum-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-gray-800);
+    margin-bottom: 12px;
+  }
+
+  /* Mini bar chart */
+  .mini-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 100px;
+    padding-top: 8px;
+  }
+  .mini-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .mini-bar {
+    width: 100%;
+    max-width: 48px;
+    border-radius: 4px 4px 0 0;
+    background: var(--c-indigo-200);
+    transition: height .3s;
+  }
+  .mini-bar.latest { background: var(--c-indigo-500); }
+  .mini-bar-label {
+    font-size: 10px;
+    color: var(--c-gray-400);
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+  }
+  .mini-bar-value {
+    font-size: 10px;
+    color: var(--c-gray-600);
+    font-weight: 600;
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+  }
+
+  /* Reason distribution (按缺失资格类型) */
+  .reason-dist {
+    flex: 1;
+  }
+  .reason-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .reason-label {
+    font-size: 12px;
+    color: var(--c-gray-600);
+    width: 130px;
+    flex-shrink: 0;
+  }
+  .reason-track {
+    flex: 1;
+    height: 14px;
+    background: var(--c-gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .reason-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+  .reason-fill.existence { background: var(--c-indigo-500); }
+  .reason-fill.anchorable { background: var(--c-amber-500); }
+  .reason-fill.baseline-q { background: var(--c-purple-600); }
+  .reason-pct {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-gray-700);
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar (三组) ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <!-- 第一组: 总览与运行 -->
+      <div class="nav-group-label">总览与运行</div>
+      <a href="01_flow_overview.html">
+        <span class="nav-icon">&#9678;</span> 流转总览
+      </a>
+      <a href="01_flow_overview_timeline.html">
+        <span class="nav-icon">&#9202;</span> 流转快照
+      </a>
+      <a href="02_run_batch_center.html">
+        <span class="nav-icon">&#9881;</span> 运行/批次中心
+      </a>
+
+      <!-- 第二组: 对象与工作台 -->
+      <div class="nav-group-label">对象与工作台</div>
+      <a href="03_objects.html">
+        <span class="nav-icon">&#9724;</span> 对象浏览
+      </a>
+      <a href="05_observation_workspace.html" class="active">
+        <span class="nav-icon">&#9201;</span> 等待/观察工作台
+      </a>
+      <a href="06_anomaly_workspace.html">
+        <span class="nav-icon">&#9888;</span> 异常工作台
+      </a>
+      <a href="07_baseline_profile.html">
+        <span class="nav-icon">&#9733;</span> 基线/画像
+      </a>
+      <a href="08_validation_compare.html">
+        <span class="nav-icon">&#9745;</span> 验证/对照
+      </a>
+
+      <!-- 第三组: 画像与配置 -->
+      <div class="nav-group-label">画像与配置</div>
+      <a href="09_lac_profile.html">
+        <span class="nav-icon">&#9636;</span> LAC 画像
+      </a>
+      <a href="10_bs_profile.html">
+        <span class="nav-icon">&#9635;</span> BS 画像
+      </a>
+      <a href="11_cell_profile.html">
+        <span class="nav-icon">&#9632;</span> Cell 画像
+      </a>
+      <a href="12_initialization.html">
+        <span class="nav-icon">&#9654;</span> 初始化数据
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-title">rebuild3 流式治理工作台</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        正常运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Section 1: Summary Bar -->
+      <div class="section">
+        <div class="section-title">等待/观察工作台</div>
+        <div class="summary-bar">
+          <div class="summary-item">
+            <div class="summary-item-label">等待中</div>
+            <div class="summary-item-value">1,283</div>
+            <div class="summary-item-meta">
+              <span>本批 +15</span>
+              <span class="summary-item-delta green">较上批 -3 &#8595;</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-item-label">观察中</div>
+            <div class="summary-item-value">892</div>
+            <div class="summary-item-meta">
+              <span>本批 +8</span>
+              <span class="summary-item-delta gray">较上批 +3 &#8593;</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-item-label">本批晋升</div>
+            <div class="summary-item-value">5</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-item-label">本批转问题</div>
+            <div class="summary-item-value">2</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-item-label">本批拒收</div>
+            <div class="summary-item-value">0</div>
+          </div>
+          <div class="summary-item warning-box">
+            <div class="warning-text">
+              <span class="warning-icon">&#9888;</span>
+              堆积警告: 连续 3 批 waiting 数量增长
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Tabs + Filter + Cards -->
+      <div class="section">
+        <div class="tabs">
+          <div class="tab active">等待中<span class="tab-count">1,283</span></div>
+          <div class="tab">观察中<span class="tab-count">892</span></div>
+          <div class="tab">全部</div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">推进状态</span>
+            <select class="filter-select">
+              <option>全部</option>
+              <option>前进中</option>
+              <option>停滞</option>
+              <option>回退</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-group">
+            <span class="filter-label">缺失资格层</span>
+            <select class="filter-select">
+              <option>全部</option>
+              <option>缺存在资格</option>
+              <option>缺锚点资格</option>
+              <option>缺基线资格</option>
+              <option>全部达标</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-group">
+            <span class="filter-label">排序</span>
+            <select class="filter-select">
+              <option>进度降序</option>
+              <option>首次发现</option>
+              <option>停滞批次数</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card-grid">
+
+          <!-- ════════════════════════════════════════════════════
+               卡片1: 存在+锚点+基线全达标 → "即将晋升"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card suggest-promote">
+            <div class="card-header">
+              <span class="card-pk">46000-LTE-15432-2</span>
+              <span class="lifecycle-badge observing">观察</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 锚点资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 基线资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge advancing">&#8599; 前进中</span>
+              <span class="mini-trend">+3, +2, +1</span>
+            </div>
+            <div><span class="action-badge near-promote">即将晋升 — 三层资格全部达标</span></div>
+            <div class="card-quality">质心(31.2304, 121.4737) P90半径 42m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-03-18</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片2: 存在达标、锚点接近(GPS差2) → "继续观察"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card">
+            <div class="card-header">
+              <span class="card-pk">46001-LTE-15433-1</span>
+              <span class="lifecycle-badge observing">观察</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 锚点资格 85% — GPS差2 -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon anchorable">&#9670;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct">85%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">GPS有效点</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill close" style="width:80%"></div></div>
+                    <span class="qual-detail-value">8/10</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">设备数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">3/2</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">P90半径</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">58m</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">时间跨度</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">3/1天</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">禁锚异常</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">无</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 基线资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需锚点资格达成后才能评估</div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge advancing">&#8599; 前进中</span>
+              <span class="mini-trend">+2, +1, +2</span>
+            </div>
+            <div><span class="action-badge continue">继续观察（锚点资格 GPS 点数差 2）</span></div>
+            <div class="card-quality">质心(31.1892, 121.4301) P90半径 58m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-03-20</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片3: 存在达标、锚点缺设备 → "继续观察"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card">
+            <div class="card-header">
+              <span class="card-pk">46000-LTE-15434-5</span>
+              <span class="lifecycle-badge observing">观察</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 锚点资格 70% — 设备不足 -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon anchorable">&#9670;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct">70%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">GPS有效点</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">12/10</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">设备数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:50%"></div></div>
+                    <span class="qual-detail-value">1/2</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">P90半径</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">103m</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">时间跨度</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">5/1天</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">禁锚异常</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">无</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 基线资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需锚点资格达成后才能评估</div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge advancing">&#8599; 前进中</span>
+              <span class="mini-trend">+1, +0, +1</span>
+            </div>
+            <div><span class="action-badge continue">继续观察（锚点资格 设备数不足 1/2）</span></div>
+            <div class="card-quality">质心(39.9042, 116.4074) P90半径 103m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-03-10</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片4: 存在接近(时间跨度不足) → "继续观察"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card">
+            <div class="card-header">
+              <span class="card-pk">46001-LTE-15435-3</span>
+              <span class="lifecycle-badge waiting">等待</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 72% — 时间跨度不足 -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon existence">&#9670;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct">72%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">合规主键</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">稳定</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">GPS有效点</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">6/3</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">设备数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">2/1</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">时间跨度</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:33%"></div></div>
+                    <span class="qual-detail-value">1/3天</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 锚点资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon anchorable">&#9670;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需存在资格达成后才能评估</div>
+              </div>
+              <!-- 基线资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需锚点资格达成后才能评估</div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge advancing">&#8599; 前进中</span>
+              <span class="mini-trend">+1, +1, +1</span>
+            </div>
+            <div><span class="action-badge continue">继续观察（存在资格 时间跨度不足 1/3天）</span></div>
+            <div class="card-quality">质心(22.5431, 114.0579) P90半径 87m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-03-28</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片5: 存在远 → "新进入"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card">
+            <div class="card-header">
+              <span class="card-pk">46000-LTE-15436-8</span>
+              <span class="lifecycle-badge waiting">等待</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 25% -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon existence">&#9670;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct">25%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">合规主键</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">稳定</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">GPS有效点</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:33%"></div></div>
+                    <span class="qual-detail-value">1/3</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">设备数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:100%"></div></div>
+                    <span class="qual-detail-value">1/1</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">时间跨度</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:17%"></div></div>
+                    <span class="qual-detail-value">0.5/3天</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 锚点资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon anchorable">&#9670;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需存在资格达成后才能评估</div>
+              </div>
+              <!-- 基线资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需锚点资格达成后才能评估</div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge new-entry">新进入</span>
+              <span class="mini-trend">+1</span>
+            </div>
+            <div><span class="action-badge continue">新进入 — 存在资格仅 25%</span></div>
+            <div class="card-quality">质心(30.5728, 104.0668) P90半径 215m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-04-02</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片6: 存在达标、锚点达标、基线缺稳定性 → "继续观察"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card">
+            <div class="card-header">
+              <span class="card-pk">46001-LTE-15437-6</span>
+              <span class="lifecycle-badge observing">观察</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 锚点资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 基线资格 68% — 稳定性不足 -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">68%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">样本量</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">达标</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">活跃天数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">5天</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">原始信号占比</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill close" style="width:72%"></div></div>
+                    <span class="qual-detail-value">72%</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">稳定性</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:40%"></div></div>
+                    <span class="qual-detail-value">不足</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge advancing">&#8599; 前进中</span>
+              <span class="mini-trend">+2, +1, +1</span>
+            </div>
+            <div><span class="action-badge continue">继续观察（基线资格 稳定性不足）</span></div>
+            <div class="card-quality">质心(34.2614, 108.9424) P90半径 134m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-03-15</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片7: 存在达标但停滞5批 → "建议关注"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card suggest-attention">
+            <div class="card-header">
+              <span class="card-pk">46000-LTE-15438-2</span>
+              <span class="lifecycle-badge observing">观察</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 锚点资格 60% — 停滞 -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon anchorable">&#9670;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct">60%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">GPS有效点</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill close" style="width:60%"></div></div>
+                    <span class="qual-detail-value">6/10</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">设备数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:50%"></div></div>
+                    <span class="qual-detail-value">1/2</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">P90半径</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">178m</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">时间跨度</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">8/1天</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">禁锚异常</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">无</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 基线资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需锚点资格达成后才能评估</div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge stagnant">&#8594; 停滞(5批无新增)</span>
+              <span class="mini-trend">+0, +0, +0</span>
+            </div>
+            <div><span class="action-badge attention">建议关注 — 存在资格已达标但 5 批无新推进</span></div>
+            <div class="card-quality">质心(23.1291, 113.2644) P90半径 178m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-02-25</span>
+              <span>停滞批次: 5</span>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════
+               卡片8: 存在达标、P90超标 → "建议转问题"
+               ════════════════════════════════════════════════════ -->
+          <div class="candidate-card suggest-issue">
+            <div class="card-header">
+              <span class="card-pk">46001-LTE-15439-9</span>
+              <span class="lifecycle-badge observing">观察</span>
+            </div>
+
+            <div class="qual-layers">
+              <!-- 存在资格 100% -->
+              <div class="qual-layer met">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon done">&#10003;</span>
+                    <span class="qual-layer-name">存在资格</span>
+                  </div>
+                  <span class="qual-layer-pct complete">100%</span>
+                </div>
+              </div>
+              <!-- 锚点资格 55% — P90超标 -->
+              <div class="qual-layer">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon anchorable">&#9670;</span>
+                    <span class="qual-layer-name">锚点资格</span>
+                  </div>
+                  <span class="qual-layer-pct">55%</span>
+                </div>
+                <div class="qual-details">
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">GPS有效点</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">15/10</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">设备数</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">3/2</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">P90半径</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill far" style="width:18%"></div></div>
+                    <span class="qual-detail-value" style="color:var(--c-red-600)">1823m!</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">时间跨度</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">6/1天</span>
+                  </div>
+                  <div class="qual-detail-row">
+                    <span class="qual-detail-label">禁锚异常</span>
+                    <div class="qual-detail-track"><div class="qual-detail-fill met" style="width:100%"></div></div>
+                    <span class="qual-detail-value">无</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 基线资格 — 锁定 -->
+              <div class="qual-layer locked">
+                <div class="qual-layer-header">
+                  <div class="qual-layer-left">
+                    <span class="qual-layer-icon baseline">&#9670;</span>
+                    <span class="qual-layer-name">基线资格</span>
+                  </div>
+                  <span class="qual-layer-pct">--</span>
+                </div>
+                <div class="qual-locked-text">需锚点资格达成后才能评估</div>
+              </div>
+            </div>
+
+            <div class="card-trend-action">
+              <span class="trend-badge regressing">&#8601; 回退</span>
+              <span class="mini-trend">+2, -1, -1</span>
+            </div>
+            <div><span class="action-badge to-issue">建议转问题（锚点资格 P90 半径超标 1823m &gt; 1500m）</span></div>
+            <div class="card-quality">质心(28.2282, 112.9388) P90半径 1823m</div>
+            <div class="card-footer">
+              <span>首次发现 2026-03-12</span>
+              <span>停滞批次: 0</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 3: Accumulation Analysis -->
+      <div class="section">
+        <div class="section-title">堆积分析</div>
+        <div class="accumulation-section">
+
+          <!-- Left: trend chart -->
+          <div class="accum-chart-area">
+            <div class="accum-title">近 6 批次 waiting 数量趋势</div>
+            <div class="mini-bar-chart">
+              <div class="mini-bar-col">
+                <div class="mini-bar-value">1268</div>
+                <div class="mini-bar" style="height:82px"></div>
+                <div class="mini-bar-label">B-28</div>
+              </div>
+              <div class="mini-bar-col">
+                <div class="mini-bar-value">1271</div>
+                <div class="mini-bar" style="height:84px"></div>
+                <div class="mini-bar-label">B-29</div>
+              </div>
+              <div class="mini-bar-col">
+                <div class="mini-bar-value">1275</div>
+                <div class="mini-bar" style="height:87px"></div>
+                <div class="mini-bar-label">B-30</div>
+              </div>
+              <div class="mini-bar-col">
+                <div class="mini-bar-value">1278</div>
+                <div class="mini-bar" style="height:90px"></div>
+                <div class="mini-bar-label">B-31</div>
+              </div>
+              <div class="mini-bar-col">
+                <div class="mini-bar-value">1280</div>
+                <div class="mini-bar" style="height:92px"></div>
+                <div class="mini-bar-label">B-32</div>
+              </div>
+              <div class="mini-bar-col">
+                <div class="mini-bar-value">1283</div>
+                <div class="mini-bar latest" style="height:95px"></div>
+                <div class="mini-bar-label">B-33</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: 按缺失资格类型分布 -->
+          <div class="reason-dist">
+            <div class="accum-title">缺失资格类型分布</div>
+            <div class="reason-row">
+              <span class="reason-label">缺存在资格</span>
+              <div class="reason-track"><div class="reason-fill existence" style="width:38%"></div></div>
+              <span class="reason-pct">38%</span>
+            </div>
+            <div class="reason-row">
+              <span class="reason-label">缺锚点资格</span>
+              <div class="reason-track"><div class="reason-fill anchorable" style="width:42%"></div></div>
+              <span class="reason-pct">42%</span>
+            </div>
+            <div class="reason-row">
+              <span class="reason-label">缺基线资格</span>
+              <div class="reason-track"><div class="reason-fill baseline-q" style="width:15%"></div></div>
+              <span class="reason-pct">15%</span>
+            </div>
+            <div class="reason-row">
+              <span class="reason-label">全部达标(待晋升)</span>
+              <div class="reason-track"><div class="reason-fill" style="width:5%; background:var(--c-green-600)"></div></div>
+              <span class="reason-pct">5%</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+</body>
+</html>

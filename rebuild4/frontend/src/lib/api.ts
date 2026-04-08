@@ -20,7 +20,7 @@ export const getFlowOverview = () => request(`${BASE}/flow-overview`)
 
 // API-02
 export const getFlowSnapshotTimepoints = () => request(`${BASE}/flow-snapshot/timepoints`)
-export const getFlowSnapshot = (batchId: string) => request(withQuery(`${BASE}/flow-snapshot`, { batch_id: batchId }))
+export const getFlowSnapshot = (snapshotSeq: number) => request(withQuery(`${BASE}/flow-snapshot`, { snapshot_seq: snapshotSeq }))
 
 // API-03
 export const getRunsCurrent = () => request(`${BASE}/runs/current`)
@@ -42,17 +42,13 @@ export const getAnomalyImpact = (key: string) => request(`${BASE}/anomaly-worksp
 
 // API-08
 export const getBaselineCurrent = () => request(`${BASE}/baseline/current`)
-export const getBaselineDiff = () => request(`${BASE}/baseline/current/diff`)
 export const getBaselineHistory = (q?: Record<string, any>) => request(withQuery(`${BASE}/baseline/history`, q || {}))
 
 // API-09
 export const getProfileLac = (q?: Record<string, any>) => request(withQuery(`${BASE}/profiles/lac`, q || {}))
 export const getProfileBs = (q?: Record<string, any>) => request(withQuery(`${BASE}/profiles/bs`, q || {}))
+export const getProfileBsCentroids = (q: Record<string, any>) => request(withQuery(`${BASE}/profiles/bs/centroids`, q))
 export const getProfileCell = (q?: Record<string, any>) => request(withQuery(`${BASE}/profiles/cell`, q || {}))
-
-// API-10
-export const getInitializationLatest = () => request(`${BASE}/initialization/latest`)
-export const getInitializationDetail = (runId: string) => request(`${BASE}/initialization/${runId}`)
 
 // API-11
 export const getGovernanceOverview = () => request(`${BASE}/governance/overview`)

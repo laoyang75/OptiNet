@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>流转快照 — rebuild3</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-200:#C7D2FE;
+    --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA;
+    --c-indigo-900:#312E81; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-500:#3B82F6; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB;
+    --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280;
+    --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --sidebar-w:240px; --topbar-h:56px; --radius:12px;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-card-hover:0 4px 12px rgba(0,0,0,.08);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;color:var(--c-gray-800);background:var(--c-gray-50);min-width:1100px;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--c-indigo-950);color:var(--c-indigo-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-brand{height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;font-size:15px;font-weight:600;color:var(--c-white);border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-nav{padding:12px 8px;flex:1}
+  .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--c-indigo-200);transition:background .15s,color .15s;margin-bottom:2px}
+  .sidebar-nav a:hover{background:rgba(255,255,255,.08);color:var(--c-white)}
+  .sidebar-nav a.active{background:var(--c-indigo-600);color:var(--c-white);font-weight:500}
+  .sidebar-nav .ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:8px 14px}
+  .sidebar-group-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);padding:8px 14px 4px;text-transform:uppercase;letter-spacing:.06em}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+  .topbar{height:var(--topbar-h);background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:16px;font-weight:600;color:var(--c-gray-900)}
+  .topbar-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-gray-500)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-green-600);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  .content{padding:24px 32px 48px}
+  .section-title{font-size:15px;font-weight:600;color:var(--c-gray-900);margin-bottom:12px}
+  .section+.section{margin-top:28px}
+
+  /* 视图切换 */
+  .view-switch{display:flex;gap:8px;margin-bottom:16px}
+  .view-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid var(--c-gray-200);background:var(--c-white);color:var(--c-gray-600);cursor:pointer;transition:all .15s;text-decoration:none}
+  .view-btn:hover{border-color:var(--c-indigo-200);color:var(--c-indigo-600)}
+  .view-btn.active{background:var(--c-indigo-600);color:var(--c-white);border-color:var(--c-indigo-600)}
+
+  /* 时间选择器 */
+  .time-selector-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:20px 24px;margin-bottom:20px}
+  .time-selectors{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .ts-col{padding:16px;border-radius:10px;border:2px solid transparent}
+  .ts-col.init{background:var(--c-blue-50);border-color:var(--c-blue-500)}
+  .ts-col.t1{background:var(--c-amber-50);border-color:var(--c-amber-500)}
+  .ts-col.t2{background:var(--c-green-50);border-color:var(--c-green-500)}
+  .ts-col-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .ts-col-tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;color:var(--c-white)}
+  .ts-col-tag.init{background:var(--c-blue-500)}
+  .ts-col-tag.t1{background:var(--c-amber-500)}
+  .ts-col-tag.t2{background:var(--c-green-500)}
+  .ts-col-title{font-size:14px;font-weight:600;color:var(--c-gray-900)}
+  .ts-col label{display:block;font-size:12px;color:var(--c-gray-500);margin-bottom:4px;font-weight:500}
+  .ts-col select,.ts-col input[type="datetime-local"]{
+    width:100%;padding:8px 10px;border:1px solid var(--c-gray-200);border-radius:8px;
+    font-size:13px;color:var(--c-gray-800);background:var(--c-white);
+    font-family:inherit;
+  }
+  .ts-col select:focus,.ts-col input:focus{outline:none;border-color:var(--c-indigo-500);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+  .ts-col .ts-info{font-size:12px;color:var(--c-gray-500);margin-top:8px}
+  .ts-col .ts-info strong{color:var(--c-gray-700)}
+
+  .btn-load{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;background:var(--c-indigo-600);color:var(--c-white);border:none;cursor:pointer;margin-top:16px;transition:background .15s}
+  .btn-load:hover{background:var(--c-indigo-700)}
+
+  /* 快照表格 */
+  .snapshot-card{background:var(--c-white);border:1px solid var(--c-gray-200);border-radius:var(--radius);box-shadow:var(--shadow-card);overflow:hidden}
+  .snapshot-table{width:100%;border-collapse:collapse;font-size:13px}
+  .snapshot-table thead th{text-align:left;padding:10px 16px;background:var(--c-gray-50);color:var(--c-gray-500);font-weight:600;font-size:12px;border-bottom:2px solid var(--c-gray-200)}
+  .snapshot-table thead th:not(:first-child){text-align:right;min-width:160px}
+  .snapshot-table thead th.col-init{color:var(--c-blue-600);background:rgba(59,130,246,.04)}
+  .snapshot-table thead th.col-t1{color:#92400E;background:rgba(245,158,11,.04)}
+  .snapshot-table thead th.col-t2{color:#166534;background:rgba(34,197,94,.04)}
+
+  .snapshot-table tbody td{padding:10px 16px;border-bottom:1px solid var(--c-gray-100)}
+  .snapshot-table tbody td:not(:first-child){text-align:right;font-family:"SF Mono","JetBrains Mono",monospace;font-weight:600}
+  .snapshot-table tbody tr:hover td{background:var(--c-indigo-50)}
+
+  .snapshot-table .stage-label-cell{display:flex;align-items:center;gap:10px}
+  .stage-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .stage-dot.input{background:var(--c-indigo-600)}
+  .stage-dot.process{background:var(--c-gray-400)}
+  .stage-dot.governed{background:var(--c-green-600)}
+  .stage-dot.pending_obs{background:var(--c-amber-500)}
+  .stage-dot.pending_issue{background:var(--c-orange-600)}
+  .stage-dot.rejected{background:var(--c-red-500)}
+  .stage-dot.merge{background:var(--c-blue-500)}
+  .stage-dot.decision{background:var(--c-purple-600)}
+  .stage-dot.anomaly{background:var(--c-orange-500)}
+  .stage-dot.baseline{background:var(--c-indigo-600)}
+
+  .stage-text{font-weight:600;color:var(--c-gray-800)}
+  .stage-sub{font-size:11px;color:var(--c-gray-400);font-weight:400;margin-left:4px}
+  .pct{font-size:11px;color:var(--c-gray-400);font-weight:400;margin-left:6px}
+  .col-init{color:var(--c-blue-600)!important}
+  .col-t1{color:#92400E!important}
+  .col-t2{color:var(--c-green-600)!important}
+
+  /* 分组行 */
+  .snapshot-table .group-row td{background:var(--c-gray-50);font-size:10px;font-weight:700;color:var(--c-gray-400);text-transform:uppercase;letter-spacing:.06em;padding:6px 16px;border-bottom:1px solid var(--c-gray-200)}
+
+  /* 说明 */
+  .note-box{background:var(--c-gray-50);border:1px solid var(--c-gray-200);border-radius:var(--radius);padding:16px 20px;margin-top:20px;font-size:13px;color:var(--c-gray-600);line-height:1.7}
+  .note-box strong{color:var(--c-gray-800)}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">rebuild3</div>
+    <nav class="sidebar-nav">
+      <!-- 主流程层 -->
+      <a href="01_flow_overview.html"><span class="ico">&#9678;</span> 流转总览</a>
+      <a href="01_flow_overview_timeline.html" class="active"><span class="ico">&#9202;</span> 流转快照</a>
+      <a href="02_run_batch_center.html"><span class="ico">&#9881;</span> 运行/批次中心</a>
+      <a href="03_objects.html"><span class="ico">&#9724;</span> 对象浏览</a>
+      <a href="05_observation_workspace.html"><span class="ico">&#9201;</span> 等待/观察工作台</a>
+      <a href="06_anomaly_workspace.html"><span class="ico">&#9888;</span> 异常工作台</a>
+      <a href="07_baseline_profile.html"><span class="ico">&#9733;</span> 基线/画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 画像视角层 -->
+      <a href="09_lac_profile.html"><span class="ico">&#9636;</span> LAC 画像</a>
+      <a href="10_bs_profile.html"><span class="ico">&#9635;</span> BS 画像</a>
+      <a href="11_cell_profile.html"><span class="ico">&#9632;</span> Cell 画像</a>
+      <div class="sidebar-divider"></div>
+      <!-- 支撑治理层 -->
+      <a href="13_data_governance.html"><span class="ico">&#9776;</span> 基础数据治理</a>
+      <a href="08_validation_compare.html"><span class="ico">&#9745;</span> 验证/对照</a>
+      <a href="12_initialization.html"><span class="ico">&#9654;</span> 初始化数据</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">rebuild3 流式治理工作台</div>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        运行中 &middot; 上次刷新 14:32:07
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 视图切换 -->
+      <div class="section">
+        <div class="view-switch">
+          <a href="01_flow_overview.html" class="view-btn">流程图视图</a>
+          <button class="view-btn active">时间快照视图</button>
+        </div>
+        <div style="font-size:12px;color:var(--c-gray-400);margin-top:4px;line-height:1.6">本视图用于批次回放和局部重跑对照，不是主流程首页。每次批次完成后数据记录到 batch_snapshot 表。</div>
+      </div>
+
+      <!-- 时间选择器 -->
+      <div class="section">
+        <div class="section-title">选择时间点</div>
+        <div class="time-selector-card">
+          <div class="time-selectors">
+
+            <!-- 初始化后（固定） -->
+            <div class="ts-col init">
+              <div class="ts-col-header">
+                <span class="ts-col-tag init">固定</span>
+                <span class="ts-col-title">初始化完成后</span>
+              </div>
+              <label>初始化批次</label>
+              <select>
+                <option selected>INIT-001 (2026-04-01 ~ 04-03, 3天)</option>
+              </select>
+              <div class="ts-info">
+                <strong>run_id:</strong> RUN-20260403-001<br>
+                <strong>基线版本:</strong> v1（首版基线）<br>
+                <strong>完成时间:</strong> 2026-04-03 00:15:32
+              </div>
+            </div>
+
+            <!-- 自定义时间 1 -->
+            <div class="ts-col t1">
+              <div class="ts-col-header">
+                <span class="ts-col-tag t1">自定义 1</span>
+                <span class="ts-col-title">时间点 A</span>
+              </div>
+              <label>选择批次完成时间</label>
+              <select>
+                <option>BATCH-2026040302 (02:00~04:00)</option>
+                <option>BATCH-2026040304 (04:00~06:00)</option>
+                <option>BATCH-2026040306 (06:00~08:00)</option>
+                <option>BATCH-2026040308 (08:00~10:00)</option>
+                <option selected>BATCH-2026040310 (10:00~12:00) ⟳重跑</option>
+                <option>BATCH-2026040312 (12:00~14:00)</option>
+                <option>BATCH-2026040314 (14:00~16:00)</option>
+              </select>
+              <div class="ts-info">
+                <strong>基线版本:</strong> v47（本批触发刷新）<br>
+                <strong>类型:</strong> 重跑批次<br>
+                <strong>完成时间:</strong> 2026-04-03 12:08:47
+              </div>
+            </div>
+
+            <!-- 自定义时间 2 -->
+            <div class="ts-col t2">
+              <div class="ts-col-header">
+                <span class="ts-col-tag t2">自定义 2</span>
+                <span class="ts-col-title">时间点 B</span>
+              </div>
+              <label>选择批次完成时间</label>
+              <select>
+                <option>BATCH-2026040302 (02:00~04:00)</option>
+                <option>BATCH-2026040304 (04:00~06:00)</option>
+                <option>BATCH-2026040306 (06:00~08:00)</option>
+                <option>BATCH-2026040308 (08:00~10:00)</option>
+                <option>BATCH-2026040310 (10:00~12:00) ⟳重跑</option>
+                <option>BATCH-2026040312 (12:00~14:00)</option>
+                <option selected>BATCH-2026040314 (14:00~16:00)</option>
+              </select>
+              <div class="ts-info">
+                <strong>基线版本:</strong> v47<br>
+                <strong>类型:</strong> 正常批次<br>
+                <strong>完成时间:</strong> 2026-04-03 16:12:03
+              </div>
+            </div>
+
+          </div>
+          <button class="btn-load">&#9654; 加载快照数据</button>
+        </div>
+      </div>
+
+      <!-- 快照数据表 -->
+      <div class="section">
+        <div class="section-title">流水线各阶段数据快照</div>
+        <div class="snapshot-card">
+          <table class="snapshot-table">
+            <thead>
+              <tr>
+                <th style="min-width:280px">处理阶段</th>
+                <th class="col-init">初始化后<br><span style="font-size:10px;font-weight:400">INIT-001 · 4月3日 00:15</span></th>
+                <th class="col-t1">时间点 A<br><span style="font-size:10px;font-weight:400">BATCH-10 ⟳ · 4月3日 12:08</span></th>
+                <th class="col-t2">时间点 B<br><span style="font-size:10px;font-weight:400">BATCH-14 · 4月3日 16:12</span></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- 输入与标准化 -->
+              <tr class="group-row"><td colspan="4">输入与标准化</td></tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot input"></span><span class="stage-text">批次输入</span><span class="stage-sub">原始记录</span></div></td>
+                <td class="col-init">2,847,103</td>
+                <td class="col-t1">43,587</td>
+                <td class="col-t2">45,231</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot process"></span><span class="stage-text">标准化事件</span><span class="stage-sub">fact_standardized</span></div></td>
+                <td class="col-init">2,841,290 <span class="pct">99.8%</span></td>
+                <td class="col-t1">43,489 <span class="pct">99.8%</span></td>
+                <td class="col-t2">45,140 <span class="pct">99.8%</span></td>
+              </tr>
+
+              <!-- 对象查询 -->
+              <tr class="group-row"><td colspan="4">对象与基线匹配</td></tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot process"></span><span class="stage-text">参考基线版本</span></div></td>
+                <td class="col-init">— <span class="pct">冷启动</span></td>
+                <td class="col-t1">v46</td>
+                <td class="col-t2">v47</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot process"></span><span class="stage-text">已注册对象数</span></div></td>
+                <td class="col-init">— <span class="pct">冷启动</span></td>
+                <td class="col-t1">12,829</td>
+                <td class="col-t2">12,847</td>
+              </tr>
+
+              <!-- 四分流 -->
+              <tr class="group-row"><td colspan="4">四分流结果（本批次事件分配）</td></tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot governed"></span><span class="stage-text">已治理事实</span><span class="stage-sub">fact_governed</span></div></td>
+                <td class="col-init">2,388,652 <span class="pct">84.1%</span></td>
+                <td class="col-t1">37,041 <span class="pct">85.2%</span></td>
+                <td class="col-t2">38,369 <span class="pct">85.0%</span></td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot pending_obs"></span><span class="stage-text">观察事实</span><span class="stage-sub">fact_pending_observation</span></div></td>
+                <td class="col-init">312,894 <span class="pct">11.0%</span></td>
+                <td class="col-t1">4,262 <span class="pct">9.8%</span></td>
+                <td class="col-t2">4,514 <span class="pct">10.0%</span></td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot pending_issue"></span><span class="stage-text">问题事实</span><span class="stage-sub">fact_pending_issue</span></div></td>
+                <td class="col-init">85,241 <span class="pct">3.0%</span></td>
+                <td class="col-t1">1,218 <span class="pct">2.8%</span></td>
+                <td class="col-t2">1,354 <span class="pct">3.0%</span></td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot rejected"></span><span class="stage-text">拒收事实</span><span class="stage-sub">fact_rejected</span></div></td>
+                <td class="col-init">54,503 <span class="pct">1.9%</span></td>
+                <td class="col-t1">968 <span class="pct">2.2%</span></td>
+                <td class="col-t2">903 <span class="pct">2.0%</span></td>
+              </tr>
+
+              <!-- 证据累计 -->
+              <tr class="group-row"><td colspan="4">证据累计与对象更新</td></tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot merge"></span><span class="stage-text">证据更新对象数</span></div></td>
+                <td class="col-init">12,782</td>
+                <td class="col-t1">12,839</td>
+                <td class="col-t2">12,850</td>
+              </tr>
+
+              <!-- 批末决策 -->
+              <tr class="group-row"><td colspan="4">批末统一决策</td></tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot decision"></span><span class="stage-text">Cell 晋升</span><span class="stage-sub">waiting→observing→active</span></div></td>
+                <td class="col-init">+12,782 <span class="pct">初始晋升</span></td>
+                <td class="col-t1">+8</td>
+                <td class="col-t2">+5</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot decision"></span><span class="stage-text">Cell 降级</span><span class="stage-sub">active→dormant</span></div></td>
+                <td class="col-init">0</td>
+                <td class="col-t1">-0</td>
+                <td class="col-t2">-2</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot decision"></span><span class="stage-text">级联更新 BS</span></div></td>
+                <td class="col-init">3,382 <span class="pct">初始派生</span></td>
+                <td class="col-t1">+9</td>
+                <td class="col-t2">+5</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot decision"></span><span class="stage-text">级联更新 LAC</span></div></td>
+                <td class="col-init">152 <span class="pct">初始派生</span></td>
+                <td class="col-t1">+1</td>
+                <td class="col-t2">+1</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot anomaly"></span><span class="stage-text">异常检测</span><span class="stage-sub">碰撞/动态/迁移/GPS偏差</span></div></td>
+                <td class="col-init" style="color:var(--c-orange-600)">38</td>
+                <td class="col-t1" style="color:var(--c-orange-600)">43</td>
+                <td class="col-t2" style="color:var(--c-orange-600)">47</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot baseline"></span><span class="stage-text">基线刷新</span></div></td>
+                <td class="col-init">v1 <span class="pct">首版基线</span></td>
+                <td class="col-t1" style="color:var(--c-indigo-600)">v47 <span class="pct">触发刷新</span></td>
+                <td class="col-t2" style="color:var(--c-gray-400)">— <span class="pct">未触发</span></td>
+              </tr>
+
+              <!-- 累计状态 -->
+              <tr class="group-row"><td colspan="4">系统累计状态（批次结束后）</td></tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-green-500)"></span><span class="stage-text">活跃对象 (active)</span></div></td>
+                <td class="col-init">12,782</td>
+                <td class="col-t1">12,839</td>
+                <td class="col-t2">12,847</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-amber-400)"></span><span class="stage-text">等待中 (waiting)</span></div></td>
+                <td class="col-init">1,156</td>
+                <td class="col-t1">1,275</td>
+                <td class="col-t2">1,283</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-amber-500)"></span><span class="stage-text">观察中 (observing)</span></div></td>
+                <td class="col-init">823</td>
+                <td class="col-t1">882</td>
+                <td class="col-t2">892</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-green-600)"></span><span class="stage-text">锚点可用 (anchorable)</span></div></td>
+                <td class="col-init">11,403</td>
+                <td class="col-t1">11,256</td>
+                <td class="col-t2">11,234</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-indigo-500)"></span><span class="stage-text">基线可用 (baseline_eligible)</span></div></td>
+                <td class="col-init">10,987</td>
+                <td class="col-t1">10,912</td>
+                <td class="col-t2">10,891</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-gray-400)"></span><span class="stage-text">BS 覆盖</span></div></td>
+                <td class="col-init">3,382</td>
+                <td class="col-t1">3,412</td>
+                <td class="col-t2">3,421</td>
+              </tr>
+              <tr>
+                <td><div class="stage-label-cell"><span class="stage-dot" style="background:var(--c-gray-400)"></span><span class="stage-text">LAC 覆盖</span></div></td>
+                <td class="col-init">152</td>
+                <td class="col-t1">155</td>
+                <td class="col-t2">156</td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 说明 -->
+      <div class="section">
+        <div class="note-box">
+          <strong>关于数据存储：</strong>每次批次处理完成后，系统会将完整的流水线各阶段数据记录到 <code>batch_snapshot</code> 表中，包括：批次输入量、标准化结果、四分流分配、证据累计、晋升/降级、级联更新、异常检测、基线刷新状态、以及系统累计状态。历史快照数据永久保留，可随时选择任意两个时间点查看各阶段的数据状态。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,99 @@
+# 画像业务阈值参数
+# 修改后重跑 streaming 可观察效果变化
+# 算法常量（中国边界、经纬度转米系数）保留在代码中
+
+lifecycle:
+  waiting:
+    min_obs: 3
+    min_devs: 2
+  active:
+    min_obs: 3
+    min_devs: 2
+    max_p90_m: 1500
+    min_span_hours: 24
+    exclude_collision: true
+
+anchorable:
+  min_gps_valid: 10
+  min_devs: 2
+  max_p90_m: 1500
+  min_span_hours: 24
+  exclude_collision: true
+
+position_grade:
+  excellent:
+    min_obs: 8
+    min_devs: 3
+    max_p90_m: 500
+  good:
+    min_obs: 3
+    min_devs: 2
+  qualified:
+    min_obs: 1
+
+gps_confidence:
+  high:
+    min_gps_valid: 20
+    min_devs: 3
+  medium:
+    min_gps_valid: 10
+    min_devs: 2
+  low:
+    min_gps_valid: 1
+
+signal_confidence:
+  high:
+    min_signal_original: 20
+  medium:
+    min_signal_original: 5
+  low:
+    min_signal_original: 1
+
+cell_scale:
+  major:
+    min_obs: 50
+    min_devs: 10
+  large:
+    min_obs: 20
+    min_devs: 5
+  medium:
+    min_obs: 10
+    min_devs: 3
+  small:
+    min_obs: 3
+
+drift:
+  min_days: 2
+  stable_max_spread_m: 500
+  collision_min_spread_m: 2200
+  collision_max_ratio: 0.3
+  migration_min_ratio: 0.7
+  large_coverage_max_spread_m: 2200
+
+is_dynamic:
+  min_spread_m: 1500
+
+bs_classification:
+  large_spread_min_dist_m: 2500
+
+# BS 生命周期: 基于下属 Cell 的质量晋升
+# active 条件 (满足任一): 1 个 excellent Cell，或 N 个 qualified+ Cell
+# observing: 有 Cell 但不满足 active
+# waiting: 全部 Cell 都是 waiting
+bs_lifecycle:
+  active:
+    min_excellent_cells: 1     # 1 个优秀 Cell 即可晋升
+    min_qualified_cells: 3     # 或 3 个及格(qualified+good+excellent) Cell
+  observing:
+    min_cells_with_gps: 1      # 至少有 1 个 Cell 有 GPS 数据
+
+# LAC 生命周期: 基于下属 BS 的质量晋升
+# active: 需要足够多的 active BS
+# observing: 有 active/observing BS 但不满足 active
+# waiting: 全部 BS 都是 waiting
+lac_lifecycle:
+  active:
+    min_active_bs: 3           # 至少 3 个 active BS
+    min_active_bs_ratio: 0.1   # 或 active BS 占比 >= 10%
+  observing:
+    min_non_waiting_bs: 1      # 至少 1 个非 waiting BS

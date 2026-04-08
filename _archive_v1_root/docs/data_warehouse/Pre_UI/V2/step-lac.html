@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>步骤工作台：可信 LAC - 工作台</title>
+<link rel="stylesheet" href="wb.css"/>
+</head>
+<body>
+
+<div class="ctx-bar">
+  <span>Run: <strong>#0037</strong></span>
+  <span>Compare: <strong>#0034</strong></span>
+  <span>参数集: <strong>P-003</strong></span>
+  <span>规则集: <strong>R2</strong></span>
+  <span>SQL: <strong>S-005</strong></span>
+  <span>当前步骤: <strong>可信 LAC</strong></span>
+  <span class="spacer"></span>
+  <button class="ctx-btn" onclick="openDrawer('version')">版本抽屉</button>
+</div>
+
+<nav class="sidebar">
+  <div class="group-label">治理链路</div>
+  <a href="index.html"><span class="step-status done"></span><span>链路总览</span></a>
+  <a href="step-lac.html" class="active"><span class="step-status done"></span><span>可信 LAC</span><span class="step-count">45</span></a>
+  <a href="step-cell.html"><span class="step-status done"></span><span>Cell 统计</span><span class="step-count">9,654</span></a>
+  <a href="step-bs.html"><span class="step-status done"></span><span>可信 BS</span><span class="step-count">3,218</span></a>
+  <a href="step-gps.html"><span class="step-status done"></span><span>GPS 修正</span><span class="step-count">22%</span></a>
+  <a href="#"><span class="step-status done"></span><span>信号补齐</span><span class="step-count">8%</span></a>
+  <a href="#"><span class="step-status done"></span><span>完整回归</span><span class="step-count">10.8M</span></a>
+  <a href="#"><span class="step-status done"></span><span>画像/基线</span><span class="step-count">B1</span></a>
+  <a href="#"><span class="step-status pending"></span><span>伪日更</span><span class="step-count">—</span></a>
+  <div class="sep"></div>
+  <div class="group-label">辅助页面</div>
+  <a href="fields.html"><span>字段治理</span></a>
+  <a href="samples.html"><span>样本研究</span></a>
+</nav>
+
+<div class="main">
+  <div class="crumb"><a href="index.html">链路总览</a> / 步骤工作台：可信 LAC</div>
+
+  <!-- A. 步骤说明 -->
+  <div class="card">
+    <h3>A. 步骤说明</h3>
+    <dl class="detail-grid">
+      <dt>步骤名称</dt><dd>可信 LAC</dd>
+      <dt>业务目的</dt><dd>从全量数据中筛出结构可信的 LAC 集合，画出"可信地盘边界"</dd>
+      <dt>上游步骤</dt><dd>数据起点（原始接入）</dd>
+      <dt>下游步骤</dt><dd><a class="link" href="step-cell.html">Cell 统计</a></dd>
+      <dt>当前状态</dt><dd><span class="tag ok">已完成</span></dd>
+      <dt>当前库映射</dt><dd>Y_codex_Layer2_Step03/04 &rarr; dim_lac_trusted</dd>
+    </dl>
+  </div>
+
+  <!-- B. 输入/输出 -->
+  <div class="card">
+    <h3>B. 输入 / 输出</h3>
+    <table>
+      <thead><tr><th></th><th>输入</th><th>输出</th></tr></thead>
+      <tbody>
+        <tr><td><strong>库名</strong></td><td>raw_standardized（全量标准化记录）</td><td>dim_lac_trusted</td></tr>
+        <tr><td><strong>行数</strong></td><td>12,345,678</td><td>45（LAC 数）</td></tr>
+        <tr><td><strong>主键</strong></td><td>record_id</td><td>operator + tech + lac</td></tr>
+        <tr><td><strong>维度</strong></td><td>记录级</td><td>LAC 级</td></tr>
+        <tr><td><strong>vs #0034</strong></td><td>11,890,234 (+3.8%)</td><td>43 <span class="tag diff-new">+2</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- C. 规则区 -->
+  <div class="card">
+    <h3>C. 规则</h3>
+    <table>
+      <thead><tr><th>规则名称</th><th>目的</th><th>关键参数</th><th>命中/过滤</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>运营商过滤</td>
+          <td>只保留五大核心 PLMN</td>
+          <td>移动/联通/电信/广电/铁路</td>
+          <td>过滤 1.2%</td>
+          <td>全局</td>
+        </tr>
+        <tr>
+          <td>LAC 编码过滤</td>
+          <td>剔除 NULL/异常长度/黑名单</td>
+          <td>黑名单 12 条</td>
+          <td>过滤 0.8%</td>
+          <td>全局</td>
+        </tr>
+        <tr>
+          <td>位置过滤</td>
+          <td>只保留北京区域 GPS</td>
+          <td>bbox: (115.4,39.4)~(117.5,41.1)</td>
+          <td>过滤 5.3%</td>
+          <td>全局</td>
+        </tr>
+        <tr>
+          <td>稳定性过滤</td>
+          <td>活跃天数和上报量最低要求</td>
+          <td>min_days: 7, min_reports: 100</td>
+          <td>过滤 2.0%</td>
+          <td>LAC 级</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- D. 参数区 -->
+  <div class="card">
+    <h3>D. 参数</h3>
+    <table>
+      <thead><tr><th>参数名</th><th>当前值</th><th>上次值</th><th>变化</th></tr></thead>
+      <tbody>
+        <tr><td>plmn_whitelist</td><td>46000,46001,46002,46003,46020</td><td>同</td><td><span class="tag muted">—</span></td></tr>
+        <tr><td>lac_blacklist</td><td>12条</td><td>10条</td><td><span class="tag warn">+2</span></td></tr>
+        <tr><td>geo_bbox</td><td>(115.4,39.4)~(117.5,41.1)</td><td>同</td><td><span class="tag muted">—</span></td></tr>
+        <tr style="background:#fffaf5"><td><strong>min_active_days</strong></td><td><strong>7</strong></td><td>5</td><td><span class="tag warn">&#9650; 调高</span></td></tr>
+        <tr><td>min_report_count</td><td>100</td><td>100</td><td><span class="tag muted">—</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- E. SQL 区 -->
+  <div class="card">
+    <h3>E. SQL</h3>
+    <table>
+      <thead><tr><th>序号</th><th>SQL 名称</th><th>用途</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>filter_plmn.sql</td><td>运营商过滤</td><td><a class="link">展开 SQL</a></td></tr>
+        <tr><td>2</td><td>filter_lac_code.sql</td><td>编码过滤</td><td><a class="link">展开 SQL</a></td></tr>
+        <tr><td>3</td><td>filter_geo_bbox.sql</td><td>位置过滤</td><td><a class="link">展开 SQL</a></td></tr>
+        <tr><td>4</td><td>filter_stability.sql</td><td>稳定性过滤</td><td><a class="link">展开 SQL</a></td></tr>
+        <tr><td>5</td><td>build_lac_trusted.sql</td><td>生成可信LAC表</td><td><a class="link">展开 SQL</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- F. 数据变化 -->
+  <div class="card">
+    <h3>F. 数据变化（本次 Run#0037）</h3>
+    <div class="metric-row">
+      <div class="metric-card"><div class="num">12.3M</div><div class="lbl">原始输入</div></div>
+      <div class="metric-card"><div class="num">11.2M</div><div class="lbl">过滤后</div></div>
+      <div class="metric-card"><div class="num" style="color:#c48800">-9.3%</div><div class="lbl">过滤率</div></div>
+      <div class="metric-card"><div class="num">45</div><div class="lbl">可信 LAC</div></div>
+    </div>
+    <table>
+      <thead><tr><th>过滤环节</th><th>过滤行数</th><th>占比</th></tr></thead>
+      <tbody>
+        <tr><td>运营商过滤</td><td>148,000</td><td>1.2%</td></tr>
+        <tr><td>LAC编码过滤</td><td>99,000</td><td>0.8%</td></tr>
+        <tr><td>位置过滤</td><td>654,000</td><td>5.3%</td></tr>
+        <tr><td>稳定性过滤</td><td>244,678</td><td>2.0%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- G. 差异区 -->
+  <div class="card">
+    <h3>G. 差异（Run#0037 vs Run#0034）</h3>
+    <table>
+      <thead><tr><th>指标</th><th>#0037</th><th>#0034</th><th>差异</th></tr></thead>
+      <tbody>
+        <tr><td>可信 LAC 数</td><td>45</td><td>43</td><td><span class="tag diff-new">+2</span></td></tr>
+        <tr><td>总过滤率</td><td>9.3%</td><td>8.9%</td><td>+0.4%</td></tr>
+        <tr><td>稳定性过滤率</td><td>2.0%</td><td>1.5%</td><td><span class="tag warn">+0.5%（阈值调高）</span></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px;font-size:13px">
+      新增 LAC: <span class="tag diff-new">LAC-9510, LAC-2215</span> &middot; 消失 LAC: 0
+    </div>
+  </div>
+
+  <!-- H. 样本区 -->
+  <div class="card">
+    <h3>H. 样本</h3>
+    <table>
+      <thead><tr><th>分类</th><th>数量</th><th>代表样本</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag ok">典型可信LAC</span></td><td>43</td><td>LAC-9501 移动4G 活跃14天 12.5万上报</td></tr>
+        <tr><td><span class="tag diff-new">新增LAC</span></td><td>2</td><td>LAC-9510 移动4G 活跃8天（新满足阈值）</td></tr>
+        <tr><td><span class="tag muted">边界被过滤</span></td><td>3</td><td>LAC-7701 活跃6天（差1天未达阈值7）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="display:flex;gap:10px">
+    <button class="btn btn-primary">从此步骤开始重跑</button>
+    <button class="btn btn-ghost">仅重跑此步骤</button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="overlay-version" onclick="closeDrawer('version')"></div>
+<div class="drawer" id="drawer-version">
+  <button class="close" onclick="closeDrawer('version')">&times;</button>
+  <h2>版本与运行</h2>
+  <div class="card"><dl class="detail-grid"><dt>run_id</dt><dd>#0037</dd><dt>参数集</dt><dd>P-003</dd><dt>规则集</dt><dd>R2</dd><dt>SQL</dt><dd>S-005</dd></dl></div>
+</div>
+
+<script>
+function openDrawer(n){document.getElementById('drawer-'+n).classList.add('open');document.getElementById('overlay-'+n).classList.add('open')}
+function closeDrawer(n){document.getElementById('drawer-'+n).classList.remove('open');document.getElementById('overlay-'+n).classList.remove('open')}
+</script>
+</body>
+</html>

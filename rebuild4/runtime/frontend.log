@@ -1,0 +1,425 @@
+2:25:41 AM [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.0.5  ready in 293 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+9:43:18 AM [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.0.5  ready in 297 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+
+  VITE v8.0.5  ready in 277 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+2:56:06 PM [vite] (client) hmr update /src/components/GlobalStatusBar.vue, /src/pages/FlowOverviewPage.vue, /src/pages/GovernancePage.vue, /src/pages/CellProfilePage.vue
+2:58:32 PM [vite] (client) page reload src/router.ts
+2:58:37 PM [vite] (client) hmr update /src/App.vue
+2:58:44 PM [vite] (client) hmr update /src/App.vue
+2:58:53 PM [vite] (client) hmr update /src/assets/styles/layout.css
+3:16:30 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.0.5  ready in 274 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+3:45:51 PM [vite] (client) page reload src/router.ts
+3:45:51 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/FoundationRawPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:62
+  120 |  	{
+  121 |  		path: "/governance/raw-overview",
+  122 |  		component: () => import("./pages/FoundationRawPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+3:45:52 PM [vite] Internal server error: Failed to resolve import "./pages/FoundationRawPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:62
+  120 |  	{
+  121 |  		path: "/governance/raw-overview",
+  122 |  		component: () => import("./pages/FoundationRawPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+3:45:53 PM [vite] (client) hmr update /src/components/GlobalStatusBar.vue, /src/pages/FlowOverviewPage.vue, /src/pages/FoundationL0Page.vue, /src/pages/FoundationOdsPage.vue
+3:45:53 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/FoundationRawPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:62
+  120 |  	{
+  121 |  		path: "/governance/raw-overview",
+  122 |  		component: () => import("./pages/FoundationRawPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+3:45:53 PM [vite] Internal server error: Failed to resolve import "./pages/FoundationRawPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:62
+  120 |  	{
+  121 |  		path: "/governance/raw-overview",
+  122 |  		component: () => import("./pages/FoundationRawPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+3:45:57 PM [vite] (client) hmr update /src/App.vue
+3:45:57 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/FoundationRawPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:62
+  120 |  	{
+  121 |  		path: "/governance/raw-overview",
+  122 |  		component: () => import("./pages/FoundationRawPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+3:45:57 PM [vite] Internal server error: Failed to resolve import "./pages/FoundationRawPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:62
+  120 |  	{
+  121 |  		path: "/governance/raw-overview",
+  122 |  		component: () => import("./pages/FoundationRawPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+3:46:25 PM [vite] (client) page reload src/pages/FoundationRawPage.vue
+3:46:52 PM [vite] (client) hmr update /src/pages/FoundationL0Page.vue, /src/pages/FoundationL0Page.vue?vue&type=style&index=0&scoped=6742b5c1&lang.css
+3:47:18 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue, /src/pages/FoundationOdsPage.vue?vue&type=style&index=0&scoped=f026c8c6&lang.css
+
+  VITE v8.0.5  ready in 273 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+4:04:13 PM [vite] (client) hmr update /src/pages/FoundationRawPage.vue, /src/pages/FoundationRawPage.vue?vue&type=style&index=0&scoped=b916ce33&lang.css
+4:04:48 PM [vite] (client) page reload src/router.ts
+4:04:52 PM [vite] (client) hmr update /src/App.vue
+4:04:54 PM [vite] (client) hmr update /src/pages/FlowOverviewPage.vue, /src/components/GlobalStatusBar.vue, /src/pages/FoundationRawPage.vue, /src/pages/FoundationL0Page.vue, /src/pages/FoundationOdsPage.vue, /src/pages/FoundationTrustedPage.vue
+
+  VITE v8.0.5  ready in 275 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+4:52:10 PM [vite] (client) hmr update /src/pages/FoundationL0AuditPage.vue, /src/pages/FoundationL0AuditPage.vue?vue&type=style&index=0&scoped=439c4e4d&lang.css
+4:53:20 PM [vite] (client) hmr update /src/components/GlobalStatusBar.vue, /src/pages/FoundationRawPage.vue, /src/pages/FoundationL0AuditPage.vue, /src/pages/FoundationL0Page.vue, /src/pages/FoundationOdsPage.vue, /src/pages/FoundationTrustedPage.vue
+4:53:31 PM [vite] (client) hmr update /src/pages/FoundationRawPage.vue
+4:53:43 PM [vite] (client) hmr update /src/pages/FoundationRawPage.vue?vue&type=style&index=0&scoped=b916ce33&lang.css
+4:54:00 PM [vite] (client) hmr update /src/pages/FoundationL0Page.vue
+4:54:07 PM [vite] (client) hmr update /src/pages/FoundationL0Page.vue
+4:54:14 PM [vite] (client) hmr update /src/pages/FoundationL0Page.vue?vue&type=style&index=0&scoped=6742b5c1&lang.css
+4:54:21 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue
+4:54:27 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue
+4:54:33 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue
+4:54:41 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue?vue&type=style&index=0&scoped=f026c8c6&lang.css
+
+  VITE v8.0.5  ready in 276 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+5:05:17 PM [vite] (client) hmr update /src/pages/FoundationL0Page.vue, /src/pages/FoundationL0Page.vue?vue&type=style&index=0&scoped=6742b5c1&lang.css
+5:05:23 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue
+
+  VITE v8.0.5  ready in 266 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+5:31:52 PM [vite] (client) page reload src/router.ts
+5:31:56 PM [vite] (client) hmr update /src/App.vue
+5:32:03 PM [vite] (client) hmr update /src/components/GlobalStatusBar.vue, /src/pages/FoundationL0Page.vue, /src/pages/FoundationRawPage.vue, /src/pages/FoundationL0AuditPage.vue, /src/pages/FoundationOdsPage.vue, /src/pages/FoundationTrustedPage.vue
+
+  VITE v8.0.5  ready in 262 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+
+  VITE v8.0.5  ready in 439 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+5:48:11 PM [vite] (client) page reload src/router.ts
+5:48:11 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlRegisterPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:51
+  120 |  	{
+  121 |  		path: "/etl/register",
+  122 |  		component: () => import("./pages/EtlRegisterPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+5:48:12 PM [vite] Internal server error: Failed to resolve import "./pages/EtlRegisterPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:51
+  120 |  	{
+  121 |  		path: "/etl/register",
+  122 |  		component: () => import("./pages/EtlRegisterPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:48:20 PM [vite] (client) hmr update /src/App.vue
+5:48:20 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlRegisterPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:51
+  120 |  	{
+  121 |  		path: "/etl/register",
+  122 |  		component: () => import("./pages/EtlRegisterPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+5:48:20 PM [vite] Internal server error: Failed to resolve import "./pages/EtlRegisterPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:51
+  120 |  	{
+  121 |  		path: "/etl/register",
+  122 |  		component: () => import("./pages/EtlRegisterPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:48:27 PM [vite] (client) page reload src/components/EtlFooter.vue
+5:48:27 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlRegisterPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:51
+  120 |  	{
+  121 |  		path: "/etl/register",
+  122 |  		component: () => import("./pages/EtlRegisterPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+5:48:27 PM [vite] Internal server error: Failed to resolve import "./pages/EtlRegisterPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:22:51
+  120 |  	{
+  121 |  		path: "/etl/register",
+  122 |  		component: () => import("./pages/EtlRegisterPage.vue"),
+      |                            ^
+  123 |  		meta: {
+  124 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:48:52 PM [vite] (client) page reload src/pages/EtlRegisterPage.vue
+5:48:52 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlAuditPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:23:48
+  128 |  	{
+  129 |  		path: "/etl/audit",
+  130 |  		component: () => import("./pages/EtlAuditPage.vue"),
+      |                            ^
+  131 |  		meta: {
+  132 |  			group: "etl",
+5:48:52 PM [vite] Internal server error: Failed to resolve import "./pages/EtlAuditPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:23:48
+  128 |  	{
+  129 |  		path: "/etl/audit",
+  130 |  		component: () => import("./pages/EtlAuditPage.vue"),
+      |                            ^
+  131 |  		meta: {
+  132 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 15)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:48:56 PM [vite] (client) page reload src/pages/EtlAuditPage.vue
+5:48:56 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlParsePage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:24:48
+  136 |  	{
+  137 |  		path: "/etl/parse",
+  138 |  		component: () => import("./pages/EtlParsePage.vue"),
+      |                            ^
+  139 |  		meta: {
+  140 |  			group: "etl",
+5:48:56 PM [vite] Internal server error: Failed to resolve import "./pages/EtlParsePage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:24:48
+  136 |  	{
+  137 |  		path: "/etl/parse",
+  138 |  		component: () => import("./pages/EtlParsePage.vue"),
+      |                            ^
+  139 |  		meta: {
+  140 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 16)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:49:50 PM [vite] (client) page reload src/pages/EtlParsePage.vue
+5:49:50 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlFillPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:26:47
+  152 |  	{
+  153 |  		path: "/etl/fill",
+  154 |  		component: () => import("./pages/EtlFillPage.vue"),
+      |                            ^
+  155 |  		meta: {
+  156 |  			group: "etl",
+5:49:50 PM [vite] Internal server error: Failed to resolve import "./pages/EtlCleanPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:25:48
+  144 |  	{
+  145 |  		path: "/etl/clean",
+  146 |  		component: () => import("./pages/EtlCleanPage.vue"),
+      |                            ^
+  147 |  		meta: {
+  148 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 17)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:50:17 PM [vite] (client) page reload src/pages/EtlCleanPage.vue
+5:50:17 PM [vite] (client) Pre-transform error: Failed to resolve import "./pages/EtlFillPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:26:47
+  152 |  	{
+  153 |  		path: "/etl/fill",
+  154 |  		component: () => import("./pages/EtlFillPage.vue"),
+      |                            ^
+  155 |  		meta: {
+  156 |  			group: "etl",
+5:50:17 PM [vite] Internal server error: Failed to resolve import "./pages/EtlFillPage.vue" from "src/router.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/src/router.ts:26:47
+  152 |  	{
+  153 |  		path: "/etl/fill",
+  154 |  		component: () => import("./pages/EtlFillPage.vue"),
+      |                            ^
+  155 |  		meta: {
+  156 |  			group: "etl",
+      at TransformPluginContext._formatLog (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30339:39)
+      at TransformPluginContext.error (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30336:14)
+      at normalizeUrl (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27624:18)
+      at async file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27687:30
+      at async Promise.all (index 18)
+      at async TransformPluginContext.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:27655:4)
+      at async EnvironmentPluginContainer.transform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:30128:14)
+      at async loadAndTransform (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24459:26)
+      at async viteTransformMiddleware (file:///Users/yangcongan/cursor/WangYou_Data/rebuild4/frontend/node_modules/vite/dist/node/chunks/node.js:24253:20)
+5:50:45 PM [vite] (client) page reload src/pages/EtlFillPage.vue
+5:51:08 PM [vite] (client) hmr update /src/pages/FoundationL0Page.vue, /src/pages/FoundationL0Page.vue?vue&type=style&index=0&scoped=6742b5c1&lang.css
+5:51:08 PM [vite] (client) hmr update /src/pages/FoundationOdsPage.vue, /src/pages/FoundationOdsPage.vue?vue&type=style&index=0&scoped=f026c8c6&lang.css
+5:51:08 PM [vite] (client) hmr update /src/pages/FoundationL0AuditPage.vue, /src/pages/FoundationL0AuditPage.vue?vue&type=style&index=0&scoped=439c4e4d&lang.css
+
+  VITE v8.0.5  ready in 218 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+5:58:37 PM [vite] (client) hmr update /src/components/GlobalStatusBar.vue, /src/pages/EtlFillPage.vue, /src/pages/EtlAuditPage.vue, /src/pages/EtlParsePage.vue, /src/pages/EtlCleanPage.vue
+5:59:02 PM [vite] (client) hmr update /src/pages/EtlParsePage.vue, /src/pages/EtlParsePage.vue?vue&type=style&index=0&scoped=8f49366d&lang.css
+5:59:27 PM [vite] (client) hmr update /src/pages/EtlCleanPage.vue, /src/pages/EtlCleanPage.vue?vue&type=style&index=0&scoped=76c20650&lang.css
+5:59:50 PM [vite] (client) hmr update /src/pages/EtlFillPage.vue, /src/pages/EtlFillPage.vue?vue&type=style&index=0&scoped=02a864c4&lang.css
+
+  VITE v8.0.5  ready in 235 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+6:14:17 PM [vite] (client) hmr update /src/pages/EtlAuditPage.vue
+6:14:22 PM [vite] (client) hmr update /src/pages/EtlAuditPage.vue
+6:16:14 PM [vite] (client) hmr update /src/pages/EtlParsePage.vue
+6:16:21 PM [vite] (client) hmr update /src/pages/EtlParsePage.vue?vue&type=style&index=0&scoped=8f49366d&lang.css
+6:16:33 PM [vite] (client) hmr update /src/pages/EtlCleanPage.vue
+6:16:40 PM [vite] (client) hmr update /src/pages/EtlCleanPage.vue?vue&type=style&index=0&scoped=76c20650&lang.css
+6:16:51 PM [vite] (client) hmr update /src/pages/EtlFillPage.vue
+6:16:59 PM [vite] (client) hmr update /src/pages/EtlFillPage.vue?vue&type=style&index=0&scoped=02a864c4&lang.css
+
+  VITE v8.0.5  ready in 280 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+6:34:25 PM [vite] (client) hmr update /src/pages/EtlFillPage.vue, /src/pages/EtlFillPage.vue?vue&type=style&index=0&scoped=02a864c4&lang.css
+
+  VITE v8.0.5  ready in 243 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+
+  VITE v8.0.5  ready in 495 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+6:54:29 PM [vite] (client) hmr update /src/components/GlobalStatusBar.vue, /src/pages/EtlFillPage.vue, /src/pages/EtlParsePage.vue, /src/pages/EtlCleanPage.vue
+6:54:52 PM [vite] (client) hmr update /src/pages/EtlParsePage.vue, /src/pages/EtlParsePage.vue?vue&type=style&index=0&scoped=8f49366d&lang.css
+7:04:28 PM [vite] (client) hmr update /src/pages/CellProfilePage.vue, /src/pages/CellProfilePage.vue?vue&type=style&index=0&scoped=0f6d2fca&lang.css
+4:00:36 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.0.5  ready in 302 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+4:09:25 PM [vite] (client) hmr update /src/pages/FlowOverviewPage.vue
+4:09:26 PM [vite] (client) hmr update /src/pages/FlowOverviewPage.vue
+4:09:28 PM [vite] (client) hmr update /src/pages/FlowOverviewPage.vue
+4:09:31 PM [vite] (client) hmr update /src/pages/FlowSnapshotPage.vue
+4:09:32 PM [vite] (client) hmr update /src/pages/ObservationWorkspacePage.vue
+4:09:35 PM [vite] (client) hmr update /src/pages/ObservationWorkspacePage.vue
+4:09:36 PM [vite] (client) hmr update /src/pages/ObjectsPage.vue
+4:09:43 PM [vite] (client) hmr update /src/components/LifecycleBadge.vue
+4:09:44 PM [vite] (client) hmr update /src/components/LifecycleBadge.vue
+4:09:50 PM [vite] (client) hmr update /src/pages/ObservationWorkspacePage.vue
+4:09:52 PM [vite] (client) hmr update /src/pages/ObservationWorkspacePage.vue
+4:09:54 PM [vite] (client) hmr update /src/pages/ObservationWorkspacePage.vue
+4:09:59 PM [vite] (client) hmr update /src/pages/ObjectsPage.vue
+4:10:01 PM [vite] (client) hmr update /src/pages/ObjectsPage.vue
+4:10:09 PM [vite] (client) hmr update /src/pages/ObjectDetailPage.vue
+4:10:11 PM [vite] (client) hmr update /src/pages/ObjectDetailPage.vue
+4:10:14 PM [vite] (client) hmr update /src/pages/ObjectDetailPage.vue
+4:10:14 PM [vite] (client) hmr update /src/pages/ObjectDetailPage.vue
+4:10:17 PM [vite] (client) hmr update /src/pages/ObjectDetailPage.vue
+4:10:46 PM [vite] (client) hmr update /src/pages/FlowOverviewPage.vue
+
+  VITE v8.0.5  ready in 306 ms
+
+  ➜  Local:   http://127.0.0.1:47132/
+4:38:58 PM [vite] (client) hmr update /src/pages/FlowOverviewPage.vue, /src/pages/FlowOverviewPage.vue?vue&type=style&index=0&scoped=486d3dcd&lang.css
+
+  VITE v8.0.5  ready in 412 ms
+
+  ➜  Local:   http://127.0.0.1:47132/

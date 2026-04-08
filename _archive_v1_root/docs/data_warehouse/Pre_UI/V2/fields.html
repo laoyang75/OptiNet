@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>字段治理 - 工作台</title>
+<link rel="stylesheet" href="wb.css"/>
+</head>
+<body>
+
+<div class="ctx-bar">
+  <span>Run: <strong>#0037</strong></span><span>契约: <strong>C1</strong></span>
+  <span>数据批次: <strong>B-07</strong></span>
+  <span class="spacer"></span>
+  <button class="ctx-btn" onclick="openDrawer('version')">版本抽屉</button>
+</div>
+
+<nav class="sidebar">
+  <div class="group-label">治理链路</div>
+  <a href="index.html"><span class="step-status done"></span><span>链路总览</span></a>
+  <a href="step-lac.html"><span class="step-status done"></span><span>可信 LAC</span><span class="step-count">45</span></a>
+  <a href="step-cell.html"><span class="step-status done"></span><span>Cell 统计</span><span class="step-count">9,654</span></a>
+  <a href="step-bs.html"><span class="step-status done"></span><span>可信 BS</span><span class="step-count">3,218</span></a>
+  <a href="step-gps.html"><span class="step-status done"></span><span>GPS 修正</span><span class="step-count">22%</span></a>
+  <a href="#"><span class="step-status done"></span><span>信号补齐</span><span class="step-count">8%</span></a>
+  <a href="#"><span class="step-status done"></span><span>完整回归</span><span class="step-count">10.8M</span></a>
+  <a href="#"><span class="step-status done"></span><span>画像/基线</span><span class="step-count">B1</span></a>
+  <a href="#"><span class="step-status pending"></span><span>伪日更</span><span class="step-count">—</span></a>
+  <div class="sep"></div>
+  <div class="group-label">辅助页面</div>
+  <a href="fields.html" class="active"><span>字段治理</span></a>
+  <a href="samples.html"><span>样本研究</span></a>
+</nav>
+
+<div class="main">
+  <div class="crumb"><a href="index.html">链路总览</a> / 字段治理</div>
+  <div class="page-header"><h1>字段治理</h1></div>
+
+  <!-- 过滤 -->
+  <div class="filter-bar">
+    <input type="text" placeholder="搜索字段名..."/>
+    <select><option>全部状态</option><option>active</option><option>drifted</option><option>missing</option><option>deprecated</option></select>
+    <select><option>全部影响步骤</option><option>可信LAC</option><option>Cell统计</option><option>可信BS</option><option>GPS修正</option><option>信号补齐</option><option>画像/基线</option></select>
+  </div>
+
+  <!-- 健康概览 -->
+  <div class="metric-row">
+    <div class="metric-card"><div class="num" style="color:#1a9a5a">32</div><div class="lbl">正常</div></div>
+    <div class="metric-card"><div class="num" style="color:#c48800">5</div><div class="lbl">关注</div></div>
+    <div class="metric-card"><div class="num" style="color:#c73939">2</div><div class="lbl">异常</div></div>
+    <div class="metric-card"><div class="num" style="color:#999">1</div><div class="lbl">缺失</div></div>
+  </div>
+
+  <!-- 字段注册表 -->
+  <div class="card">
+    <h3>字段注册表</h3>
+    <p style="font-size:11px;color:#888;margin-bottom:8px">点击字段行展开治理内容</p>
+    <table>
+      <thead><tr><th>原始字段</th><th>标准字段</th><th>类型</th><th>状态</th><th>空值率</th><th>异常率</th><th>影响步骤</th></tr></thead>
+      <tbody>
+        <tr class="expandable" onclick="toggleField('f-cellid')">
+          <td>raw_cellid</td><td><strong>cell_id</strong></td><td>int</td>
+          <td><span class="tag ok">active</span></td><td>0%</td><td>0.3%</td><td>7步</td>
+        </tr>
+        <tr class="expandable" onclick="toggleField('f-lac')">
+          <td>raw_lac</td><td><strong>lac</strong></td><td>int</td>
+          <td><span class="tag ok">active</span></td><td>0%</td><td>0.1%</td><td>6步</td>
+        </tr>
+        <tr class="expandable" onclick="toggleField('f-rsrp')">
+          <td>raw_rsrp</td><td><strong>rsrp_dbm</strong></td><td>float</td>
+          <td><span class="tag ok">active</span></td><td>2%</td><td>0.1%</td><td>4步</td>
+        </tr>
+
+        <!-- rsrq - 展开示例 -->
+        <tr class="expandable" onclick="toggleField('f-rsrq')" style="background:#fffaf5">
+          <td>raw_rsrq</td><td><strong>rsrq_db</strong></td><td>float</td>
+          <td><span class="tag err">drifted</span></td>
+          <td><strong style="color:#c73939">15%</strong></td>
+          <td><strong style="color:#c73939">2.1%</strong></td><td>4步</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- rsrq 展开区 -->
+    <div class="expand-zone" id="f-rsrq">
+      <h4>rsrq_db 字段治理详情</h4>
+
+      <!-- 基本信息 -->
+      <div class="card" style="margin-bottom:10px">
+        <h3>基本信息</h3>
+        <dl class="detail-grid">
+          <dt>原始字段</dt><dd>raw_rsrq</dd>
+          <dt>标准字段</dt><dd>rsrq_db</dd>
+          <dt>数据类型</dt><dd>float</dd>
+          <dt>单位</dt><dd>dB</dd>
+          <dt>数据源</dt><dd>batch_import_v2</dd>
+          <dt>生命周期</dt><dd><span class="tag err">drifted</span></dd>
+          <dt>字段说明</dt><dd>参考信号接收质量，负值，越接近0越好。有效范围 [-30, 0]</dd>
+        </dl>
+      </div>
+
+      <!-- 映射与解析规则 -->
+      <div class="card" style="margin-bottom:10px">
+        <h3>映射与解析规则</h3>
+        <p style="font-size:13px;margin-bottom:8px">
+          <code>raw_rsrq</code> &xrarr; 解析规则 <strong>P-003</strong> &xrarr; <code>rsrq_db</code>
+        </p>
+        <table>
+          <thead><tr><th>解析步骤</th><th>规则</th></tr></thead>
+          <tbody>
+            <tr><td>类型转换</td><td>varchar &rarr; float</td></tr>
+            <tr><td>空值处理</td><td>空字符串 / NULL &rarr; NULL</td></tr>
+            <tr><td>范围校验</td><td>有效范围 [-30, 0]</td></tr>
+            <tr><td>超范围处理</td><td>标记 is_anomaly=true，保留原值（修正优于丢弃）</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:8px">
+          <p style="font-size:12px;color:#888"><strong>解析规则历史：</strong></p>
+          <table>
+            <tbody>
+              <tr><td><span class="tag info">P-003</span> (当前)</td><td>3/10</td><td>新增范围校验 [-30, 0]</td></tr>
+              <tr><td><span class="tag muted">P-002</span></td><td>3/01</td><td>初始规则，仅类型转换</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 健康度趋势 -->
+      <div class="card" style="margin-bottom:10px">
+        <h3>健康度趋势</h3>
+        <table>
+          <thead><tr><th>批次</th><th>空值率</th><th>异常率</th><th>分布偏移</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr style="background:#fffaf5">
+              <td><strong>B-07</strong></td>
+              <td><strong style="color:#c73939">15% &#9650;</strong></td>
+              <td>2.1%</td><td>偏移</td>
+              <td><span class="tag err">drifted</span></td>
+            </tr>
+            <tr><td>B-06</td><td>12%</td><td>1.5%</td><td>轻微</td><td><span class="tag warn">drifted</span></td></tr>
+            <tr><td>B-05</td><td>8%</td><td>0.8%</td><td>正常</td><td><span class="tag ok">active</span></td></tr>
+            <tr><td>B-04</td><td>5%</td><td>0.3%</td><td>正常</td><td><span class="tag ok">active</span></td></tr>
+            <tr><td>B-03</td><td>2%</td><td>0.1%</td><td>正常</td><td><span class="tag ok">active</span></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12px;color:#c73939;margin-top:6px">趋势判定：空值率从 B-05 起持续上升，建议排查数据源解析变化</p>
+      </div>
+
+      <!-- 影响步骤 -->
+      <div class="card" style="margin-bottom:10px">
+        <h3>影响步骤</h3>
+        <table>
+          <thead><tr><th>步骤</th><th>使用方式</th><th>影响程度</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Cell 统计</td><td>聚合统计指标</td><td><span class="tag warn">中</span></td><td><a class="link" href="step-cell.html">跳转 &rarr;</a></td></tr>
+            <tr><td>信号补齐</td><td>donor 选择依据</td><td><span class="tag err">高</span></td><td><a class="link" href="#">跳转 &rarr;</a></td></tr>
+            <tr><td>画像/基线</td><td>rsrq_median 指标</td><td><span class="tag err">高</span></td><td><a class="link" href="#">跳转 &rarr;</a></td></tr>
+            <tr><td>伪日更</td><td>信号漂移检测</td><td><span class="tag err">高</span></td><td><a class="link" href="#">跳转 &rarr;</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 变更历史 -->
+      <div class="card">
+        <h3>变更历史</h3>
+        <table>
+          <thead><tr><th>时间</th><th>变更类型</th><th>详情</th></tr></thead>
+          <tbody>
+            <tr><td>3/15</td><td><span class="tag err">健康变化</span></td><td>空值率突增至 15%（触发 drifted 状态）</td></tr>
+            <tr><td>3/10</td><td><span class="tag info">规则变更</span></td><td>解析规则 P-002 &rarr; P-003（新增范围校验）</td></tr>
+            <tr><td>3/01</td><td><span class="tag muted">注册</span></td><td>字段首次注册</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 继续字段列表 -->
+    <table>
+      <tbody>
+        <tr class="expandable" onclick="toggleField('f-lat')">
+          <td>raw_lat</td><td><strong>latitude</strong></td><td>float</td>
+          <td><span class="tag ok">active</span></td><td>1.8%</td><td>0.5%</td><td>5步</td>
+        </tr>
+        <tr class="expandable" onclick="toggleField('f-lon')">
+          <td>raw_lon</td><td><strong>longitude</strong></td><td>float</td>
+          <td><span class="tag ok">active</span></td><td>1.8%</td><td>0.5%</td><td>5步</td>
+        </tr>
+        <tr class="expandable" onclick="toggleField('f-sinr')">
+          <td>raw_sinr</td><td><strong>sinr_db</strong></td><td>float</td>
+          <td><span class="tag ok">active</span></td><td>3%</td><td>0.2%</td><td>3步</td>
+        </tr>
+        <tr class="expandable" onclick="toggleField('f-dbm')" style="background:#fffaf5">
+          <td>raw_dbm</td><td><strong>rx_dbm</strong></td><td>float</td>
+          <td><span class="tag warn">missing</span></td>
+          <td><strong style="color:#c48800">45%</strong></td><td>0%</td><td>2步</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- rx_dbm 展开区 -->
+    <div class="expand-zone" id="f-dbm" style="display:none">
+      <h4>rx_dbm 字段治理详情</h4>
+      <div class="card" style="margin-bottom:10px">
+        <h3>基本信息</h3>
+        <dl class="detail-grid">
+          <dt>原始字段</dt><dd>raw_dbm</dd>
+          <dt>标准字段</dt><dd>rx_dbm</dd>
+          <dt>数据类型</dt><dd>float</dd>
+          <dt>单位</dt><dd>dBm</dd>
+          <dt>数据源</dt><dd>batch_import_v2</dd>
+          <dt>生命周期</dt><dd><span class="tag warn">missing</span></dd>
+          <dt>字段说明</dt><dd>接收信号功率（旧制式），部分终端不上报</dd>
+        </dl>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <h3>映射与解析规则</h3>
+        <p style="font-size:13px"><code>raw_dbm</code> &xrarr; 解析规则 <strong>P-001</strong> &xrarr; <code>rx_dbm</code></p>
+        <table>
+          <tbody>
+            <tr><td>类型转换</td><td>varchar &rarr; float</td></tr>
+            <tr><td>空值处理</td><td>空字符串 / NULL &rarr; NULL</td></tr>
+            <tr><td>范围校验</td><td>无（该字段值域不固定）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <h3>健康度趋势</h3>
+        <table>
+          <thead><tr><th>批次</th><th>空值率</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>B-07</td><td style="color:#c48800"><strong>45%</strong></td><td><span class="tag warn">missing</span></td></tr>
+            <tr><td>B-06</td><td>42%</td><td><span class="tag warn">missing</span></td></tr>
+            <tr><td>B-05</td><td>38%</td><td><span class="tag warn">missing</span></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12px;color:#888;margin-top:6px">该字段空值率长期偏高，属于部分终端不上报场景，非突发异常</p>
+      </div>
+      <div class="card">
+        <h3>影响步骤</h3>
+        <table>
+          <tbody>
+            <tr><td>信号补齐</td><td>补齐候选字段</td><td><span class="tag warn">中</span></td></tr>
+            <tr><td>画像/基线</td><td>rx_dbm_median 指标</td><td><span class="tag muted">低</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;font-size:12px;color:#888">显示 1-8 / 共 40 个字段</div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="overlay-version" onclick="closeDrawer('version')"></div>
+<div class="drawer" id="drawer-version">
+  <button class="close" onclick="closeDrawer('version')">&times;</button>
+  <h2>版本与运行</h2>
+  <div class="card"><dl class="detail-grid"><dt>run_id</dt><dd>#0037</dd><dt>契约版本</dt><dd>C1</dd><dt>数据批次</dt><dd>B-07</dd></dl></div>
+</div>
+
+<script>
+function openDrawer(n){document.getElementById('drawer-'+n).classList.add('open');document.getElementById('overlay-'+n).classList.add('open')}
+function closeDrawer(n){document.getElementById('drawer-'+n).classList.remove('open');document.getElementById('overlay-'+n).classList.remove('open')}
+function toggleField(id){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.style.display = el.style.display==='none'?'block':'none';
+}
+</script>
+</body>
+</html>

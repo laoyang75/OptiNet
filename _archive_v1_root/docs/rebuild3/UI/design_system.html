@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rebuild3 Design System</title>
+<style>
+  /* ========== Reset & Base ========== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Primary */
+    --primary-50:  #eef2ff;
+    --primary-100: #e0e7ff;
+    --primary-500: #6366f1;
+    --primary-600: #4f46e5;
+    --primary-700: #4338ca;
+
+    /* Neutral */
+    --gray-50:  #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --white:    #ffffff;
+
+    /* Semantic — Active / Healthy */
+    --green-50:  #f0fdf4;
+    --green-500: #22c55e;
+    --green-600: #16a34a;
+
+    /* Semantic — Waiting / Observing */
+    --amber-50:  #fffbeb;
+    --amber-400: #fbbf24;
+    --amber-500: #f59e0b;
+
+    /* Semantic — Issue / Anomaly */
+    --orange-50:  #fff7ed;
+    --orange-400: #fb923c;
+    --orange-500: #f97316;
+
+    /* Semantic — Rejected */
+    --red-50:  #fef2f2;
+    --red-500: #ef4444;
+    --red-600: #dc2626;
+
+    /* Semantic — Dynamic */
+    --blue-50:  #eff6ff;
+    --blue-400: #60a5fa;
+    --blue-500: #3b82f6;
+
+    /* Semantic — Migration */
+    --purple-50:  #faf5ff;
+    --purple-400: #a78bfa;
+    --purple-500: #8b5cf6;
+
+    /* Shadows */
+    --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md:  0 4px 12px rgba(0,0,0,0.1);
+
+    /* Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+
+    /* Spacing */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+    --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--gray-900);
+    background: var(--gray-50);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ========== Layout ========== */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 220px;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--white);
+    border-right: 1px solid var(--gray-200);
+    padding: var(--sp-6) 0;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .sidebar-logo {
+    padding: 0 var(--sp-6) var(--sp-6);
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: var(--sp-4);
+  }
+  .sidebar-logo h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-500);
+    letter-spacing: -0.02em;
+  }
+  .sidebar-logo span {
+    font-size: 12px;
+    color: var(--gray-400);
+    font-weight: 400;
+  }
+  .sidebar nav a {
+    display: block;
+    padding: 6px var(--sp-6);
+    font-size: 13px;
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .sidebar nav a:hover {
+    color: var(--primary-500);
+    background: var(--primary-50);
+    border-left-color: var(--primary-500);
+  }
+  .sidebar nav .nav-group {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray-400);
+    padding: var(--sp-4) var(--sp-6) var(--sp-1);
+  }
+
+  .main {
+    flex: 1;
+    max-width: 960px;
+    padding: var(--sp-10) var(--sp-12);
+  }
+
+  /* ========== Section ========== */
+  .section { margin-bottom: var(--sp-16); }
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: var(--sp-2);
+    letter-spacing: -0.02em;
+  }
+  .section-desc {
+    font-size: 14px;
+    color: var(--gray-500);
+    margin-bottom: var(--sp-8);
+  }
+  .subsection {
+    margin-bottom: var(--sp-8);
+  }
+  .subsection-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: var(--sp-4);
+  }
+
+  /* ========== Utility ========== */
+  .flex { display: flex; }
+  .flex-wrap { flex-wrap: wrap; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: var(--sp-2); }
+  .gap-3 { gap: var(--sp-3); }
+  .gap-4 { gap: var(--sp-4); }
+  .gap-6 { gap: var(--sp-6); }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: var(--sp-6);
+    transition: box-shadow 0.15s;
+  }
+  .card:hover { box-shadow: var(--shadow-md); }
+
+  .mono {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+  }
+
+  /* ========== Color Swatches ========== */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--sp-3);
+  }
+  .swatch {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+  }
+  .swatch-color {
+    height: 56px;
+    width: 100%;
+  }
+  .swatch-info {
+    padding: var(--sp-2) var(--sp-3);
+  }
+  .swatch-name { font-size: 12px; font-weight: 600; color: var(--gray-700); }
+  .swatch-hex  { font-size: 11px; color: var(--gray-400); font-family: 'SF Mono', monospace; }
+
+  /* ========== Typography Showcase ========== */
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .type-label {
+    width: 160px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--gray-400);
+    font-family: 'SF Mono', monospace;
+  }
+
+  /* ========== Spacing ========== */
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-2);
+  }
+  .spacing-label {
+    width: 60px;
+    font-size: 12px;
+    color: var(--gray-400);
+    font-family: 'SF Mono', monospace;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .spacing-bar {
+    height: 20px;
+    background: var(--primary-50);
+    border: 1px solid var(--primary-500);
+    border-radius: 2px;
+    opacity: 0.7;
+  }
+
+  /* ========== Badges ========== */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    transition: transform 0.15s;
+    cursor: default;
+  }
+  .badge:hover { transform: scale(1.05); }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Lifecycle States */
+  .badge-waiting   { background: var(--amber-50);  color: var(--amber-500); }
+  .badge-waiting .badge-dot { background: var(--amber-400); }
+
+  .badge-observing { background: var(--amber-50);  color: var(--amber-500); }
+  .badge-observing .badge-dot { background: var(--amber-500); }
+
+  .badge-active    { background: var(--green-50);  color: var(--green-600); }
+  .badge-active .badge-dot { background: var(--green-500); }
+
+  .badge-dormant   { background: var(--gray-100);  color: var(--gray-500); }
+  .badge-dormant .badge-dot { background: var(--gray-400); }
+
+  .badge-retired   { background: var(--gray-100);  color: var(--gray-400); }
+  .badge-retired .badge-dot { background: var(--gray-300); }
+
+  .badge-rejected  { background: var(--red-50);    color: var(--red-500); }
+  .badge-rejected .badge-dot { background: var(--red-500); }
+
+  /* Health States */
+  .badge-healthy     { background: var(--green-50);   color: var(--green-600); }
+  .badge-anomaly     { background: var(--orange-50);  color: var(--orange-500); }
+  .badge-issue       { background: var(--orange-50);  color: var(--orange-500); }
+  .badge-dynamic     { background: var(--blue-50);    color: var(--blue-500); }
+  .badge-migration   { background: var(--purple-50);  color: var(--purple-500); }
+  .badge-silent      { background: var(--gray-100);   color: var(--gray-500); }
+  .badge-unknown     { background: var(--gray-100);   color: var(--gray-400); }
+
+  /* Fact Layer */
+  .badge-governed    { background: var(--green-50);   color: var(--green-600); }
+  .badge-pending-obs { background: var(--amber-50);   color: var(--amber-500); }
+  .badge-pending-iss { background: var(--orange-50);  color: var(--orange-500); }
+  .badge-fact-rejected { background: var(--red-50);   color: var(--red-500); }
+
+  /* Watch */
+  .badge-watch {
+    background: var(--orange-50);
+    color: var(--orange-500);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--orange-400);
+  }
+
+  /* Qualification Tags */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    transition: transform 0.15s;
+  }
+  .tag:hover { transform: scale(1.05); }
+  .tag-enabled  { background: var(--primary-50); color: var(--primary-600); border-color: var(--primary-500); }
+  .tag-disabled { background: var(--gray-50);    color: var(--gray-400);    border-color: var(--gray-300); text-decoration: line-through; }
+
+  /* ========== Buttons ========== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    line-height: 1;
+  }
+  .btn-primary {
+    background: var(--primary-500);
+    color: var(--white);
+    border-color: var(--primary-500);
+  }
+  .btn-primary:hover {
+    background: var(--primary-600);
+    border-color: var(--primary-600);
+  }
+  .btn-secondary {
+    background: var(--white);
+    color: var(--gray-700);
+    border-color: var(--gray-200);
+  }
+  .btn-secondary:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+  }
+  .btn-danger {
+    background: var(--red-500);
+    color: var(--white);
+    border-color: var(--red-500);
+  }
+  .btn-danger:hover {
+    background: var(--red-600);
+    border-color: var(--red-600);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--gray-600);
+    border-color: transparent;
+  }
+  .btn-ghost:hover {
+    background: var(--gray-100);
+    color: var(--gray-900);
+  }
+
+  /* ========== Metric Card ========== */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-4);
+  }
+  .metric-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: var(--sp-5);
+    transition: box-shadow 0.15s;
+  }
+  .metric-card:hover { box-shadow: var(--shadow-md); }
+  .metric-label {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: var(--sp-1);
+  }
+  .metric-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gray-900);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .metric-trend {
+    font-size: 12px;
+    margin-top: var(--sp-2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .trend-up   { color: var(--green-500); }
+  .trend-down { color: var(--red-500); }
+  .trend-flat { color: var(--gray-400); }
+
+  /* ========== Table ========== */
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    background: var(--white);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  td {
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--gray-100);
+    color: var(--gray-700);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-50); }
+  td .mono { color: var(--gray-500); }
+
+  /* ========== Progress Bar ========== */
+  .progress-wrapper { margin-bottom: var(--sp-3); }
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: var(--sp-1);
+  }
+  .progress-header-label { color: var(--gray-600); }
+  .progress-header-value { color: var(--gray-400); font-family: 'SF Mono', monospace; }
+  .progress-track {
+    height: 6px;
+    background: var(--gray-100);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .progress-fill-primary { background: var(--primary-500); }
+  .progress-fill-green   { background: var(--green-500); }
+  .progress-fill-amber   { background: var(--amber-500); }
+  .progress-fill-orange  { background: var(--orange-500); }
+
+  /* ========== Timeline ========== */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--gray-200);
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: var(--sp-6);
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-dot {
+    position: absolute;
+    left: -20px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--white);
+    box-shadow: 0 0 0 2px var(--gray-300);
+    background: var(--gray-300);
+  }
+  .timeline-dot-green  { background: var(--green-500); box-shadow: 0 0 0 2px var(--green-500); }
+  .timeline-dot-amber  { background: var(--amber-500); box-shadow: 0 0 0 2px var(--amber-500); }
+  .timeline-dot-orange { background: var(--orange-500); box-shadow: 0 0 0 2px var(--orange-500); }
+  .timeline-dot-primary { background: var(--primary-500); box-shadow: 0 0 0 2px var(--primary-500); }
+  .timeline-time {
+    font-size: 11px;
+    color: var(--gray-400);
+    font-family: 'SF Mono', monospace;
+    margin-bottom: 2px;
+  }
+  .timeline-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-800);
+  }
+  .timeline-body {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-top: 2px;
+  }
+
+  /* ========== Empty State ========== */
+  .empty-state {
+    text-align: center;
+    padding: var(--sp-12) var(--sp-8);
+    color: var(--gray-400);
+  }
+  .empty-state-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto var(--sp-4);
+    background: var(--gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .empty-state-icon svg { width: 24px; height: 24px; stroke: var(--gray-400); fill: none; }
+  .empty-state-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: var(--sp-1);
+  }
+  .empty-state-desc {
+    font-size: 13px;
+    color: var(--gray-400);
+  }
+
+  /* ========== Version Bind ========== */
+  .version-bind {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--gray-600);
+  }
+  .version-bind-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--gray-200);
+  }
+  .version-bind-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px;
+    color: var(--gray-400);
+    font-weight: 500;
+  }
+
+  /* ========== Shadow & Radius Demo ========== */
+  .demo-box {
+    width: 160px;
+    height: 80px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--gray-500);
+  }
+  .demo-box-label { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- ========== Sidebar ========== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Rebuild3</h2>
+      <span>Design System v1.0</span>
+    </div>
+    <nav>
+      <div class="nav-group">基础</div>
+      <a href="#colors">色彩系统</a>
+      <a href="#typography">排版</a>
+      <a href="#spacing">间距</a>
+      <a href="#shadows">阴影与圆角</a>
+      <div class="nav-group">组件</div>
+      <a href="#lifecycle-badges">生命周期标记</a>
+      <a href="#health-badges">健康状态标记</a>
+      <a href="#qualification-tags">资格标签</a>
+      <a href="#watch-indicator">WATCH 指示</a>
+      <a href="#fact-badges">事实层标记</a>
+      <a href="#metric-cards">指标卡片</a>
+      <a href="#buttons">按钮</a>
+      <a href="#table">表格</a>
+      <a href="#progress">进度条</a>
+      <a href="#timeline">时间线</a>
+      <a href="#empty-state">空状态</a>
+      <a href="#version-bind">版本绑定</a>
+    </nav>
+  </aside>
+
+  <!-- ========== Main Content ========== -->
+  <main class="main">
+
+    <!-- Title -->
+    <div style="margin-bottom: var(--sp-12);">
+      <h1 style="font-size: 28px; font-weight: 700; color: var(--gray-900); letter-spacing: -0.03em;">Rebuild3 Design System</h1>
+      <p style="font-size: 14px; color: var(--gray-500); margin-top: var(--sp-2);">
+        通信基础设施治理系统 &mdash; 轻盈、干净、宽敞的桌面端工作台风格
+      </p>
+    </div>
+
+    <!-- ===== 1. Colors ===== -->
+    <section class="section" id="colors">
+      <h2 class="section-title">色彩系统</h2>
+      <p class="section-desc">基于 Indigo/Blue 色谱的主色调，配合完整的语义色彩体系。</p>
+
+      <div class="subsection">
+        <h3 class="subsection-title">主色 Primary</h3>
+        <div class="swatch-grid">
+          <div class="swatch"><div class="swatch-color" style="background:#eef2ff"></div><div class="swatch-info"><div class="swatch-name">Indigo-50</div><div class="swatch-hex">#eef2ff</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#e0e7ff"></div><div class="swatch-info"><div class="swatch-name">Indigo-100</div><div class="swatch-hex">#e0e7ff</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#6366f1"></div><div class="swatch-info"><div class="swatch-name">Indigo-500</div><div class="swatch-hex">#6366f1</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#4f46e5"></div><div class="swatch-info"><div class="swatch-name">Indigo-600</div><div class="swatch-hex">#4f46e5</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#4338ca"></div><div class="swatch-info"><div class="swatch-name">Indigo-700</div><div class="swatch-hex">#4338ca</div></div></div>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">中性色 Neutral</h3>
+        <div class="swatch-grid">
+          <div class="swatch"><div class="swatch-color" style="background:#ffffff; border-bottom: 1px solid #e5e7eb;"></div><div class="swatch-info"><div class="swatch-name">White</div><div class="swatch-hex">#ffffff</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#f9fafb"></div><div class="swatch-info"><div class="swatch-name">Gray-50</div><div class="swatch-hex">#f9fafb</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#f3f4f6"></div><div class="swatch-info"><div class="swatch-name">Gray-100</div><div class="swatch-hex">#f3f4f6</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#e5e7eb"></div><div class="swatch-info"><div class="swatch-name">Gray-200</div><div class="swatch-hex">#e5e7eb</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#9ca3af"></div><div class="swatch-info"><div class="swatch-name">Gray-400</div><div class="swatch-hex">#9ca3af</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#4b5563"></div><div class="swatch-info"><div class="swatch-name">Gray-600</div><div class="swatch-hex">#4b5563</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#111827"></div><div class="swatch-info"><div class="swatch-name">Gray-900</div><div class="swatch-hex">#111827</div></div></div>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">语义色 Semantic</h3>
+        <div class="swatch-grid">
+          <div class="swatch"><div class="swatch-color" style="background:#22c55e"></div><div class="swatch-info"><div class="swatch-name">Green-500 活跃/健康</div><div class="swatch-hex">#22c55e</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#f0fdf4"></div><div class="swatch-info"><div class="swatch-name">Green-50</div><div class="swatch-hex">#f0fdf4</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#f59e0b"></div><div class="swatch-info"><div class="swatch-name">Amber-500 等待/观察</div><div class="swatch-hex">#f59e0b</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#fffbeb"></div><div class="swatch-info"><div class="swatch-name">Amber-50</div><div class="swatch-hex">#fffbeb</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#f97316"></div><div class="swatch-info"><div class="swatch-name">Orange-500 问题/异常</div><div class="swatch-hex">#f97316</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#fff7ed"></div><div class="swatch-info"><div class="swatch-name">Orange-50</div><div class="swatch-hex">#fff7ed</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#ef4444"></div><div class="swatch-info"><div class="swatch-name">Red-500 驳回</div><div class="swatch-hex">#ef4444</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#60a5fa"></div><div class="swatch-info"><div class="swatch-name">Blue-400 动态</div><div class="swatch-hex">#60a5fa</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#a78bfa"></div><div class="swatch-info"><div class="swatch-name">Purple-400 迁移</div><div class="swatch-hex">#a78bfa</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#9ca3af"></div><div class="swatch-info"><div class="swatch-name">Gray-400 休眠</div><div class="swatch-hex">#9ca3af</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#d1d5db"></div><div class="swatch-info"><div class="swatch-name">Gray-300 退役</div><div class="swatch-hex">#d1d5db</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 2. Typography ===== -->
+    <section class="section" id="typography">
+      <h2 class="section-title">排版</h2>
+      <p class="section-desc">使用系统字体栈，确保在各平台下获得最佳渲染效果。</p>
+
+      <div class="card">
+        <div class="type-row">
+          <div class="type-label">H1 &middot; 24px/700</div>
+          <div style="font-size:24px; font-weight:700; letter-spacing:-0.02em;">基站治理工作台</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">H2 &middot; 20px/600</div>
+          <div style="font-size:20px; font-weight:600;">质心分类总览</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">H3 &middot; 16px/600</div>
+          <div style="font-size:16px; font-weight:600;">观察期进度</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">H4 &middot; 14px/600</div>
+          <div style="font-size:14px; font-weight:600;">GPS 采样点阈值</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">Body &middot; 14px/400</div>
+          <div style="font-size:14px; font-weight:400; color:var(--gray-900);">该基站在最近 30 天内共采集到 2,847 条 GPS 定位数据，质心漂移幅度 32m。</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">Secondary &middot; 13px</div>
+          <div style="font-size:13px; font-weight:400; color:var(--gray-600);">上次治理运行于 2026-04-02 03:00 UTC+8</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">Caption &middot; 12px</div>
+          <div style="font-size:12px; font-weight:400; color:var(--gray-400);">run_id: R-20260402-003 | batch: B-20260402</div>
+        </div>
+        <div class="type-row" style="border-bottom:none;">
+          <div class="type-label">Mono &middot; 12px</div>
+          <div class="mono">ci_id: 460-00-12345-67 &nbsp; lat: 31.230416 &nbsp; lon: 121.473701</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. Spacing ===== -->
+    <section class="section" id="spacing">
+      <h2 class="section-title">间距</h2>
+      <p class="section-desc">基于 4px 基础单元的间距体系。</p>
+
+      <div class="card">
+        <div class="spacing-row"><div class="spacing-label">4px</div><div class="spacing-bar" style="width:4px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">8px</div><div class="spacing-bar" style="width:8px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">12px</div><div class="spacing-bar" style="width:12px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">16px</div><div class="spacing-bar" style="width:16px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">20px</div><div class="spacing-bar" style="width:20px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">24px</div><div class="spacing-bar" style="width:24px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">32px</div><div class="spacing-bar" style="width:32px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">40px</div><div class="spacing-bar" style="width:40px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">48px</div><div class="spacing-bar" style="width:48px;"></div></div>
+        <div class="spacing-row"><div class="spacing-label">64px</div><div class="spacing-bar" style="width:64px;"></div></div>
+      </div>
+    </section>
+
+    <!-- ===== 4. Shadows & Borders ===== -->
+    <section class="section" id="shadows">
+      <h2 class="section-title">阴影与圆角</h2>
+      <p class="section-desc">克制的阴影与统一的圆角，营造轻盈层次感。</p>
+
+      <div class="flex gap-6" style="margin-bottom: var(--sp-6);">
+        <div class="demo-box" style="box-shadow: var(--shadow-sm); border-radius: var(--radius-md);">
+          shadow-sm
+          <div class="demo-box-label">0 1px 2px</div>
+        </div>
+        <div class="demo-box" style="box-shadow: var(--shadow-card); border-radius: var(--radius-md);">
+          shadow-card
+          <div class="demo-box-label">0 1px 3px</div>
+        </div>
+        <div class="demo-box" style="box-shadow: var(--shadow-md); border-radius: var(--radius-md);">
+          shadow-md
+          <div class="demo-box-label">0 4px 12px</div>
+        </div>
+      </div>
+      <div class="flex gap-6">
+        <div class="demo-box" style="border-radius: var(--radius-sm); box-shadow: var(--shadow-card);">
+          radius-sm
+          <div class="demo-box-label">4px</div>
+        </div>
+        <div class="demo-box" style="border-radius: var(--radius-md); box-shadow: var(--shadow-card);">
+          radius-md
+          <div class="demo-box-label">6px</div>
+        </div>
+        <div class="demo-box" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-card);">
+          radius-lg
+          <div class="demo-box-label">8px</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 5. Lifecycle Badges ===== -->
+    <section class="section" id="lifecycle-badges">
+      <h2 class="section-title">生命周期标记 lifecycle_state</h2>
+      <p class="section-desc">6 种生命周期阶段的视觉标识。</p>
+
+      <div class="card">
+        <div class="flex flex-wrap gap-3">
+          <span class="badge badge-waiting"><span class="badge-dot"></span>等待中</span>
+          <span class="badge badge-observing"><span class="badge-dot"></span>观察中</span>
+          <span class="badge badge-active"><span class="badge-dot"></span>活跃</span>
+          <span class="badge badge-dormant"><span class="badge-dot"></span>休眠</span>
+          <span class="badge badge-retired"><span class="badge-dot"></span>退役</span>
+          <span class="badge badge-rejected"><span class="badge-dot"></span>驳回</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. Health Badges ===== -->
+    <section class="section" id="health-badges">
+      <h2 class="section-title">健康状态标记 health_state</h2>
+      <p class="section-desc">7 种健康状态的视觉标识，带图标前缀。</p>
+
+      <div class="card">
+        <div class="flex flex-wrap gap-3">
+          <span class="badge badge-healthy">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 4.5L6.5 11.5L2.5 7.5"/></svg>
+            健康
+          </span>
+          <span class="badge badge-anomaly">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10.5v.5"/></svg>
+            异常
+          </span>
+          <span class="badge badge-issue">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L14 13H2L8 2Z"/><path d="M8 7v2.5M8 11.5v.5"/></svg>
+            问题
+          </span>
+          <span class="badge badge-dynamic">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8c0-3.3 2.7-6 6-6M14 8c0 3.3-2.7 6-6 6"/><path d="M12 2l2 2-2 2M4 14l-2-2 2-2"/></svg>
+            动态
+          </span>
+          <span class="badge badge-migration">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M10 5l3 3-3 3"/></svg>
+            迁移
+          </span>
+          <span class="badge badge-silent">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></svg>
+            沉默
+          </span>
+          <span class="badge badge-unknown">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M6 6.5a2 2 0 013 1.7c0 1-1.5 1.3-1.5 2.3M8 12.5v.5"/></svg>
+            未知
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 7. Qualification Tags ===== -->
+    <section class="section" id="qualification-tags">
+      <h2 class="section-title">资格标签 Qualification</h2>
+      <p class="section-desc">锚定资格与基线资格的启用/禁用两态。</p>
+
+      <div class="card">
+        <div class="flex flex-wrap gap-3" style="margin-bottom: var(--sp-4);">
+          <span class="tag tag-enabled">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 4.5L6.5 11.5L2.5 7.5"/></svg>
+            可锚定
+          </span>
+          <span class="tag tag-disabled">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            可锚定
+          </span>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <span class="tag tag-enabled">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 4.5L6.5 11.5L2.5 7.5"/></svg>
+            基线候选
+          </span>
+          <span class="tag tag-disabled">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            基线候选
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 8. Watch Indicator ===== -->
+    <section class="section" id="watch-indicator">
+      <h2 class="section-title">WATCH 指示器</h2>
+      <p class="section-desc">标记需要人工关注的基站。</p>
+
+      <div class="card">
+        <div class="flex items-center gap-4">
+          <span class="badge badge-watch">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>
+            WATCH
+          </span>
+          <span style="font-size: 13px; color: var(--gray-500);">ci_id: 460-00-98765-43 &mdash; 质心连续漂移 3 期</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 9. Fact Layer Badges ===== -->
+    <section class="section" id="fact-badges">
+      <h2 class="section-title">事实层标记 Fact Layer</h2>
+      <p class="section-desc">4 种事实层状态标记。</p>
+
+      <div class="card">
+        <div class="flex flex-wrap gap-3">
+          <span class="badge badge-governed">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l3 3 5-6"/></svg>
+            已治理
+          </span>
+          <span class="badge badge-pending-obs">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>
+            待观察
+          </span>
+          <span class="badge badge-pending-iss">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L14 13H2L8 2Z"/><path d="M8 7v2.5"/></svg>
+            待处理
+          </span>
+          <span class="badge badge-fact-rejected">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            已驳回
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 10. Metric Cards ===== -->
+    <section class="section" id="metric-cards">
+      <h2 class="section-title">指标卡片</h2>
+      <p class="section-desc">关键统计数据的卡片展示，支持趋势箭头。</p>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">治理基站总数</div>
+          <div class="metric-value">12,847</div>
+          <div class="metric-trend trend-up">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l5-6 5 6"/></svg>
+            +3.2%
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">活跃基站</div>
+          <div class="metric-value">9,651</div>
+          <div class="metric-trend trend-up">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l5-6 5 6"/></svg>
+            +1.8%
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">异常基站</div>
+          <div class="metric-value">284</div>
+          <div class="metric-trend trend-down">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5l5 6 5-6"/></svg>
+            -12.5%
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">WATCH 观察中</div>
+          <div class="metric-value">37</div>
+          <div class="metric-trend trend-flat">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10"/></svg>
+            +0
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 11. Buttons ===== -->
+    <section class="section" id="buttons">
+      <h2 class="section-title">按钮</h2>
+      <p class="section-desc">四种按钮风格：主要、次要、危险、幽灵。</p>
+
+      <div class="card">
+        <div class="flex flex-wrap gap-3 items-center">
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+            新建治理批次
+          </button>
+          <button class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M10 5l3 3-3 3"/></svg>
+            导出报告
+          </button>
+          <button class="btn btn-danger">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            驳回
+          </button>
+          <button class="btn btn-ghost">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>
+            查看历史
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 12. Table ===== -->
+    <section class="section" id="table">
+      <h2 class="section-title">表格</h2>
+      <p class="section-desc">包含全部状态标记的典型数据行。</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>CI 标识</th>
+              <th>小区名称</th>
+              <th>生命周期</th>
+              <th>健康状态</th>
+              <th>事实层</th>
+              <th>GPS 点数</th>
+              <th>质心漂移</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="mono">460-00-12345-01</span></td>
+              <td>浦东新区张江高科</td>
+              <td><span class="badge badge-active"><span class="badge-dot"></span>活跃</span></td>
+              <td><span class="badge badge-healthy">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 4.5L6.5 11.5L2.5 7.5"/></svg>健康</span></td>
+              <td><span class="badge badge-governed">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l3 3 5-6"/></svg>已治理</span></td>
+              <td>142</td>
+              <td>12m</td>
+              <td><button class="btn btn-ghost" style="padding:4px 8px; font-size:12px;">详情</button></td>
+            </tr>
+            <tr>
+              <td><span class="mono">460-00-12345-02</span></td>
+              <td>黄浦区南京东路</td>
+              <td><span class="badge badge-observing"><span class="badge-dot"></span>观察中</span></td>
+              <td><span class="badge badge-anomaly">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10.5v.5"/></svg>异常</span>
+                <span class="badge badge-watch" style="margin-left:4px;">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>WATCH</span></td>
+              <td><span class="badge badge-pending-obs">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>待观察</span></td>
+              <td>8</td>
+              <td>87m</td>
+              <td><button class="btn btn-ghost" style="padding:4px 8px; font-size:12px;">详情</button></td>
+            </tr>
+            <tr>
+              <td><span class="mono">460-00-98765-43</span></td>
+              <td>徐汇区漕河泾</td>
+              <td><span class="badge badge-waiting"><span class="badge-dot"></span>等待中</span></td>
+              <td><span class="badge badge-dynamic">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8c0-3.3 2.7-6 6-6M14 8c0 3.3-2.7 6-6 6"/><path d="M12 2l2 2-2 2M4 14l-2-2 2-2"/></svg>动态</span></td>
+              <td><span class="badge badge-pending-iss">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L14 13H2L8 2Z"/><path d="M8 7v2.5"/></svg>待处理</span></td>
+              <td>3</td>
+              <td>--</td>
+              <td><button class="btn btn-ghost" style="padding:4px 8px; font-size:12px;">详情</button></td>
+            </tr>
+            <tr>
+              <td><span class="mono">460-00-55555-10</span></td>
+              <td>闵行区虹桥枢纽</td>
+              <td><span class="badge badge-dormant"><span class="badge-dot"></span>休眠</span></td>
+              <td><span class="badge badge-silent">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></svg>沉默</span></td>
+              <td><span class="badge badge-governed">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l3 3 5-6"/></svg>已治理</span></td>
+              <td>0</td>
+              <td>--</td>
+              <td><button class="btn btn-ghost" style="padding:4px 8px; font-size:12px;">详情</button></td>
+            </tr>
+            <tr>
+              <td><span class="mono">460-00-77777-05</span></td>
+              <td>静安区南京西路</td>
+              <td><span class="badge badge-rejected"><span class="badge-dot"></span>驳回</span></td>
+              <td><span class="badge badge-issue">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L14 13H2L8 2Z"/><path d="M8 7v2.5M8 11.5v.5"/></svg>问题</span></td>
+              <td><span class="badge badge-fact-rejected">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>已驳回</span></td>
+              <td>1</td>
+              <td>1,240m</td>
+              <td><button class="btn btn-ghost" style="padding:4px 8px; font-size:12px;">详情</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== 13. Progress ===== -->
+    <section class="section" id="progress">
+      <h2 class="section-title">进度条</h2>
+      <p class="section-desc">阈值进度展示，如 GPS 采样点数量。</p>
+
+      <div class="card">
+        <div class="progress-wrapper">
+          <div class="progress-header">
+            <span class="progress-header-label">GPS 采样点数</span>
+            <span class="progress-header-value">8 / 10</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-primary" style="width:80%"></div>
+          </div>
+        </div>
+        <div class="progress-wrapper">
+          <div class="progress-header">
+            <span class="progress-header-label">观察期进度</span>
+            <span class="progress-header-value">5 / 7 天</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-green" style="width:71.4%"></div>
+          </div>
+        </div>
+        <div class="progress-wrapper">
+          <div class="progress-header">
+            <span class="progress-header-label">质心稳定度</span>
+            <span class="progress-header-value">32m / 50m 阈值</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-amber" style="width:64%"></div>
+          </div>
+        </div>
+        <div class="progress-wrapper" style="margin-bottom:0;">
+          <div class="progress-header">
+            <span class="progress-header-label">漂移告警</span>
+            <span class="progress-header-value">87m / 100m 上限</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-orange" style="width:87%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 14. Timeline ===== -->
+    <section class="section" id="timeline">
+      <h2 class="section-title">时间线</h2>
+      <p class="section-desc">基站状态变更的时序记录。</p>
+
+      <div class="card">
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot timeline-dot-green"></div>
+            <div class="timeline-time">2026-04-02 03:12:45</div>
+            <div class="timeline-title">状态变更: 观察中 &rarr; 活跃</div>
+            <div class="timeline-body">GPS 采样点达到阈值 (10/10)，质心漂移 &le; 50m，自动升级</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot timeline-dot-amber"></div>
+            <div class="timeline-time">2026-03-26 03:08:21</div>
+            <div class="timeline-title">状态变更: 等待中 &rarr; 观察中</div>
+            <div class="timeline-body">首次满足最低 GPS 采样条件 (3/3)，进入 7 天观察期</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot timeline-dot-primary"></div>
+            <div class="timeline-time">2026-03-20 03:05:10</div>
+            <div class="timeline-title">新基站入网</div>
+            <div class="timeline-body">ci_id: 460-00-12345-01 首次出现在 L0 GPS 数据中，初始化为等待中</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot timeline-dot-orange"></div>
+            <div class="timeline-time">2026-03-18 10:30:00</div>
+            <div class="timeline-title">异常标记: WATCH</div>
+            <div class="timeline-body">ci_id: 460-00-98765-43 质心连续漂移超过 3 期，标记为 WATCH</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 15. Empty State ===== -->
+    <section class="section" id="empty-state">
+      <h2 class="section-title">空状态</h2>
+      <p class="section-desc">无数据时的占位提示。</p>
+
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.2-5.2M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <div class="empty-state-title">暂无匹配的基站数据</div>
+          <div class="empty-state-desc">请调整筛选条件或清除搜索关键词后重试</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 16. Version Bind ===== -->
+    <section class="section" id="version-bind">
+      <h2 class="section-title">版本绑定</h2>
+      <p class="section-desc">run_id / batch_id / baseline_version 的统一展示格式。</p>
+
+      <div class="card">
+        <div style="display: flex; flex-direction: column; gap: var(--sp-4);">
+          <div>
+            <div style="font-size:12px; color:var(--gray-400); margin-bottom:var(--sp-1);">完整版本绑定</div>
+            <div class="version-bind">
+              <span><span class="version-bind-label">run_id</span> R-20260402-003</span>
+              <span class="version-bind-sep"></span>
+              <span><span class="version-bind-label">batch_id</span> B-20260402</span>
+              <span class="version-bind-sep"></span>
+              <span><span class="version-bind-label">baseline</span> v3.1.7</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--gray-400); margin-bottom:var(--sp-1);">单独 run_id</div>
+            <div class="version-bind">
+              <span><span class="version-bind-label">run_id</span> R-20260401-001</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--gray-400); margin-bottom:var(--sp-1);">batch + baseline</div>
+            <div class="version-bind">
+              <span><span class="version-bind-label">batch_id</span> B-20260331</span>
+              <span class="version-bind-sep"></span>
+              <span><span class="version-bind-label">baseline</span> v3.1.6</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div style="padding: var(--sp-8) 0; border-top: 1px solid var(--gray-200); margin-top: var(--sp-8); font-size: 12px; color: var(--gray-400);">
+      Rebuild3 Design System v1.0 &mdash; 通信基础设施治理系统 &mdash; 2026-04-03 生成
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

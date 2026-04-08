@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>共享组件展示 — rebuild3 UI v2</title>
+<style>
+  :root {
+    --c-indigo-50:#EEF2FF; --c-indigo-100:#E0E7FF; --c-indigo-500:#6366F1; --c-indigo-600:#4F46E5; --c-indigo-700:#4338CA; --c-indigo-950:#1E1B4B;
+    --c-green-50:#F0FDF4; --c-green-400:#4ADE80; --c-green-500:#22C55E; --c-green-600:#16A34A;
+    --c-red-50:#FEF2F2; --c-red-400:#F87171; --c-red-500:#EF4444; --c-red-600:#DC2626;
+    --c-orange-50:#FFF7ED; --c-orange-400:#FB923C; --c-orange-500:#F97316; --c-orange-600:#EA580C;
+    --c-amber-50:#FFFBEB; --c-amber-400:#FBBF24; --c-amber-500:#F59E0B;
+    --c-blue-50:#EFF6FF; --c-blue-400:#60A5FA; --c-blue-600:#2563EB;
+    --c-purple-50:#FAF5FF; --c-purple-400:#A78BFA; --c-purple-600:#9333EA;
+    --c-gray-50:#F9FAFB; --c-gray-100:#F3F4F6; --c-gray-200:#E5E7EB; --c-gray-300:#D1D5DB; --c-gray-400:#9CA3AF; --c-gray-500:#6B7280; --c-gray-600:#4B5563; --c-gray-700:#374151; --c-gray-800:#1F2937; --c-gray-900:#111827;
+    --c-white:#FFFFFF;
+    --radius: 12px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    color: var(--c-gray-800); background: var(--c-gray-50); line-height: 1.6;
+    padding: 32px 48px; max-width: 1200px; margin: 0 auto;
+  }
+  h1 { font-size: 24px; font-weight: 700; color: var(--c-gray-900); margin-bottom: 8px; }
+  h2 { font-size: 18px; font-weight: 600; color: var(--c-gray-900); margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--c-gray-200); }
+  h3 { font-size: 14px; font-weight: 600; color: var(--c-gray-700); margin-bottom: 8px; }
+  .subtitle { color: var(--c-gray-500); font-size: 14px; margin-bottom: 32px; }
+  a { color: var(--c-indigo-600); text-decoration: none; }
+
+  .showcase { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 24px; }
+  .showcase-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* ── Lifecycle Badges ── */
+  .badge-lifecycle {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .badge-lifecycle .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .badge-lifecycle.waiting { background: #FFFBEB; color: #92400E; }
+  .badge-lifecycle.waiting .dot { background: var(--c-amber-400); }
+  .badge-lifecycle.observing { background: #FEF3C7; color: #78350F; }
+  .badge-lifecycle.observing .dot { background: var(--c-amber-500); }
+  .badge-lifecycle.active { background: var(--c-green-50); color: #166534; }
+  .badge-lifecycle.active .dot { background: var(--c-green-500); }
+  .badge-lifecycle.dormant { background: var(--c-gray-100); color: var(--c-gray-600); }
+  .badge-lifecycle.dormant .dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--c-gray-400); background: transparent; }
+  .badge-lifecycle.retired { background: var(--c-gray-50); color: var(--c-gray-400); text-decoration: line-through; }
+  .badge-lifecycle.retired .dot { background: var(--c-gray-300); }
+  .badge-lifecycle.rejected { background: var(--c-red-50); color: #991B1B; }
+  .badge-lifecycle.rejected .dot { background: var(--c-red-500); }
+
+  /* Observing mini progress */
+  .badge-lifecycle.observing .mini-bar { width: 24px; height: 4px; background: #FDE68A; border-radius: 2px; overflow: hidden; }
+  .badge-lifecycle.observing .mini-bar .fill { height: 100%; background: var(--c-amber-500); border-radius: 2px; }
+
+  /* ── Health Badges ── */
+  .badge-health {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  }
+  .badge-health.healthy { color: #166534; }
+  .badge-health.healthy .icon { color: var(--c-green-500); }
+  .badge-health.insufficient { color: var(--c-gray-500); }
+  .badge-health.gps_bias { color: #9A3412; }
+  .badge-health.gps_bias .icon { color: var(--c-orange-400); }
+  .badge-health.collision_suspect { color: #9A3412; }
+  .badge-health.collision_suspect .icon { color: var(--c-orange-500); }
+  .badge-health.collision_confirmed { color: #991B1B; }
+  .badge-health.collision_confirmed .icon { color: var(--c-red-500); }
+  .badge-health.dynamic { color: #1E40AF; }
+  .badge-health.dynamic .icon { color: var(--c-blue-400); }
+  .badge-health.migration_suspect { color: #6B21A8; }
+  .badge-health.migration_suspect .icon { color: var(--c-purple-400); }
+
+  /* ── Qualification Tags ── */
+  .qual-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  }
+  .qual-tag.enabled { background: var(--c-green-50); color: #166534; }
+  .qual-tag.disabled { background: var(--c-gray-100); color: var(--c-gray-500); }
+
+  /* ── WATCH indicator ── */
+  .watch-badge {
+    display: inline-block; background: var(--c-orange-500); color: white;
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  .watch-row-demo {
+    border-left: 3px solid var(--c-orange-500);
+    background: #FFF7ED;
+    padding: 8px 12px; border-radius: 0 8px 8px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  /* ── Fact Layer Badges ── */
+  .fact-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    border-left: 3px solid;
+  }
+  .fact-badge.governed { background: var(--c-green-50); border-color: var(--c-green-500); color: #166534; }
+  .fact-badge.pending_obs { background: var(--c-amber-50); border-color: var(--c-amber-500); color: #92400E; }
+  .fact-badge.pending_issue { background: var(--c-orange-50); border-color: var(--c-orange-500); color: #9A3412; }
+  .fact-badge.rejected { background: var(--c-red-50); border-color: var(--c-red-500); color: #991B1B; }
+
+  /* ── Delta Indicator ── */
+  .delta {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 12px; font-weight: 600;
+  }
+  .delta.improve { color: var(--c-green-600); }
+  .delta.worsen { color: var(--c-red-600); }
+  .delta.neutral { color: var(--c-gray-400); }
+  .delta .arrow { font-size: 14px; }
+
+  /* ── Metric Card with Delta ── */
+  .metric-card {
+    background: var(--c-white); border-radius: var(--radius); box-shadow: var(--shadow-card);
+    padding: 16px 20px; min-width: 220px;
+  }
+  .metric-card .label { font-size: 12px; color: var(--c-gray-500); font-weight: 500; margin-bottom: 4px; }
+  .metric-card .value { font-size: 24px; font-weight: 700; color: var(--c-gray-900); }
+  .metric-card .meta { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; color: var(--c-gray-500); }
+
+  /* ── Progress Bar ── */
+  .progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .progress-label { font-size: 12px; color: var(--c-gray-600); width: 100px; flex-shrink: 0; }
+  .progress-bar { flex: 1; height: 8px; background: var(--c-gray-200); border-radius: 4px; overflow: hidden; }
+  .progress-bar .fill { height: 100%; border-radius: 4px; transition: width .3s; }
+  .progress-bar .fill.green { background: var(--c-green-500); }
+  .progress-bar .fill.yellow { background: var(--c-amber-500); }
+  .progress-bar .fill.red { background: var(--c-red-400); }
+  .progress-num { font-size: 12px; font-weight: 600; color: var(--c-gray-700); width: 48px; text-align: right; }
+
+  /* ── Trend Indicator ── */
+  .trend { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+  .trend.advancing { background: var(--c-green-50); color: var(--c-green-600); }
+  .trend.stalled { background: var(--c-gray-100); color: var(--c-gray-500); }
+  .trend.regressing { background: var(--c-red-50); color: var(--c-red-600); }
+
+  /* ── Suggested Action Badge ── */
+  .action-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  }
+  .action-badge.continue { background: var(--c-gray-100); color: var(--c-gray-600); }
+  .action-badge.promote { background: var(--c-green-50); color: var(--c-green-600); border: 1.5px solid var(--c-green-400); }
+  .action-badge.attention { background: #FFFBEB; color: #92400E; border: 1.5px solid var(--c-amber-400); }
+  .action-badge.to-issue { background: var(--c-orange-50); color: #9A3412; border: 1.5px solid var(--c-orange-400); }
+  .action-badge.reject { background: var(--c-red-50); color: #991B1B; border: 1.5px solid var(--c-red-400); }
+
+  /* ── Severity Badge ── */
+  .severity { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: white; }
+  .severity.high { background: var(--c-red-500); }
+  .severity.medium { background: var(--c-orange-500); }
+  .severity.low { background: var(--c-amber-400); color: #78350F; }
+
+  /* ── Rerun Badge ── */
+  .rerun-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    color: var(--c-purple-600); border: 1.5px dashed var(--c-purple-400); background: var(--c-purple-50);
+  }
+
+  /* ── Batch Flow Mini Diagram ── */
+  .flow-mini { display: flex; align-items: center; gap: 2px; height: 20px; }
+  .flow-mini .bar { height: 100%; border-radius: 2px; }
+  .flow-mini .bar.governed { background: var(--c-green-500); }
+  .flow-mini .bar.pending-obs { background: var(--c-amber-500); }
+  .flow-mini .bar.pending-issue { background: var(--c-orange-500); }
+  .flow-mini .bar.rejected-bar { background: var(--c-red-500); }
+
+  /* ── Global Status Bar ── */
+  .global-bar { padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; }
+  .global-bar.normal { background: var(--c-green-50); color: var(--c-green-600); }
+  .global-bar.processing { background: var(--c-blue-50); color: var(--c-blue-600); }
+  .global-bar.rerun { background: var(--c-purple-50); color: var(--c-purple-600); }
+  .global-bar.validation { background: var(--c-gray-100); color: var(--c-gray-600); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 1.5s infinite; }
+  .pulse.green { background: var(--c-green-500); }
+  .pulse.blue { background: var(--c-blue-600); }
+  .pulse.purple { background: var(--c-purple-600); }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; }
+  .btn-primary { background: var(--c-indigo-600); color: white; }
+  .btn-primary:hover { background: var(--c-indigo-700); }
+  .btn-secondary { background: var(--c-white); color: var(--c-gray-700); border: 1px solid var(--c-gray-200); }
+  .btn-secondary:hover { background: var(--c-gray-50); border-color: var(--c-gray-300); }
+  .btn-danger { background: var(--c-white); color: var(--c-red-600); border: 1.5px dashed var(--c-red-400); }
+  .btn-danger:hover { background: var(--c-red-50); }
+
+  /* ── Timeline ── */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 2px; background: var(--c-gray-200); }
+  .timeline-item { position: relative; margin-bottom: 16px; }
+  .timeline-item .tl-dot { position: absolute; left: -20px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; }
+  .timeline-item .tl-time { font-size: 11px; color: var(--c-gray-400); }
+  .timeline-item .tl-content { font-size: 13px; color: var(--c-gray-700); }
+
+  /* ── Table Demo ── */
+  .demo-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .demo-table th { text-align: left; padding: 8px 12px; background: var(--c-gray-50); color: var(--c-gray-500); font-weight: 600; border-bottom: 1px solid var(--c-gray-200); }
+  .demo-table td { padding: 10px 12px; border-bottom: 1px solid var(--c-gray-100); }
+  .demo-table tr:hover td { background: var(--c-indigo-50); }
+
+  .back-link { display: inline-block; margin-bottom: 24px; color: var(--c-indigo-600); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-link">← 返回导航</a>
+<h1>共享组件展示</h1>
+<p class="subtitle">rebuild3 UI v2 可复用组件规范与交互状态展示</p>
+
+<!-- ════ 1. Lifecycle Badges ════ -->
+<h2>1. 生命周期状态徽标 (LifecycleBadge)</h2>
+<div class="showcase">
+  <span class="badge-lifecycle waiting"><span class="dot"></span>等待</span>
+  <span class="badge-lifecycle observing"><span class="dot"></span>观察 <span class="mini-bar"><span class="fill" style="width:70%"></span></span></span>
+  <span class="badge-lifecycle active"><span class="dot"></span>活跃</span>
+  <span class="badge-lifecycle dormant"><span class="dot"></span>休眠</span>
+  <span class="badge-lifecycle retired"><span class="dot"></span>退役</span>
+  <span class="badge-lifecycle rejected"><span class="dot"></span>拒收</span>
+</div>
+
+<!-- ════ 2. Health Badges ════ -->
+<h2>2. 健康状态徽标 (HealthBadge)</h2>
+<div class="showcase">
+  <span class="badge-health healthy"><span class="icon">✓</span> 健康</span>
+  <span class="badge-health insufficient"><span class="icon">?</span> 数据不足</span>
+  <span class="badge-health gps_bias"><span class="icon">⊕</span> GPS偏差</span>
+  <span class="badge-health collision_suspect"><span class="icon">△</span> 碰撞嫌疑</span>
+  <span class="badge-health collision_confirmed"><span class="icon">⊘</span> 碰撞确认</span>
+  <span class="badge-health dynamic"><span class="icon">→</span> 动态</span>
+  <span class="badge-health migration_suspect"><span class="icon">⇢</span> 迁移嫌疑</span>
+</div>
+
+<!-- ════ 3. Qualification Tags ════ -->
+<h2>3. 资格标签 (QualificationTags)</h2>
+<div class="showcase">
+  <span class="qual-tag enabled">🔓 锚点可用</span>
+  <span class="qual-tag disabled">🔒 锚点禁用</span>
+  <span class="qual-tag enabled">📊 基线可用</span>
+  <span class="qual-tag disabled">🚫 基线禁用</span>
+</div>
+
+<!-- ════ 4. WATCH Indicator ════ -->
+<h2>4. WATCH 指示器 (WatchIndicator)</h2>
+<h3>active + health != healthy 时显示</h3>
+<div class="showcase" style="flex-direction: column; align-items: flex-start;">
+  <div class="watch-row-demo">
+    <span class="badge-lifecycle active"><span class="dot"></span>活跃</span>
+    <span class="badge-health gps_bias"><span class="icon">⊕</span> GPS偏差</span>
+    <span class="watch-badge">WATCH</span>
+    <span style="color: var(--c-gray-400); font-size: 12px;">← 橙色左边框 + WATCH 徽标</span>
+  </div>
+  <div style="padding: 8px 12px; display: flex; align-items: center; gap: 12px;">
+    <span class="badge-lifecycle active"><span class="dot"></span>活跃</span>
+    <span class="badge-health healthy"><span class="icon">✓</span> 健康</span>
+    <span style="color: var(--c-gray-400); font-size: 12px;">← 正常行，无橙色标记</span>
+  </div>
+</div>
+
+<!-- ════ 5. Fact Layer Badges ════ -->
+<h2>5. 事实层徽标 (FactLayerBadge)</h2>
+<div class="showcase">
+  <span class="fact-badge governed">✓ 已治理 (governed)</span>
+  <span class="fact-badge pending_obs">⏱ 观察中 (pending_observation)</span>
+  <span class="fact-badge pending_issue">⚠ 待复核 (pending_issue)</span>
+  <span class="fact-badge rejected">⊘ 已拒收 (rejected)</span>
+</div>
+
+<!-- ════ 6. Delta Indicator ════ -->
+<h2>6. Delta 指示器 (DeltaIndicator)</h2>
+<h3>改善/恶化/中性 三种语义</h3>
+<div class="showcase" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+  <div style="font-size: 13px;">
+    活跃对象 <strong>12,847</strong>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    本批 <span class="delta improve">+3</span>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    较上批 <span class="delta improve">+1 <span class="arrow">↑</span></span>
+  </div>
+  <div style="font-size: 13px;">
+    等待池 <strong>1,283</strong>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    本批 <span class="delta worsen">+15</span>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    较上批 <span class="delta improve">-3 <span class="arrow">↓</span></span>
+    <span style="color: var(--c-gray-400); font-size: 11px; margin-left: 8px;">（等待池减少=改善）</span>
+  </div>
+  <div style="font-size: 13px;">
+    异常对象 <strong>47</strong>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    本批 <span class="delta worsen">+2</span>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    较上批 <span class="delta worsen">+2 <span class="arrow">↑</span></span>
+    <span style="color: var(--c-gray-400); font-size: 11px; margin-left: 8px;">（异常增加=恶化，红色）</span>
+  </div>
+  <div style="font-size: 13px;">
+    拒收记录 <strong>940</strong>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    本批 <span class="delta neutral">+940</span>
+    <span style="color: var(--c-gray-400); margin: 0 4px;">|</span>
+    较上批 <span class="delta neutral">— <span class="arrow"></span></span>
+    <span style="color: var(--c-gray-400); font-size: 11px; margin-left: 8px;">（无 delta 用 — 标记）</span>
+  </div>
+</div>
+
+<!-- ════ 7. Metric Card with Delta ════ -->
+<h2>7. Delta 指标卡 (MetricCardWithDelta)</h2>
+<div class="showcase">
+  <div class="metric-card">
+    <div class="label">活跃对象</div>
+    <div class="value">12,847</div>
+    <div class="meta">
+      <span>本批 <span class="delta improve">+3</span></span>
+      <span>较上批 <span class="delta improve">+1 ↑</span></span>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="label">异常对象</div>
+    <div class="value" style="color: var(--c-orange-600);">47</div>
+    <div class="meta">
+      <span>本批 <span class="delta worsen">+2</span></span>
+      <span>较上批 <span class="delta worsen">+2 ↑</span></span>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="label">锚点可用</div>
+    <div class="value">11,234</div>
+    <div class="meta">
+      <span>本批 <span class="delta improve">+2</span></span>
+      <span>较上批 <span class="delta worsen">-5 ↓</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 8. Progress Bar ════ -->
+<h2>8. 门槛进度条 (ThresholdProgressBar)</h2>
+<div style="max-width: 400px;">
+  <div class="progress-row">
+    <span class="progress-label">GPS 有效点数</span>
+    <div class="progress-bar"><div class="fill green" style="width:90%"></div></div>
+    <span class="progress-num">9/10</span>
+  </div>
+  <div class="progress-row">
+    <span class="progress-label">独立设备数</span>
+    <div class="progress-bar"><div class="fill yellow" style="width:50%"></div></div>
+    <span class="progress-num">1/2</span>
+  </div>
+  <div class="progress-row">
+    <span class="progress-label">时间跨度</span>
+    <div class="progress-bar"><div class="fill red" style="width:33%"></div></div>
+    <span class="progress-num">1/3天</span>
+  </div>
+</div>
+
+<!-- ════ 9. Trend Indicator ════ -->
+<h2>9. 推进趋势指示器 (TrendIndicator)</h2>
+<div class="showcase">
+  <span class="trend advancing">↗ 前进中</span>
+  <span class="trend stalled">→ 停滞</span>
+  <span class="trend regressing">↙ 回退</span>
+</div>
+
+<!-- ════ 10. Suggested Action Badge ════ -->
+<h2>10. 建议动作徽标 (SuggestedActionBadge)</h2>
+<div class="showcase">
+  <span class="action-badge continue">继续观察</span>
+  <span class="action-badge promote">即将晋升</span>
+  <span class="action-badge attention">建议关注</span>
+  <span class="action-badge to-issue">建议转问题</span>
+  <span class="action-badge reject">建议拒收</span>
+</div>
+
+<!-- ════ 11. Severity Badge ════ -->
+<h2>11. 严重度徽标 (SeverityBadge)</h2>
+<div class="showcase">
+  <span class="severity high">高</span>
+  <span class="severity medium">中</span>
+  <span class="severity low">低</span>
+</div>
+
+<!-- ════ 12. Rerun Badge ════ -->
+<h2>12. 重跑标记 (RerunBadge)</h2>
+<div class="showcase">
+  <span class="rerun-badge">⟳ 重跑</span>
+  <span style="color: var(--c-gray-400); font-size: 12px;">← 紫色虚线边框，区分正常批次和修复后重跑批次</span>
+</div>
+
+<!-- ════ 13. Batch Flow Mini Diagram ════ -->
+<h2>13. 四分流迷你条形图 (FlowMiniBar)</h2>
+<h3>用于批次列表表格中的内联展示</h3>
+<div class="showcase">
+  <div class="flow-mini" style="width: 200px;">
+    <div class="bar governed" style="width:85%"></div>
+    <div class="bar pending-obs" style="width:10%"></div>
+    <div class="bar pending-issue" style="width:3%"></div>
+    <div class="bar rejected-bar" style="width:2%"></div>
+  </div>
+  <span style="font-size: 12px; color: var(--c-gray-400);">85% / 10% / 3% / 2%</span>
+</div>
+
+<!-- ════ 14. Global Status Bar ════ -->
+<h2>14. 全局状态条 (GlobalStatusBar)</h2>
+<div class="showcase" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+  <div class="global-bar normal"><span class="pulse green"></span> 系统正常运行</div>
+  <div class="global-bar processing"><span class="pulse blue"></span> 批次处理中 BATCH-2026040314</div>
+  <div class="global-bar rerun"><span class="pulse purple"></span> 重跑中 — BATCH-10~BATCH-12</div>
+  <div class="global-bar validation">◉ 验证模式 — 对比 RUN-001 vs RUN-002</div>
+</div>
+
+<!-- ════ 15. Buttons ════ -->
+<h2>15. 按钮 (Buttons)</h2>
+<div class="showcase">
+  <button class="btn btn-primary">主要操作</button>
+  <button class="btn btn-secondary">次要操作</button>
+  <button class="btn btn-danger">⚠ 杀掉端口</button>
+</div>
+
+<!-- ════ 16. Timeline ════ -->
+<h2>16. 状态时间线 (StatusTimeline)</h2>
+<div class="timeline" style="max-width: 400px;">
+  <div class="timeline-item">
+    <div class="tl-dot" style="background: var(--c-orange-400);"></div>
+    <div class="tl-time">2026-04-03 BATCH-14</div>
+    <div class="tl-content">健康状态 → GPS偏差</div>
+  </div>
+  <div class="timeline-item">
+    <div class="tl-dot" style="background: var(--c-gray-400);"></div>
+    <div class="tl-time">2026-04-02 BATCH-08</div>
+    <div class="tl-content">锚点资格 → 禁用</div>
+  </div>
+  <div class="timeline-item">
+    <div class="tl-dot" style="background: var(--c-green-500);"></div>
+    <div class="tl-time">2026-03-28</div>
+    <div class="tl-content">生命周期 → 活跃 (晋升)</div>
+  </div>
+  <div class="timeline-item">
+    <div class="tl-dot" style="background: var(--c-amber-500);"></div>
+    <div class="tl-time">2026-03-25</div>
+    <div class="tl-content">生命周期 → 观察</div>
+  </div>
+  <div class="timeline-item">
+    <div class="tl-dot" style="background: var(--c-amber-400);"></div>
+    <div class="tl-time">2026-03-20</div>
+    <div class="tl-content">生命周期 → 等待 (首次发现)</div>
+  </div>
+</div>
+
+<!-- ════ 17. Table Demo ════ -->
+<h2>17. 数据表格行示例 (DataTable)</h2>
+<table class="demo-table">
+  <thead>
+    <tr>
+      <th>主键</th><th>生命周期</th><th>健康状态</th><th>锚点</th><th>基线</th><th>样本数</th><th>异常</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="font-family: monospace; font-weight: 600;">46000-LTE-12847-3</td>
+      <td><span class="badge-lifecycle active"><span class="dot"></span>活跃</span></td>
+      <td><span class="badge-health healthy"><span class="icon">✓</span> 健康</span></td>
+      <td><span class="qual-tag enabled">🔓</span></td>
+      <td><span class="qual-tag enabled">📊</span></td>
+      <td>2,847</td>
+      <td>—</td>
+    </tr>
+    <tr style="border-left: 3px solid var(--c-orange-500); background: #FFF7ED;">
+      <td style="font-family: monospace; font-weight: 600;">46000-LTE-12848-1</td>
+      <td><span class="badge-lifecycle active"><span class="dot"></span>活跃</span></td>
+      <td><span class="badge-health gps_bias"><span class="icon">⊕</span> GPS偏差</span></td>
+      <td><span class="qual-tag disabled">🔒</span></td>
+      <td><span class="qual-tag disabled">🚫</span></td>
+      <td>1,203</td>
+      <td><span class="watch-badge">WATCH</span></td>
+    </tr>
+    <tr>
+      <td style="font-family: monospace; font-weight: 600;">46001-LTE-8834-7</td>
+      <td><span class="badge-lifecycle waiting"><span class="dot"></span>等待</span></td>
+      <td><span class="badge-health insufficient"><span class="icon">?</span> 数据不足</span></td>
+      <td><span class="qual-tag disabled">🔒</span></td>
+      <td><span class="qual-tag disabled">🚫</span></td>
+      <td>12</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td style="font-family: monospace; font-weight: 600; color: var(--c-gray-400); text-decoration: line-through;">46001-LTE-3379-2</td>
+      <td><span class="badge-lifecycle retired"><span class="dot"></span>退役</span></td>
+      <td><span style="color: var(--c-gray-400);">—</span></td>
+      <td><span class="qual-tag disabled">🔒</span></td>
+      <td><span class="qual-tag disabled">🚫</span></td>
+      <td style="color: var(--c-gray-400);">89</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="margin-top: 48px; text-align: center; color: var(--c-gray-400); font-size: 12px;">
+  rebuild3 UI v2 共享组件 — 2026-04-03
+</div>
+
+</body>
+</html>

@@ -1,0 +1,50 @@
+SET
+SET
+DROP TABLE
+SELECT 100
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 100
+DROP TABLE
+SELECT 100
+DROP TABLE
+SELECT 100
+DROP TABLE
+SELECT 34798
+DROP TABLE
+DROP TABLE
+SELECT 34798
+CREATE INDEX
+ANALYZE
+SELECT 34798
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 34798
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 9
+DROP TABLE
+SELECT 100
+DROP TABLE
+SELECT 9
+psql:rebuild3/backend/sql/init/002_rebuild2_sample_eval.sql:708: NOTICE:  table "r2_cell_state" does not exist, skipping
+DROP TABLE
+SELECT 100
+psql:rebuild3/backend/sql/init/002_rebuild2_sample_eval.sql:782: NOTICE:  table "r2_bs_state" does not exist, skipping
+DROP TABLE
+SELECT 9
+psql:rebuild3/backend/sql/init/002_rebuild2_sample_eval.sql:848: NOTICE:  table "r2_lac_state" does not exist, skipping
+DROP TABLE
+SELECT 9
+psql:rebuild3/backend/sql/init/002_rebuild2_sample_eval.sql:905: NOTICE:  table "r2_fact_semantic" does not exist, skipping
+DROP TABLE
+SELECT 34998

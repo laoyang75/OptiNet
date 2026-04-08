@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rebuild3 — 等待池</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #f3f4f6; color: #111827; }
+  .sidebar-nav a.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+    border-left-color: #6366f1;
+  }
+  .sidebar-nav a .icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 90;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .topbar-context { font-size: 12px; color: #9ca3af; letter-spacing: 0.02em; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    margin-top: 52px;
+    padding: 24px 28px 40px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Summary Cards ── */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .summary-card .sc-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .summary-card .sc-icon.amber { background: #fef3c7; color: #f59e0b; }
+  .summary-card .sc-icon.amber-deep { background: #fde68a; color: #d97706; }
+  .summary-card .sc-icon.green { background: #dcfce7; color: #22c55e; }
+  .summary-card .sc-label { font-size: 12px; color: #9ca3af; margin-bottom: 2px; }
+  .summary-card .sc-value { font-size: 22px; font-weight: 700; color: #111827; }
+  .summary-card .sc-unit { font-size: 12px; color: #9ca3af; font-weight: 400; margin-left: 2px; }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-label {
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 2px;
+    background: #f3f4f6;
+    border-radius: 5px;
+    padding: 2px;
+  }
+  .filter-tab {
+    padding: 5px 12px;
+    font-size: 12.5px;
+    color: #4b5563;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-tab:hover { color: #111827; }
+  .filter-tab.active { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.06); font-weight: 500; }
+  .filter-select {
+    padding: 5px 10px;
+    font-size: 12.5px;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    color: #111827;
+    background: #fff;
+    cursor: pointer;
+  }
+  .filter-search {
+    margin-left: auto;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    color: #111827;
+    background: #fff;
+    width: 220px;
+  }
+  .filter-search::placeholder { color: #9ca3af; }
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    background: #e5e7eb;
+  }
+
+  /* ── Candidate Cards Grid ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .candidate-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 18px 20px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .candidate-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .candidate-card.near-promotion {
+    border-color: #86efac;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(34,197,94,0.15);
+  }
+  .candidate-card.exceeded {
+    border-color: #fca5a5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(239,68,68,0.15);
+  }
+
+  .cc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cc-key {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: -0.3px;
+  }
+  .cc-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .cc-badge.waiting { background: #fef9c3; color: #a16207; }
+  .cc-badge.observing { background: #fde68a; color: #92400e; }
+
+  .cc-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .cc-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* ── Progress Bars ── */
+  .threshold-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .threshold-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .th-label {
+    font-size: 12px;
+    color: #4b5563;
+    width: 80px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .th-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: #f3f4f6;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .th-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  .th-bar.gray { background: #d1d5db; }
+  .th-bar.amber { background: #fbbf24; }
+  .th-bar.green { background: #22c55e; }
+  .th-bar.red { background: #ef4444; }
+  .th-value {
+    font-size: 11.5px;
+    color: #4b5563;
+    width: 80px;
+    text-align: right;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .th-value .check { color: #22c55e; font-weight: 600; }
+  .th-value .warn { color: #f59e0b; }
+  .th-value .exceed { color: #ef4444; font-weight: 600; }
+  .th-value .pending { color: #9ca3af; font-style: italic; }
+
+  /* ── Gap Indicator ── */
+  .gap-indicator {
+    font-size: 12.5px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  .gap-indicator.amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .gap-indicator.red { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .gap-indicator.gray { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
+  .gap-indicator.green { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+  /* ── Card Actions ── */
+  .cc-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+  }
+  .cc-batch {
+    font-size: 11.5px;
+    color: #9ca3af;
+  }
+  .cc-btns {
+    display: flex;
+    gap: 6px;
+  }
+  .btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: #6366f1;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-ghost {
+    background: transparent;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+  }
+  .btn-ghost:hover { background: #f3f4f6; }
+  .btn-subtle {
+    background: transparent;
+    color: #9ca3af;
+    border: 1px solid transparent;
+  }
+  .btn-subtle:hover { color: #4b5563; background: #f9fafb; }
+  .btn-orange {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+  }
+  .btn-orange:hover { background: #ffedd5; }
+  .btn-muted {
+    background: #f9fafb;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* ── Pagination ── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 10px 16px;
+  }
+  .pagination .pg-info {
+    font-size: 13px;
+    color: #4b5563;
+  }
+  .pagination .pg-info strong { color: #111827; }
+  .pg-buttons {
+    display: flex;
+    gap: 4px;
+  }
+  .pg-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fff;
+    color: #4b5563;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pg-btn:hover { background: #f3f4f6; }
+  .pg-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+  .pg-btn.disabled { color: #d1d5db; cursor: default; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">rebuild3</div>
+  <nav class="sidebar-nav">
+    <a href="01_dashboard.html"><span class="icon">📊</span> 仪表盘</a>
+    <a href="#"><span class="icon">▶️</span> 运行中心</a>
+    <a href="03_objects_list.html"><span class="icon">🗂</span> 对象浏览</a>
+    <a href="#" class="active"><span class="icon">⏳</span> 等待池</a>
+    <a href="06_anomaly_board.html"><span class="icon">⚠️</span> 异常看板</a>
+    <a href="#"><span class="icon">📋</span> 批次审查</a>
+    <a href="#"><span class="icon">📏</span> 基线管理</a>
+    <a href="#"><span class="icon">🔄</span> 回放对比</a>
+  </nav>
+</aside>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <span class="topbar-title">等待池</span>
+  <span class="topbar-context">Run #R-20260403 &nbsp;|&nbsp; Batch #B-0403-05 &nbsp;|&nbsp; Baseline v12</span>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- Summary Cards -->
+  <section class="summary-row">
+    <div class="summary-card">
+      <div class="sc-icon amber">⏳</div>
+      <div>
+        <div class="sc-label">等待中</div>
+        <div class="sc-value">847<span class="sc-unit">个 Cell</span></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-icon amber-deep">👁</div>
+      <div>
+        <div class="sc-label">观察中</div>
+        <div class="sc-value">436<span class="sc-unit">个 Cell</span></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-icon green">✅</div>
+      <div>
+        <div class="sc-label">近期晋升 (过去 24h)</div>
+        <div class="sc-value">23<span class="sc-unit">个</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Bar -->
+  <section class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">状态</span>
+      <div class="filter-tabs">
+        <button class="filter-tab active">全部</button>
+        <button class="filter-tab">waiting</button>
+        <button class="filter-tab">observing</button>
+      </div>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">排序</span>
+      <select class="filter-select">
+        <option>最接近晋升</option>
+        <option>首次出现时间</option>
+        <option>GPS 点数</option>
+        <option>设备数</option>
+      </select>
+    </div>
+    <input class="filter-search" type="text" placeholder="搜索 Cell 主键...">
+  </section>
+
+  <!-- Candidate Card Grid -->
+  <section class="card-grid">
+
+    <!-- Card 1: Close to promotion (observing) -->
+    <div class="candidate-card near-promotion">
+      <div class="cc-header">
+        <span class="cc-key">46000-4G-23456-78901</span>
+        <span class="cc-badge observing">observing</span>
+      </div>
+      <div class="cc-meta">
+        <span>首次出现: 2026-03-28</span>
+      </div>
+      <div class="threshold-list">
+        <div class="threshold-item">
+          <span class="th-label">GPS 有效点</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:90%"></div></div>
+          <span class="th-value">9 / 10</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">设备数</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:100%"></div></div>
+          <span class="th-value"><span class="check">2 / 2 ✓</span></span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">活跃天数</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:100%"></div></div>
+          <span class="th-value"><span class="check">3 / 3 ✓</span></span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">P90 半径</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:41%"></div></div>
+          <span class="th-value"><span class="check">620m &lt; 1500m ✓</span></span>
+        </div>
+      </div>
+      <div class="gap-indicator amber">仅差 1 个 GPS 点即可晋升</div>
+      <div class="cc-actions">
+        <span class="cc-batch">最近批次: B-0403-04, +3 新点</span>
+        <div class="cc-btns">
+          <button class="btn btn-subtle">手动晋升</button>
+          <button class="btn btn-primary">查看详情</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Early stage (waiting) -->
+    <div class="candidate-card">
+      <div class="cc-header">
+        <span class="cc-key">46001-4G-23457-78902</span>
+        <span class="cc-badge waiting">waiting</span>
+      </div>
+      <div class="cc-meta">
+        <span>首次出现: 2026-04-02</span>
+      </div>
+      <div class="threshold-list">
+        <div class="threshold-item">
+          <span class="th-label">GPS 有效点</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:30%"></div></div>
+          <span class="th-value">3 / 10</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">设备数</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:50%"></div></div>
+          <span class="th-value">1 / 2</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">活跃天数</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:33%"></div></div>
+          <span class="th-value">1 / 3</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">P90 半径</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:0%"></div></div>
+          <span class="th-value"><span class="pending">待定</span></span>
+        </div>
+      </div>
+      <div class="gap-indicator gray">需要更多设备和时间积累</div>
+      <div class="cc-actions">
+        <span class="cc-batch"></span>
+        <div class="cc-btns">
+          <button class="btn btn-muted">继续观察</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Observing, decent progress -->
+    <div class="candidate-card">
+      <div class="cc-header">
+        <span class="cc-key">46000-4G-23458-78903</span>
+        <span class="cc-badge observing">observing</span>
+      </div>
+      <div class="cc-meta">
+        <span>首次出现: 2026-03-30</span>
+      </div>
+      <div class="threshold-list">
+        <div class="threshold-item">
+          <span class="th-label">GPS 有效点</span>
+          <div class="th-bar-wrap"><div class="th-bar amber" style="width:70%"></div></div>
+          <span class="th-value">7 / 10</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">设备数</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:100%"></div></div>
+          <span class="th-value"><span class="check">3 / 2 ✓</span></span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">活跃天数</span>
+          <div class="th-bar-wrap"><div class="th-bar amber" style="width:66%"></div></div>
+          <span class="th-value">2 / 3</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">P90 半径</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:59%"></div></div>
+          <span class="th-value"><span class="check">890m ✓</span></span>
+        </div>
+      </div>
+      <div class="gap-indicator amber">差 3 个 GPS 点 + 1 天</div>
+      <div class="cc-actions">
+        <span class="cc-batch">最近批次: B-0403-03</span>
+        <div class="cc-btns">
+          <button class="btn btn-primary">查看详情</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Waiting, P90 warning -->
+    <div class="candidate-card">
+      <div class="cc-header">
+        <span class="cc-key">46001-5G-33459-88904</span>
+        <span class="cc-badge waiting">waiting</span>
+      </div>
+      <div class="cc-meta">
+        <span>首次出现: 2026-04-01</span>
+      </div>
+      <div class="threshold-list">
+        <div class="threshold-item">
+          <span class="th-label">GPS 有效点</span>
+          <div class="th-bar-wrap"><div class="th-bar amber" style="width:50%"></div></div>
+          <span class="th-value">5 / 10</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">设备数</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:50%"></div></div>
+          <span class="th-value">1 / 2</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">活跃天数</span>
+          <div class="th-bar-wrap"><div class="th-bar amber" style="width:66%"></div></div>
+          <span class="th-value">2 / 3</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">P90 半径</span>
+          <div class="th-bar-wrap"><div class="th-bar amber" style="width:80%"></div></div>
+          <span class="th-value"><span class="warn">1200m / 1500m</span></span>
+        </div>
+      </div>
+      <div class="gap-indicator amber">P90 半径接近上限</div>
+      <div class="cc-actions">
+        <span class="cc-batch"></span>
+        <div class="cc-btns">
+          <button class="btn btn-ghost">查看详情</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: Observing, exceeded P90 -->
+    <div class="candidate-card exceeded">
+      <div class="cc-header">
+        <span class="cc-key">46000-4G-23460-78905</span>
+        <span class="cc-badge observing">observing</span>
+      </div>
+      <div class="cc-meta">
+        <span>首次出现: 2026-03-29</span>
+      </div>
+      <div class="threshold-list">
+        <div class="threshold-item">
+          <span class="th-label">GPS 有效点</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:80%"></div></div>
+          <span class="th-value">8 / 10</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">设备数</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:100%"></div></div>
+          <span class="th-value"><span class="check">4 / 2 ✓</span></span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">活跃天数</span>
+          <div class="th-bar-wrap"><div class="th-bar green" style="width:100%"></div></div>
+          <span class="th-value"><span class="check">3 / 3 ✓</span></span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">P90 半径</span>
+          <div class="th-bar-wrap"><div class="th-bar red" style="width:100%"></div></div>
+          <span class="th-value"><span class="exceed">2100m &gt; 1500m</span></span>
+        </div>
+      </div>
+      <div class="gap-indicator red">P90 半径超限，建议转入问题事实</div>
+      <div class="cc-actions">
+        <span class="cc-batch">最近批次: B-0403-04</span>
+        <div class="cc-btns">
+          <button class="btn btn-orange">转为问题</button>
+          <button class="btn btn-ghost">查看详情</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6: Waiting, very early -->
+    <div class="candidate-card">
+      <div class="cc-header">
+        <span class="cc-key">46000-4G-23461-78906</span>
+        <span class="cc-badge waiting">waiting</span>
+      </div>
+      <div class="cc-meta">
+        <span>首次出现: 2026-04-03</span>
+      </div>
+      <div class="threshold-list">
+        <div class="threshold-item">
+          <span class="th-label">GPS 有效点</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:10%"></div></div>
+          <span class="th-value">1 / 10</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">设备数</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:50%"></div></div>
+          <span class="th-value">1 / 2</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">活跃天数</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:0%"></div></div>
+          <span class="th-value">0 / 3</span>
+        </div>
+        <div class="threshold-item">
+          <span class="th-label">P90 半径</span>
+          <div class="th-bar-wrap"><div class="th-bar gray" style="width:0%"></div></div>
+          <span class="th-value"><span class="pending">待定</span></span>
+        </div>
+      </div>
+      <div class="gap-indicator gray">刚进入系统，继续观察</div>
+      <div class="cc-actions">
+        <span class="cc-batch"></span>
+        <div class="cc-btns">
+          <button class="btn btn-muted">继续观察</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Pagination -->
+  <section class="pagination">
+    <span class="pg-info">第 <strong>1</strong> 页，共 <strong>64</strong> 页 &nbsp;|&nbsp; 共 1,283 个候选</span>
+    <div class="pg-buttons">
+      <button class="pg-btn disabled">&lsaquo;</button>
+      <button class="pg-btn active">1</button>
+      <button class="pg-btn">2</button>
+      <button class="pg-btn">3</button>
+      <button class="pg-btn">4</button>
+      <button class="pg-btn">5</button>
+      <button class="pg-btn">...</button>
+      <button class="pg-btn">64</button>
+      <button class="pg-btn">&rsaquo;</button>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
