@@ -30,7 +30,7 @@ flowchart TD
     P1["1.1 数据源注册\n登记数据源元信息\n字段映射 / 导入规则"]
     P2["1.2 字段审计\n盘点字段覆盖率\n决定 keep / parse / drop"]
     P3["1.3 解析（炸开）\n一条原始报文 →\n多条结构化记录"]
-    P4["1.4 清洗（ODS 过滤）\n16条规则去除无效值\n主键错误才删行，其余置空"]
+    P4["1.4 清洗（ODS 过滤）\n19条规则去除无效值\n主键级错误才删行，其余置空"]
     P5["1.5 字段对齐\n同一条报文内互补\ncell_infos ↔ ss1 字段互补"]
 
     OUT["✅ etl_cleaned\n66列，Step 1 最终产出"]
@@ -50,11 +50,15 @@ flowchart TD
 
 | 配置项 | 说明 |
 |--------|------|
+| `source_id` | 数据源唯一标识 |
+| `source_name` | 数据源名称 |
 | `source_table` | 原始表名 |
 | `source_type` | GPS 报文源 / LAC 报文源 / 其他 |
 | `cell_infos_field` | JSON 格式的基站字段位置 |
 | `ss1_field` | 文本格式的信号字段位置 |
 | `status` | 待接入 / 已接入 / 已停用 |
+| `row_count` | 记录数 |
+| `time_range` | 数据时间范围 |
 
 ---
 
@@ -105,7 +109,7 @@ flowchart LR
 
 ## 1.4 清洗（ODS 规则）
 
-16 条 ODS 规则，两种动作：
+19 条 ODS 规则（ODS-001 ~ ODS-018），分 6 类，两种动作：
 
 ```mermaid
 flowchart TD
@@ -113,23 +117,26 @@ flowchart TD
 
     R1["ODS-001~002\n运营商编码异常 → 置空"]
     R2["ODS-003~005\nLAC 异常 → 置空"]
-    R3["ODS-006~008\ncell_id 不可解析/为0/溢出 → 删除行"]
-    R4["ODS-009~011\nRSRP/RSRQ/SINR 越界 → 置空"]
+    R3["ODS-006~008\ncell_id 不可解析/为0/溢出 → 置空\n最终删行条件：cell_id IS NULL 或 event_time_std IS NULL"]
+    R4["ODS-009~012\nRSRP/RSRQ/SINR/Dbm 越界 → 置空"]
     R5["ODS-013~016\nGPS 越出中国边界 → 标记无效"]
+    R6["ODS-017~018\n无效 WiFi 名称 / MAC → 置空"]
 
     OUT["etl_cleaned 基础列\n687,788 行\n通过率 99.77%"]
 
-    IN --> R1 --> R2 --> R3 --> R4 --> R5 --> OUT
+    IN --> R1 --> R2 --> R3 --> R4 --> R5 --> R6 --> OUT
 
     NOTE1["置空action：保留行，字段值设为 NULL"]
-    NOTE2["删除行action：整行删除（仅主键级错误）"]
+    NOTE2["删除行action：整行删除\n（cell_id IS NULL 或 event_time_std IS NULL）"]
     R1 -.- NOTE1
     R3 -.- NOTE2
 
     style OUT fill:#c8e6c9,stroke:#388e3c
 ```
 
-**清洗原则**：能修正就修正，不能修正才删除。信号值越界→置空；`cell_id` 不可解析→删除整行。
+**清洗原则**：能修正就修正，不能修正才删除。信号值越界→置空；`cell_id` 不可解析（已置空）且 `event_time_std` 为空→删除整行。
+
+清洗阶段还负责派生 7 个字段：`bs_id`、`sector_id`、`operator_cn`、`report_ts`、`cell_ts_std`、`gps_ts`、`has_cell_id`。
 
 ---
 
@@ -167,17 +174,12 @@ flowchart TD
 
 ## 产出：etl_cleaned 的 66 列结构
 
-```mermaid
-graph LR
-    subgraph etl_cleaned["etl_cleaned（66 列）"]
-        A["标识与来源\n9列\nrecord_id, operator_code,\nlac, cell_id 等"]
-        B["射频与信号\n16列\nrsrp, rsrq, sinr,\npci, freq_channel 等"]
-        C["时间与位置\n11列\nts_std, gps_ts,\nlon_raw, lat_raw 等"]
-        D["设备元数据\n13列\ndev_id, brand,\nmodel, sdk_ver 等"]
-        E["清洗派生列\n3列\nbs_id, sector_id,\noperator_cn"]
-        F["字段对齐结果\n14列\nlon_filled, lat_filled,\ngps_fill_source 等"]
-    end
-```
+| 分类 | 列数 | 说明 |
+|------|------|------|
+| 基础结构化列 | 45 | 解析直接产出 |
+| 清洗派生列 | 7 | 清洗阶段补加（`bs_id`、`sector_id`、`operator_cn`、`report_ts`、`cell_ts_std`、`gps_ts`、`has_cell_id`） |
+| 字段对齐结果列 | 14 | 同报文对齐阶段补加 |
+| **最终输出总列数** | **66** | Step 1 最终 `etl_cleaned` |
 
 **关键约定**：`*_raw` 字段代表原始真相，永远不被覆盖；`*_filled` 字段是对齐或补数后的可用值，供后续步骤使用。
 
@@ -191,6 +193,7 @@ graph LR
 | 范围 | 仅同 `record_id` 的行 | 任何命中可信库的记录 |
 | 可靠性 | 中（依赖原始报文质量） | 高（经过质量评估的可信对象） |
 | 触发时机 | 数据入库时（现在） | 可信库建立后的持续运行 |
+| 是否受冻结约束 | 否 | 是（只读上一轮发布版本） |
 
 ---
 

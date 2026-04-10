@@ -1,0 +1,52 @@
+cell:
+  waiting:
+    min_independent_obs: 3
+    min_distinct_devices: 2
+  qualified:
+    min_independent_obs: 3
+    min_distinct_devices: 2
+    max_p90_radius_m: 1500
+    min_observed_span_hours: 24
+  excellent:
+    min_independent_obs: 8
+    min_distinct_devices: 3
+    max_p90_radius_m: 500
+    min_observed_span_hours: 24
+  anchorable:
+    min_gps_valid_count: 10
+    min_distinct_devices: 2
+    max_p90_radius_m: 1500
+    min_observed_span_hours: 24
+bs:
+  observing:
+    min_cells_with_gps: 1
+  qualified:
+    min_excellent_cells: 1
+    min_qualified_cells: 3
+lac:
+  observing:
+    min_non_waiting_bs: 1
+  qualified:
+    min_qualified_bs: 3
+    min_qualified_bs_ratio: 0.1
+gps_confidence:
+  high:
+    min_gps_valid: 20
+    min_devs: 3
+  medium:
+    min_gps_valid: 10
+    min_devs: 2
+  low:
+    min_gps_valid: 1
+signal_confidence:
+  high:
+    min_signal_original: 20
+  medium:
+    min_signal_original: 5
+  low:
+    min_signal_original: 1
+routing:
+  # 允许进入 Path B 评估的制式白名单，未来可加入 2G/3G
+  path_b_tech_whitelist:
+    - '4G'
+    - '5G'

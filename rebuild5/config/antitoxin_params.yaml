@@ -1,0 +1,42 @@
+collision:
+  min_spread_m: 2200
+  # 绝对碰撞距离阈值：同一 (operator, tech, lac, cell_id) 在不同物理位置的最小距离
+  absolute_collision_min_distance_m: 20000
+migration:
+  min_spread_m: 2200
+bs:
+  max_cell_to_bs_distance_m: 2500
+drift:
+  stable_max_spread_m: 500
+  insufficient_min_days: 2
+is_dynamic:
+  min_spread_m: 1500
+cell_scale:
+  major:
+    min_obs: 50
+    min_devs: 10
+  large:
+    min_obs: 20
+    min_devs: 5
+  medium:
+    min_obs: 10
+    min_devs: 3
+  small:
+    min_obs: 3
+drift_classification:
+  collision_max_ratio: 0.3
+  migration_min_ratio: 0.7
+  large_coverage_max_spread_m: 2200
+antitoxin_compare:
+  max_centroid_shift_m: 500
+  max_p90_ratio: 2.0
+  max_dev_ratio: 3.0
+exit:
+  dormant_inactive_days_high_density: 3
+  dormant_inactive_days_mid_density: 7
+  dormant_inactive_days_low_density: 14
+  high_density_min_active_days_30d: 20
+  mid_density_min_active_days_30d: 10
+  retired_after_dormant_days: 30
+multi_centroid:
+  trigger_min_p90_m: 800

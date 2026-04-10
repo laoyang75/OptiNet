@@ -20,13 +20,12 @@ const router = createRouter({
     { path: '/profile/routing', component: () => import('../views/profile/Routing.vue'), meta: { title: '基础画像与分流', group: 'profile' } },
     // 流转评估
     { path: '/evaluation/overview', component: () => import('../views/evaluation/FlowOverview.vue'), meta: { title: '流转总览', group: 'evaluation' } },
-    { path: '/evaluation/snapshot', component: () => import('../views/evaluation/Snapshot.vue'), meta: { title: '流转快照', group: 'evaluation' } },
-    { path: '/evaluation/watchlist', component: () => import('../views/evaluation/Watchlist.vue'), meta: { title: '观察工作台', group: 'evaluation' } },
-    { path: '/evaluation/cell', component: () => import('../views/evaluation/CellEval.vue'), meta: { title: 'Cell 评估', group: 'evaluation' } },
-    { path: '/evaluation/bs', component: () => import('../views/evaluation/BSEval.vue'), meta: { title: 'BS 评估', group: 'evaluation' } },
-    { path: '/evaluation/lac', component: () => import('../views/evaluation/LACEval.vue'), meta: { title: 'LAC 评估', group: 'evaluation' } },
+    { path: '/evaluation/cell', component: () => import('../views/evaluation/CellEval.vue'), meta: { title: 'Cell 流转', group: 'evaluation' } },
+    { path: '/evaluation/bs', component: () => import('../views/evaluation/BSEval.vue'), meta: { title: 'BS 流转', group: 'evaluation' } },
+    { path: '/evaluation/lac', component: () => import('../views/evaluation/LACEval.vue'), meta: { title: 'LAC 流转', group: 'evaluation' } },
     // 治理
     { path: '/governance/fill', component: () => import('../views/governance/KnowledgeFill.vue'), meta: { title: '知识补数', group: 'governance' } },
+    { path: '/governance/overview', component: () => import('../views/governance/GovernanceOverview.vue'), meta: { title: '治理总览', group: 'governance' } },
     { path: '/governance/cell', component: () => import('../views/governance/CellMaintain.vue'), meta: { title: 'Cell 维护', group: 'governance' } },
     { path: '/governance/bs', component: () => import('../views/governance/BSMaintain.vue'), meta: { title: 'BS 维护', group: 'governance' } },
     { path: '/governance/lac', component: () => import('../views/governance/LACMaintain.vue'), meta: { title: 'LAC 维护', group: 'governance' } },

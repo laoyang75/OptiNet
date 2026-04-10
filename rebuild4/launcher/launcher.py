@@ -31,11 +31,11 @@ UI_ROOT = Path(__file__).resolve().parent / 'launcher_ui'
 RUNTIME_ROOT = PROJECT_ROOT / 'runtime'
 
 LAUNCHER_HOST = os.environ.get('REBUILD4_LAUNCHER_HOST', '127.0.0.1')
-LAUNCHER_PORT = int(os.environ.get('REBUILD4_LAUNCHER_PORT', '47130'))
+LAUNCHER_PORT = int(os.environ.get('REBUILD4_LAUNCHER_PORT', '57130'))
 BACKEND_HOST = os.environ.get('REBUILD4_BACKEND_HOST', '127.0.0.1')
-BACKEND_PORT = int(os.environ.get('REBUILD4_BACKEND_PORT', '47131'))
+BACKEND_PORT = int(os.environ.get('REBUILD4_BACKEND_PORT', '57131'))
 FRONTEND_HOST = os.environ.get('REBUILD4_FRONTEND_HOST', '127.0.0.1')
-FRONTEND_PORT = int(os.environ.get('REBUILD4_FRONTEND_PORT', '47132'))
+FRONTEND_PORT = int(os.environ.get('REBUILD4_FRONTEND_PORT', '57132'))
 DB_HOST = os.environ.get('REBUILD4_PG_HOST', '192.168.200.217')
 DB_PORT = int(os.environ.get('REBUILD4_PG_PORT', '5433'))
 

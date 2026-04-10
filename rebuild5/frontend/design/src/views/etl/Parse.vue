@@ -1,35 +1,39 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+
 import PageHeader from '../../components/common/PageHeader.vue'
 import SummaryCard from '../../components/common/SummaryCard.vue'
 import PercentBar from '../../components/common/PercentBar.vue'
-import { fmt } from '../../composables/useFormat'
+import { getEtlStats, type ParseSourceItem } from '../../api/etl'
+import { fmt, pct } from '../../composables/useFormat'
 
-const parseStats = {
-  inputRecords: 1_248_350,
-  outputRecords: 3_872_640,
-  expansionRatio: 3.1,
-  sources: [
-    { name: 'cell_infos 解析', inputCount: 1_248_350, outputCount: 3_124_200, ratio: 2.5 },
-    { name: 'ss1 解析', inputCount: 1_248_350, outputCount: 748_440, ratio: 0.6 },
-  ],
-}
+const inputRecords = ref(0)
+const outputRecords = ref(0)
+const expansionRatio = ref(0)
+const sources = ref<ParseSourceItem[]>([])
+const coverageChange = ref<Array<{ field: string; before: number; after: number }>>([])
 
-const coverageChange = [
-  { field: 'bs_id', before: 0.45, after: 0.95 },
-  { field: 'tech_norm', before: 0.32, after: 0.88 },
-  { field: 'cell_id', before: 0.99, after: 1.0 },
-  { field: 'rsrp', before: 0.25, after: 0.73 },
-  { field: 'lac', before: 0.88, after: 0.98 },
-]
+onMounted(async () => {
+  try {
+    const payload = await getEtlStats()
+    inputRecords.value = payload.parse.inputRecords
+    outputRecords.value = payload.parse.outputRecords
+    expansionRatio.value = payload.parse.expansionRatio
+    sources.value = payload.parse.sources
+    coverageChange.value = (payload.parse as any).coverageChange ?? []
+  } catch {
+    sources.value = []
+  }
+})
 </script>
 
 <template>
   <PageHeader title="解析" description="判断 cell_infos 和 ss1 的解析扩展是否正常，解析前后多出了什么结构化信息。" />
 
   <div class="grid grid-3 mb-lg">
-    <SummaryCard title="输入记录" :value="fmt(parseStats.inputRecords)" subtitle="原始报文数" />
-    <SummaryCard title="输出记录" :value="fmt(parseStats.outputRecords)" subtitle="解析扩展后" />
-    <SummaryCard title="扩展比" :value="parseStats.expansionRatio + 'x'" subtitle="每条报文平均产出行数" color="var(--c-primary)" />
+    <SummaryCard title="输入记录" :value="fmt(inputRecords)" subtitle="原始报文数" />
+    <SummaryCard title="输出记录" :value="fmt(outputRecords)" subtitle="解析扩展后" />
+    <SummaryCard title="扩展比" :value="expansionRatio + 'x'" subtitle="每条报文平均产出行数" color="var(--c-primary)" />
   </div>
 
   <div class="grid grid-2 gap-lg mb-lg">
@@ -38,7 +42,7 @@ const coverageChange = [
       <table class="data-table">
         <thead><tr><th>解析来源</th><th>输入</th><th>输出</th><th>扩展比</th></tr></thead>
         <tbody>
-          <tr v-for="s in parseStats.sources" :key="s.name">
+          <tr v-for="s in sources" :key="s.name">
             <td class="font-semibold">{{ s.name }}</td>
             <td class="font-mono">{{ fmt(s.inputCount) }}</td>
             <td class="font-mono">{{ fmt(s.outputCount) }}</td>
@@ -49,22 +53,22 @@ const coverageChange = [
     </div>
 
     <div class="card">
-      <div class="font-semibold text-sm mb-md">解析前后字段覆盖率变化</div>
-      <div class="flex flex-col gap-md">
-        <div v-for="c in coverageChange" :key="c.field" class="coverage-row">
-          <span class="font-mono text-xs" style="width:80px">{{ c.field }}</span>
-          <div style="flex:1">
-            <div class="flex gap-sm items-center mb-sm">
-              <span class="text-xs text-muted" style="width:20px">前</span>
-              <PercentBar :value="c.before" color="var(--c-text-muted)" />
-            </div>
-            <div class="flex gap-sm items-center">
-              <span class="text-xs text-muted" style="width:20px">后</span>
-              <PercentBar :value="c.after" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="font-semibold text-sm mb-md">解析前后字段覆盖率</div>
+      <table class="data-table">
+        <thead><tr><th>字段</th><th style="width:140px">解析前</th><th style="width:140px">解析后</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr v-for="c in coverageChange" :key="c.field">
+            <td class="font-mono font-semibold">{{ c.field }}</td>
+            <td><PercentBar :value="c.before" color="var(--c-text-muted)" /></td>
+            <td><PercentBar :value="c.after" /></td>
+            <td class="text-xs text-secondary">
+              <template v-if="c.before === 0 && c.after > 0">解析新增</template>
+              <template v-else-if="c.after > c.before">+{{ pct(c.after - c.before) }}</template>
+              <template v-else>原始字段</template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>

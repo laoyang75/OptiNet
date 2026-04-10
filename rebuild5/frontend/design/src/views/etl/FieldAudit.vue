@@ -1,53 +1,142 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+
 import PageHeader from '../../components/common/PageHeader.vue'
-import PercentBar from '../../components/common/PercentBar.vue'
+import { apiGet } from '../../api/client'
 
-const fields = [
-  { name: 'cell_id', type: 'bigint', decision: 'keep', coverage: 1.0, sample: '12345678' },
-  { name: 'lac', type: 'int', decision: 'keep', coverage: 0.98, sample: '4001' },
-  { name: 'bs_id', type: 'int', decision: 'parse', coverage: 0.95, sample: '50123' },
-  { name: 'operator_code', type: 'varchar', decision: 'keep', coverage: 0.92, sample: '46000' },
-  { name: 'tech_norm', type: 'varchar', decision: 'parse', coverage: 0.88, sample: '4G' },
-  { name: 'rsrp', type: 'float', decision: 'keep', coverage: 0.73, sample: '-95.5' },
-  { name: 'lon_raw', type: 'float', decision: 'keep', coverage: 0.68, sample: '116.4312' },
-  { name: 'lat_raw', type: 'float', decision: 'keep', coverage: 0.68, sample: '39.9156' },
-  { name: 'rsrq', type: 'float', decision: 'keep', coverage: 0.41, sample: '-12.3' },
-  { name: 'sinr', type: 'float', decision: 'keep', coverage: 0.39, sample: '8.2' },
-  { name: 'pressure', type: 'float', decision: 'keep', coverage: 0.12, sample: '1013.25' },
-  { name: 'wifi_mac', type: 'varchar', decision: 'drop', coverage: 0.05, sample: 'AA:BB:CC...' },
-]
-
-const decisionStyle: Record<string, string> = {
-  keep: 'background:#dcfce7;color:#166534',
-  parse: 'background:#dbeafe;color:#1e40af',
-  drop: 'background:#fee2e2;color:#991b1b',
+interface FieldItem {
+  name: string
+  name_cn: string
+  type: string
+  source: string
+  desc: string
 }
-const decisionLabel: Record<string, string> = { keep: '保留', parse: '解析', drop: '丢弃' }
+
+interface FieldGroup {
+  category: string
+  count: number
+  fields: FieldItem[]
+}
+
+interface AuditPayload {
+  total_field_count: number
+  raw_field_count: number
+  category_summary: Record<string, number>
+  groups: FieldGroup[]
+}
+
+const totalFields = ref(0)
+const rawFields = ref(0)
+const categorySummary = ref<Record<string, number>>({})
+const groups = ref<FieldGroup[]>([])
+
+const sourceStyle: Record<string, string> = {
+  '直接映射': 'background:#dcfce7;color:#166534',
+  '解析提取': 'background:#fef3c7;color:#92400e',
+  '计算派生': 'background:#dbeafe;color:#1e40af',
+  '标签': 'background:#e0e7ff;color:#3730a3',
+  '自动生成': 'background:#f3e8ff;color:#6b21a8',
+}
+
+const catColor: Record<string, string> = {
+  '标识': '#6366f1', '来源': '#8b5cf6', '解析': '#f59e0b',
+  '补齐': '#10b981', '网络': '#3b82f6', '信号': '#ef4444',
+  '时间': '#06b6d4', '位置': '#22c55e', '元数据': '#6b7280',
+}
+
+onMounted(async () => {
+  try {
+    const payload = await apiGet<AuditPayload>('/api/etl/field-audit')
+    totalFields.value = payload.total_field_count
+    rawFields.value = payload.raw_field_count
+    categorySummary.value = payload.category_summary
+    groups.value = payload.groups
+  } catch {
+    groups.value = []
+  }
+})
 </script>
 
 <template>
-  <PageHeader title="字段审计" description="判断原始字段哪些被保留、解析或丢弃。快速定位覆盖率低或被丢弃的字段。" />
+  <PageHeader title="字段审计" :description="`${rawFields} 列原始字段经 JSON 解析、展开后的目标表结构。共 ${totalFields} 个字段，按 cell_id 拆行。`" />
 
-  <div class="card" style="padding:0;overflow:auto">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>字段名</th>
-          <th>类型</th>
-          <th>决策</th>
-          <th style="width:220px">覆盖率</th>
-          <th>样本值</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="f in fields" :key="f.name">
-          <td class="font-mono font-semibold">{{ f.name }}</td>
-          <td class="font-mono text-xs text-secondary">{{ f.type }}</td>
-          <td><span class="tag" :style="decisionStyle[f.decision]">{{ decisionLabel[f.decision] }}</span></td>
-          <td><PercentBar :value="f.coverage" /></td>
-          <td class="font-mono text-xs text-muted">{{ f.sample }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="category-grid mb-lg">
+    <div v-for="(count, cat) in categorySummary" :key="cat" class="cat-chip">
+      <span class="cat-label" :style="{ color: catColor[cat] || '#6b7280' }">{{ cat }}</span>
+      <span class="cat-count">{{ count }}</span>
+    </div>
+  </div>
+
+  <div v-for="g in groups" :key="g.category" class="field-group mb-lg">
+    <h3 class="group-title">
+      <span class="cat-badge" :style="{ background: catColor[g.category] || '#6b7280' }">{{ g.category }}</span>
+      {{ g.category }}字段（{{ g.count }}）
+    </h3>
+    <div class="card" style="padding:0;overflow:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>字段名</th>
+            <th>中文名</th>
+            <th>类型</th>
+            <th>来源</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="f in g.fields" :key="f.name">
+            <td><code class="field-name">{{ f.name }}</code></td>
+            <td>{{ f.name_cn }}</td>
+            <td><code class="type-tag">{{ f.type }}</code></td>
+            <td><span class="tag" :style="sourceStyle[f.source] || ''">{{ f.source }}</span></td>
+            <td class="text-sm text-secondary">{{ f.desc }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+}
+.cat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+.cat-label { font-size: 11px; font-weight: 600; }
+.cat-count { font-size: 22px; font-weight: 700; color: var(--c-text); }
+.group-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--sp-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+.cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+.field-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+.type-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--c-bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+</style>

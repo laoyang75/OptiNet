@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart LR
-    S2_A["Step 2\nPath A 记录\n（已命中可信库）"]
+    S2_A["Step 2\nPath A 记录\n（path_a_records）"]
     LIB["trusted_cell_library\n上一轮已发布可信库\n仅取 anchor_eligible=true 子集"]
 
     S4["⚙️ Step 4\n知识补数"]
@@ -26,6 +26,19 @@ flowchart LR
 ```
 
 **Step 4 只处理 Path A 记录**（已命中可信库的那批数据）。Path B 的数据去了 Step 3，不经过 Step 4。
+
+---
+
+## 补数源确认责任的归属
+
+Step 4 是一个**简单补数步骤**，不应自己重新承担复杂匹配责任。正确分工：
+
+| 步骤 | 责任 |
+|------|------|
+| **Step 2** | 判断当前记录命中哪个可信 Cell，确认所引用的可信库版本 |
+| **Step 4** | 直接使用 Step 2 已确认的补数源 Cell，补齐缺失字段，并基于同一补数源做 GPS 异常初筛 |
+
+因此 `path_a_records` 应显式携带补数源标识（source cell 主键、source batch/version），Step 4 不重新"猜"命中了哪个可信 Cell。
 
 ---
 
@@ -85,20 +98,22 @@ graph TD
 
 ## 各字段补数矩阵
 
-```mermaid
-flowchart LR
-    subgraph 字段级补数规则
-        GPS["GPS补数\n\n条件：lon_filled / lat_filled 仍为空\n来源：donor center_lon / center_lat\n标记：gps_fill_source = 'trusted_cell'\n置信度：= donor的 position_grade"]
+| 字段 | 补数条件 | 来源 | 来源标记 |
+|------|----------|------|----------|
+| GPS | `lon_filled / lat_filled` 仍为空 | `center_lon / center_lat` | `gps_fill_source = 'trusted_cell'` |
+| RSRP | `rsrp_filled` 为空 | `rsrp_avg` | `rsrp_fill_source = 'trusted_cell'` |
+| RSRQ | `rsrq_filled` 为空 | `rsrq_avg` | `rsrq_fill_source = 'trusted_cell'` |
+| SINR | `sinr_filled` 为空 | `sinr_avg` | `sinr_fill_source = 'trusted_cell'` |
+| 气压 | `pressure_filled` 为空，且 donor 有 `pressure_avg` | `pressure_avg` | `pressure_fill_source = 'trusted_cell'`（置信度固定 `low`） |
+| 运营商 | `operator_filled` 为空 | `operator_code` | `operator_fill_source = 'trusted_cell'` |
+| LAC | `lac_filled` 为空 | `lac` | `lac_fill_source = 'trusted_cell'` |
 
-        SIG["信号补数\n\n条件：rsrp/rsrq/sinr_filled 仍为空\n来源：donor rsrp/rsrq/sinr_avg\n标记：rsrp/rsrq/sinr_fill_source = 'trusted_cell'\n三个字段独立补，互不依赖"]
+**注意**：
+- Step 4 只补 Step 1 之后仍为空的字段，不覆盖 Step 1 已有值
+- 信号三字段（RSRP/RSRQ/SINR）**独立补，互不依赖**
+- 气压补数固定置信度 `low`（气压受天气/高度影响大）
 
-        OP["运营商/LAC 补数\n\n条件：operator/lac_filled 仍为空\n来源：donor operator_code / lac\n标记：fill_source = 'trusted_cell'"]
-
-        PRES["气压补数\n\n条件：pressure 为空\n且 donor 有 pressure_avg\n置信度：固定 low\n（气压受天气/高度影响大）"]
-    end
-```
-
-**绝对不补的字段**：`cell_id`（主键）、`dev_id/ip/brand`（设备元数据只能来自报文本身）、时间字段、射频参数（`pci/freq_channel`，变化太快）。
+**绝对不补的字段**：`cell_id`（主键）、`dev_id/ip/brand`（设备元数据只能来自报文本身）、时间字段、射频参数（`pci/freq_channel`，变化太快）、`wifi_name/wifi_mac`（非 Cell 稳定属性）
 
 ---
 
@@ -147,23 +162,24 @@ flowchart TD
 
 每个被补的字段，都要留下来源痕迹，支持完整审计追溯：
 
-```mermaid
-graph LR
-    SRC["来源值枚举"]
+| 来源值 | 含义 |
+|--------|------|
+| `raw_gps` | 报文原生 GPS |
+| `ss1_own` | ss1 字段自带 GPS |
+| `same_cell` | Step 1 同报文对齐 |
+| `trusted_cell` | Step 4 知识补数 ← 本步新增 |
+| `none` | 仍未补成功 |
 
-    S1["raw_gps\n报文原生GPS"]
-    S2["ss1_own\nss1字段自带GPS"]
-    S3["same_cell\nStep1同报文对齐"]
-    S4["trusted_cell\nStep4知识补数 ← 本步新增"]
-    S5["none\n仍未补成功"]
+> UI 展示时可把 `raw_gps / ss1_own / same_cell` 归并显示为 `original`，便于和 `trusted_cell` 对比。
 
-    SRC --> S1 & S2 & S3 & S4 & S5
+**donor 审计字段**（enriched_records 额外携带）：
 
-    NOTE["UI展示时可把\nraw_gps/ss1_own/same_cell\n归并显示为 'original'\n便于和 trusted_cell 对比"]
-    S1 -.- NOTE
-    S2 -.- NOTE
-    S3 -.- NOTE
-```
+| 字段 | 说明 |
+|------|------|
+| `trusted_donor_cell_id` | donor Cell 标识 |
+| `trusted_donor_position_grade` | donor 画像等级（补数置信度参考） |
+| `trusted_donor_anchor_eligible` | donor 是否具备锚点资格 |
+| `trusted_donor_baseline_eligible` | donor 是否具备基线资格 |
 
 ---
 
@@ -209,5 +225,6 @@ flowchart LR
 | 对象生命周期判定（waiting/qualified 等） | Step 3 |
 | 防毒化、基线刷新 | Step 5 |
 | 修改原始字段真相（lon_raw 等） | 永远不允许 |
+| 重新判断命中了哪个可信 Cell | Step 2 已负责 |
 
 **Step 4 只回答两件事**：①这条命中记录缺什么、能补什么；②它自带的 GPS 是否明显偏离可信质心。

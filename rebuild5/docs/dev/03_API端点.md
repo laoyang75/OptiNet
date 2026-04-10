@@ -71,16 +71,21 @@
 
 ### Step 3: 流式质量评估
 
+所有列表和详情端点支持 `?batch_id=` 可选参数，默认取最新批次。
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/evaluation/stats` | 评估运行统计 |
-| GET | `/api/evaluation/cells` | Cell 评估列表（分页，支持状态筛选） |
+| GET | `/api/evaluation/batches` | 可用批次列表（batch_id, snapshot_version, run_at） |
+| GET | `/api/evaluation/stats` | 评估运行统计（含 diff 摘要） |
+| GET | `/api/evaluation/cells` | Cell 评估列表（分页，支持 `lifecycle_state` 筛选） |
+| GET | `/api/evaluation/cells/rule-impact` | Cell 晋升规则影响分析（每个阈值卡住多少对象） |
 | GET | `/api/evaluation/cells/:id` | 单个 Cell 详情 |
 | GET | `/api/evaluation/bs` | BS 评估列表（分页） |
+| GET | `/api/evaluation/bs/rule-impact` | BS 晋升规则影响分析 |
 | GET | `/api/evaluation/bs/:id` | 单个 BS 详情（含下属 Cell） |
 | GET | `/api/evaluation/lac` | LAC 评估列表（分页） |
+| GET | `/api/evaluation/lac/rule-impact` | LAC 晋升规则影响分析 |
 | GET | `/api/evaluation/lac/:id` | 单个 LAC 详情（含下属 BS） |
-| GET | `/api/evaluation/snapshot/diff` | 快照差分 |
 | GET | `/api/evaluation/trend` | 跨批次收敛趋势 |
 
 ### Step 4: 知识补数
@@ -135,12 +140,10 @@
 | 清洗 | `/etl/clean` | `/api/etl/stats`, `/api/etl/clean-rules` |
 | 补齐 | `/etl/fill` | `/api/etl/stats`, `/api/etl/coverage` |
 | 基础画像与分流 | `/profile/routing` | `/api/routing/stats`, `/api/routing/collision`, `/api/routing/profile-base` |
-| 流转总览 | `/evaluation/overview` | `/api/evaluation/stats`, `/api/evaluation/trend` |
-| 流转快照 | `/evaluation/snapshot` | `/api/evaluation/snapshot/diff` |
-| 观察工作台 | `/evaluation/watchlist` | `/api/evaluation/cells?lifecycle_state=waiting,observing` |
-| Cell 评估 | `/evaluation/cell` | `/api/evaluation/cells`, `/api/evaluation/cells/:id` |
-| BS 评估 | `/evaluation/bs` | `/api/evaluation/bs`, `/api/evaluation/bs/:id` |
-| LAC 评估 | `/evaluation/lac` | `/api/evaluation/lac`, `/api/evaluation/lac/:id` |
+| 总流转页 | `/evaluation/overview` | `/api/evaluation/batches`, `/api/evaluation/stats`, `/api/evaluation/trend` |
+| Cell 流转页 | `/evaluation/cell` | `/api/evaluation/batches`, `/api/evaluation/cells`, `/api/evaluation/cells/:id`, `/api/evaluation/cells/rule-impact`, `/api/evaluation/trend` |
+| BS 流转页 | `/evaluation/bs` | `/api/evaluation/batches`, `/api/evaluation/bs`, `/api/evaluation/bs/:id`, `/api/evaluation/bs/rule-impact`, `/api/evaluation/trend` |
+| LAC 流转页 | `/evaluation/lac` | `/api/evaluation/batches`, `/api/evaluation/lac`, `/api/evaluation/lac/:id`, `/api/evaluation/lac/rule-impact`, `/api/evaluation/trend` |
 | 知识补数 | `/governance/fill` | `/api/enrichment/stats`, `/api/enrichment/coverage`, `/api/enrichment/anomalies` |
 | Cell 维护 | `/governance/cell` | `/api/maintenance/cells`, `/api/maintenance/cells/:id`, `/api/maintenance/drift` |
 | BS 维护 | `/governance/bs` | `/api/maintenance/bs`, `/api/maintenance/bs/:id` |

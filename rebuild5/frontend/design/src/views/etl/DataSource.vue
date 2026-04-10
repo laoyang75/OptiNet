@@ -1,22 +1,36 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+
 import PageHeader from '../../components/common/PageHeader.vue'
 import SummaryCard from '../../components/common/SummaryCard.vue'
+import { getEtlSource, type EtlSourceItem } from '../../api/etl'
 import { fmt } from '../../composables/useFormat'
 
-const sources = [
-  { id: 'src_01', name: 'ODS 采集主表', type: 'MaxCompute', table: 'ods_cell_scan', status: 'active', records: 824600, lastSync: '2026-04-08 06:00', fields: 55 },
-  { id: 'src_02', name: 'GPS 补充源', type: 'MaxCompute', table: 'ods_gps_track', status: 'active', records: 312450, lastSync: '2026-04-08 06:00', fields: 18 },
-  { id: 'src_03', name: '历史对照源', type: 'PostgreSQL', table: 'legacy_cell_ref', status: 'standby', records: 111300, lastSync: '2026-04-01 00:00', fields: 32 },
-]
+const sources = ref<EtlSourceItem[]>([])
+const sourceCount = ref(0)
+const rawRecordCount = ref(0)
+const lastSync = ref('-')
+
+onMounted(async () => {
+  try {
+    const payload = await getEtlSource()
+    sources.value = payload.sources
+    sourceCount.value = payload.summary.source_count
+    rawRecordCount.value = payload.summary.raw_record_count
+    lastSync.value = payload.summary.last_sync || '-'
+  } catch {
+    sources.value = []
+  }
+})
 </script>
 
 <template>
   <PageHeader title="数据源注册" description="查看当前数据集接入的原始数据源、来源范围和接入状态。" />
 
   <div class="grid grid-3 mb-lg">
-    <SummaryCard title="数据源总数" :value="sources.length" subtitle="已激活 2 / 待命 1" />
-    <SummaryCard title="原始记录总量" :value="fmt(1248350)" subtitle="来自 3 个源表" />
-    <SummaryCard title="最近同步" value="2026-04-08 06:00" subtitle="距今 12 小时" />
+    <SummaryCard title="数据源总数" :value="sourceCount" :subtitle="`当前激活 ${sourceCount} 个`" />
+    <SummaryCard title="原始记录总量" :value="fmt(rawRecordCount)" subtitle="来自当前数据集源表" />
+    <SummaryCard title="最近同步" :value="lastSync" subtitle="以元数据登记时间为准" />
   </div>
 
   <div class="card" style="padding:0;overflow:auto">
@@ -41,12 +55,15 @@ const sources = [
           <td class="font-mono text-xs">{{ s.table }}</td>
           <td>
             <span class="tag" :style="s.status === 'active' ? 'background:#dcfce7;color:#166534' : 'background:#f3f4f6;color:#6b7280'">
-              {{ s.status === 'active' ? '已激活' : '待命' }}
+              {{ s.status === 'active' ? '已激活' : s.status }}
             </span>
           </td>
           <td class="font-mono">{{ fmt(s.records) }}</td>
           <td class="font-mono">{{ s.fields }}</td>
-          <td class="text-sm text-secondary">{{ s.lastSync }}</td>
+          <td class="text-sm text-secondary">{{ s.lastSync || '-' }}</td>
+        </tr>
+        <tr v-if="sources.length === 0">
+          <td colspan="8" class="text-center text-secondary" style="padding:20px">暂无数据源，请先准备 sample_6lac 数据集</td>
         </tr>
       </tbody>
     </table>

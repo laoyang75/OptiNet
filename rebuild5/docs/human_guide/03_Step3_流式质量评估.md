@@ -1,6 +1,6 @@
 # Step 3：流式质量评估
 
-> **核心目标**：把 Step 2 计算的基础指标，结合历史累计证据，判断每个 Cell/BS/LAC 当前处于哪个质量等级，批末产出冻结快照，供 Step 5 维护并发布正式库。
+> **核心目标**：接收 Step 2 输出的 `profile_base`，把当前批次新增的 Cell 证据与历史状态合并，对**候选域**（尚未进入正式发布库的对象）做全量重评估，批末产出冻结快照，供 Step 5 维护并发布正式库。
 
 ---
 
@@ -29,13 +29,32 @@ flowchart LR
     style OUT1 fill:#c8e6c9,stroke:#388e3c
 ```
 
-**关键角色**：Step 3 负责"准入判定"，Step 5 才负责"发布正式库"。两者分工明确：Step 3 说谁够格，Step 5 才真正把它发出去。
+**关键角色分工**：
+- Step 3 负责**候选域准入判定**，批末产出冻结快照
+- Step 5 才负责**发布正式库**
+
+两者分工明确：Step 3 说谁够格进可信链路，Step 5 才真正把它发出去。
 
 ---
 
-## 为什么要"全量重评估"而不是只看新数据
+## 候选域 vs 已发布域：两个不同的范围
 
-每批新数据进来，Step 3 必须对**候选域所有已注册 Cell** 重新评估，而不是只看这批新增的：
+```mermaid
+graph LR
+    subgraph 候选域["🔵 候选域（Step 3 的处理对象）"]
+        C1["尚未进入正式库的对象\n→ 全量重评估\n按规则判定 lifecycle_state"]
+    end
+
+    subgraph 已发布域["🟢 已发布域（Step 5 的处理对象）"]
+        C2["上一版已发布到\ntrusted_cell_library 的对象\n→ 在快照中 carry-forward\n当前批维护由 Step 5 负责"]
+    end
+```
+
+> **为什么这样分**：Path A 命中正式库的记录不进入 Step 3，因此 Step 3 天然不具备对已发布对象做当前批维护的输入条件。
+
+---
+
+## 为什么要"候选域全量重评估"而不是只看新数据
 
 ```mermaid
 flowchart TD
@@ -44,7 +63,7 @@ flowchart TD
     REASON3["BS / LAC 由 Cell 聚合\n任何 Cell 变化都要重新上卷计算"]
     REASON4["只有全量重评估\n才能保证 snapshot 是完整一致的视图"]
 
-    CONCLUSION["∴ Cell 候选域全量重评估\n+ 已发布对象继承（carry-forward）\n+ 批末统一冻结"]
+    CONCLUSION["∴ 候选域 Cell 全量重评估\n+ 已发布对象继承（carry-forward）\n+ 批末统一冻结"]
 
     REASON1 --> CONCLUSION
     REASON2 --> CONCLUSION
@@ -54,7 +73,19 @@ flowchart TD
     style CONCLUSION fill:#e3f2fd,stroke:#1976d2
 ```
 
-> **已发布到正式库的对象**不在此重评估范围内，它们以"继承上一版状态"的方式出现在快照中，当前批的维护由 Step 5 负责。
+> ⚠️ **注意**：中位数质心、P90 半径、distinct_dev_id 等指标不支持增量拼接，必须基于保留的分钟级原始证据重算，不能直接把上批汇总值和本批增量数值相加。
+
+---
+
+## 入库前置过滤（可配置）
+
+Step 3 在评估前先做过滤，控制哪些对象进入评估池：
+
+| 过滤类型 | 默认配置 | 说明 |
+|----------|----------|------|
+| 制式过滤 | 只处理 `4G / 5G` | `2G / 3G` 可配置为放行 |
+| 地区过滤 | 按当前数据集 LAC 白名单 | 开发阶段可只处理样本 LAC |
+| GPS 有效性 | 无有效 GPS 不参与空间评估 | 无 GPS 不能计算质心和半径 |
 
 ---
 
@@ -65,7 +96,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     PB["profile_base\n（本批新增指标）"]
-    HIST["历史评估池\n（上一版快照累计证据）"]
+    HIST["历史评估池\n（上一版快照候选对象累计证据）"]
 
     MERGE["按 (operator_code, lac, cell_id) 合并\n累计指标\n\n⚠️ 中位数/分位数必须基于原始明细重算\n不能直接拼上批汇总值"]
 
@@ -78,13 +109,13 @@ flowchart TD
     MERGE --> JUDGE --> SNAPSHOT
 ```
 
-### Cell 晋级规则（可配置）
+### Cell 晋级规则（可配置阈值来自 profile_params.yaml）
 
 ```mermaid
 graph TD
-    W["⚫ waiting\n证据不足\n观测<3 或 设备<2"]
+    W["⚫ waiting\n证据不足\n独立观测<3 或 设备<2"]
     O["🟡 observing\n积累中\n有一定证据但不达标"]
-    Q["🔵 qualified\n✅ 合格\n观测≥3, 设备≥2\nP90<1500m, 跨度≥24h, 无碰撞"]
+    Q["🔵 qualified\n✅ 合格\n观测≥3, 设备≥2\nP90<1500m, 跨度≥24h, 无碰撞阻断"]
     E["🟢 excellent\n⭐ 优秀\n在qualified基础上:\n观测≥8, 设备≥3, P90<500m"]
 
     W -->|"继续积累"| O
@@ -97,17 +128,16 @@ graph TD
 
 ### 三层资格判定（独立于生命周期）
 
-```mermaid
-graph LR
-    REG["is_registered\n首次出现即获得"]
-    ANC["anchor_eligible\nGPS≥10 且 设备≥2\n且 P90<1500m\n且 跨度≥24h\n且 无碰撞阻断"]
-    BASE["baseline_eligible\n已是锚点\n且 无防毒化异常\n且 满足成熟条件"]
+| 资格 | 判定规则 | 阈值来源 |
+|------|----------|----------|
+| `is_registered` | 首次出现可解析的 `(operator_code, lac, cell_id)` 即注册 | 结构规则 |
+| `anchor_eligible` | `gps_valid_count ≥ 10` 且 `distinct_dev_id ≥ 2` 且 `p90_radius_m < 1500` 且 `observed_span_hours ≥ 24` 且无碰撞阻断 | `anchorable.*` |
+| `baseline_eligible` | 已 `anchor_eligible=true`，且无防毒化异常，且满足成熟条件 | 逻辑冻结，成熟阈值在 Step 5 执行 |
 
-    REG -->|"门槛提升"| ANC -->|"门槛提升"| BASE
-
-    ANC -->|"Step 4 使用"| U1["作为 donor 补数\n其他报文缺GPS时用它的质心"]
-    BASE -->|"Step 5 使用"| U2["参与画像刷新\n影响基线更新"]
-```
+**关键区分**：
+- `is_registered=true` 只表示对象建档成功
+- `anchor_eligible=true` 才表示它能被 Step 4 用作可信锚点
+- `baseline_eligible=true` 表示它能参与 Step 5 画像刷新
 
 ---
 
@@ -135,6 +165,15 @@ flowchart TD
 
 ---
 
+## 定期清理（防止评估池无限膨胀）
+
+| 清理场景 | 对象 | 处理方式 |
+|----------|------|----------|
+| 等待超时 | `waiting` 态且从未入库的 Cell，连续 N 天无新数据 | 从评估池删除，不走退出链路 |
+| 已入库对象超时 | `qualified+` 对象长期无新数据 | 标记 `dormant`，交给 Step 5.4 接管 |
+
+---
+
 ## 冻结快照：批末统一产出
 
 ```mermaid
@@ -158,9 +197,11 @@ sequenceDiagram
 | 分组 | 字段 |
 |------|------|
 | 状态 | `lifecycle_state` / `is_registered` / `anchor_eligible` / `baseline_eligible` |
+| 异常阻断 | `is_collision_id` |
 | 空间 | `center_lon` / `center_lat` / `p50_radius_m` / `p90_radius_m` |
 | 信号 | `rsrp_avg` / `rsrq_avg` / `sinr_avg` |
-| 统计 | `independent_obs` / `distinct_dev_id` / `active_days` / `observed_span_hours` |
+| 统计 | `independent_obs` / `distinct_dev_id` / `active_days` / `observed_span_hours` / `gps_valid_count` |
+| 质量 | `position_grade` / `gps_confidence` / `signal_confidence` |
 
 ---
 
@@ -229,9 +270,10 @@ rebuild4 实验已验证：**逐天累积的流式评估和全量批量计算在
 | 不做项 | 负责步骤 | 原因 |
 |--------|----------|------|
 | 漂移分类（collision/migration/stable） | Step 5 | 需多日质心轨迹计算 |
-| 碰撞确认 | Step 5 | 全局键扫描，Step 3 只消费结果 |
-| 多质心检测 | Step 5 | 高成本，只做异常子集 |
+| 碰撞确认 | Step 5.1 / 5.5 | 全局键扫描，Step 3 只消费结果 |
+| 多质心检测 | Step 5.5 | 高成本，只做异常子集 |
 | 防毒化 | Step 5 | 可信库维护逻辑 |
 | 发布 trusted_cell_library | Step 5 | Step 3 只产出冻结快照 |
+| 退出确认（dormant → retired） | Step 5.4 | 属于长期维护链路 |
 
-**Step 3 只回答一件事**：这个对象现在处于哪个质量等级，快照里记录什么。
+**Step 3 只回答一件事**：这个对象现在是否足以进入可信链路，以及它的冻结状态是什么。

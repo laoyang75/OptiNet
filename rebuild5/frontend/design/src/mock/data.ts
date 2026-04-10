@@ -150,10 +150,18 @@ export const mockLACList: LACProfile[] = Array.from({ length: 6 }, (_, i) => ({
 
 export const mockFillStats: FillStats = {
   total_path_a: 1_892_520,
+  donor_matched_count: 1_500_000,
   gps_filled: 345_000,
-  signal_filled: 128_400,
+  rsrp_filled: 128_400,
+  rsrq_filled: 95_200,
+  sinr_filled: 88_600,
   operator_filled: 23_100,
+  lac_filled: 12_800,
+  tech_filled: 3_200,
   gps_anomaly_count: 4_520,
+  collision_skip_anomaly_count: 320,
   donor_excellent_count: 890,
   donor_qualified_count: 1_456,
+  remaining_none_gps: 45_000,
+  remaining_none_signal: 12_000,
 }

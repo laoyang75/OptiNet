@@ -163,12 +163,20 @@ export interface CleanRule {
 // 补数统计
 export interface FillStats {
   total_path_a: number
+  donor_matched_count: number
   gps_filled: number
-  signal_filled: number
+  rsrp_filled: number
+  rsrq_filled: number
+  sinr_filled: number
   operator_filled: number
+  lac_filled: number
+  tech_filled: number
   gps_anomaly_count: number
+  collision_skip_anomaly_count: number
   donor_excellent_count: number
   donor_qualified_count: number
+  remaining_none_gps: number
+  remaining_none_signal: number
 }
 
 // 快照 diff

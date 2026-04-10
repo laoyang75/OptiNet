@@ -10,3 +10,6 @@ docs/phase1/dev/run_logs/*.pid
 apps/phase1_ui/issues_store.json
 apps/phase1_ui/patches_store.json
 
+.omx/
+.playwright-mcp/
+*.log

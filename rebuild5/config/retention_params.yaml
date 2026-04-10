@@ -1,0 +1,6 @@
+waiting:
+  max_inactive_batches: 3
+dormant:
+  max_inactive_batches: 7
+retired:
+  max_inactive_batches: 14

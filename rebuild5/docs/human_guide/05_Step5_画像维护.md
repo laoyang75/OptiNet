@@ -31,6 +31,8 @@ flowchart LR
 
 **Step 5 的角色**：Step 3 说"谁通过准入"，Step 5 做"深度治理 + 正式发布"。只有经过 Step 5 维护的正式库，才是系统对外提供服务和补数的依据。
 
+> **重要**：Step 5 只维护已进入可信赖库的对象；尚在 `waiting / observing` 的对象由 Step 3 继续积累，Step 5 不管。
+
 ---
 
 ## Step 5 的四大职责
@@ -39,7 +41,7 @@ flowchart LR
 mindmap
   root((Step 5\n画像维护))
     全局碰撞检测
-      扫描全库的 cell_id 复用情况
+      两层体系
       产出 collision_id_list
     异常治理
       汇总 GPS 异常时序
@@ -50,14 +52,32 @@ mindmap
       is_dynamic
       is_multi_centroid
     退出管理
-      滑动窗口保鲜
+      密度感知滑动窗口
       dormant → retired
       重新激活语义
 ```
 
+**事实层闭环**：已发布对象在当前批的有效观测来自 Step 4 的 `enriched_records`（Path A 记录经 Step 4 治理后落地）。Step 5 必须消费 `enriched_records` 作为已发布对象当前批的窗口更新输入，同时计算 `pressure_avg` 写入 `trusted_cell_library`，供下一批 Step 4 气压补数使用。
+
 ---
 
-## 5.1 全局碰撞检测
+## 5.1 全局碰撞检测（两层体系）
+
+碰撞检测分为两层，解决不同问题：
+
+### A 类：绝对碰撞（真碰撞）
+
+同一 `(operator_code, lac, cell_id)` 在不同物理位置（不同 BS）出现，质心间距 ≥ 阈值。
+
+| 项目 | 规则 |
+|------|------|
+| 扫描对象 | `trusted_cell_library` 中同一 `(operator_code, lac, cell_id)` 关联到不同 `bs_id` |
+| 命中条件 | 两个实例质心距离 ≥ `absolute_collision_min_distance_m`（当前 20km，可配置） |
+| 影响 | `is_collision=true`, `drift_pattern=collision`, `baseline_eligible=false`, `antitoxin_hit=true` |
+
+### B 类：cell_id 映射表（`collision_id_list`）
+
+同一 `cell_id` 被多个不同 `(operator_code, lac)` 组合使用——这是**补数优化映射表**，不是异常标签。
 
 ```mermaid
 flowchart TD
@@ -75,9 +95,6 @@ flowchart TD
     LIB --> SCAN --> JUDGE
     JUDGE -->|"是"| MARK_Y --> OUT
     JUDGE -->|"否"| MARK_N
-
-    NOTE["碰撞特征规律：\n远端簇通常只有 1-2 台设备\n且与主簇共享相同 PCI/freq"]
-    MARK_Y -.- NOTE
 
     style OUT fill:#c8e6c9,stroke:#388e3c
 ```
@@ -98,7 +115,7 @@ flowchart TD
     W4["GPS 异常时序判定\n按日聚合 anomaly_log\n判定 drift / migration / time_cluster"]
     W5["防毒化检测\n试算新画像 vs 上版画像\n是否在容忍范围？"]
     W6["漂移分类 + 动态识别\n产出 drift_pattern / is_dynamic 等标签"]
-    W7["退出管理\n检测静默 → dormant → retired"]
+    W7["退出管理\n密度感知检测 → dormant → retired"]
     W8["更新 trusted_cell_library"]
 
     INPUTS --> W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8
@@ -108,20 +125,20 @@ flowchart TD
 
 ---
 
-## 滑动窗口：为什么 Cell 不能无限积累历史观测
+## 滑动窗口：密度感知的数据保鲜
 
 ```mermaid
 graph LR
     PROBLEM["问题：\n如果无限累积历史观测\n画像会越来越像「长期平均」\n而不是「当前状态」"]
 
-    SOLUTION["解决：\n每个 Cell 维护一个滑动窗口\n取「最近N天」和「最少M条」中的较大范围\n默认：N=7天，M=50条"]
+    SOLUTION["解决：每个 Cell 维护一个滑动窗口\n核心原则：数量优先\n取「最近N天」和「最少M条」中的较大范围\n默认：N=7天，M=50条"]
 
     EXAMPLE["示例：\n最近7天有300条 → 只保留7天\n最近7天只有12条 → 向前回溯到凑够50条"]
 
     PROBLEM --> SOLUTION --> EXAMPLE
 ```
 
-窗口内重算：质心 / P50 / P90 半径 / 漂移轨迹 / 窗口样本量。超出窗口的明细数据归档，不再参与当前画像计算。
+窗口内重算：质心 / P50 / P90 半径 / 漂移轨迹 / 信号均值（含 `pressure_avg`） / 窗口样本量。超出窗口的明细数据归档，不再参与当前画像计算。
 
 ---
 
@@ -179,10 +196,10 @@ flowchart TD
     COMPARE -->|"超出容忍"| BLOCK
 
     subgraph 检测维度
-        D1["质心漂移 > max_shift_m"]
-        D2["P90 膨胀 > max_ratio 倍"]
-        D3["设备数突增 > max_ratio 倍"]
-        D4["单时段观测占比 > max_ratio"]
+        D1["质心漂移 > max_shift_m（默认 500m）"]
+        D2["P90 膨胀 > max_ratio 倍（默认 2.0x）"]
+        D3["设备数突增 > max_ratio 倍（默认 3.0x）"]
+        D4["单时段观测占比 > max_ratio（待冻结）"]
     end
 
     COMPARE -.- 检测维度
@@ -222,9 +239,9 @@ graph TD
 
 ---
 
-## 退出管理
+## 退出管理（密度感知）
 
-只有**已进入可信库**的 Cell 才走退出链路，从未入库的观察对象直接从评估池清理：
+只有**已进入可信库**的 Cell 才走退出链路，从未入库的观察对象直接从 Step 3 评估池清理：
 
 ```mermaid
 stateDiagram-v2
@@ -233,14 +250,23 @@ stateDiagram-v2
     retired: retired 🔴
     step2: Step 2 重新积累
 
-    qualified_excellent --> dormant: 连续静默达到阈值\n（silent_days_to_dormant）
+    qualified_excellent --> dormant: 连续静默达到阈值\n（密度感知：高密度3天 / 中密度7天 / 低密度14天）
 
-    dormant --> retired: dormant 持续到期\n（dormant_days_to_retired）
+    dormant --> retired: dormant 持续 30 天
 
     dormant --> qualified_excellent: 恢复新数据\n→ 重新活跃
 
     retired --> step2: 再次出现新数据\n不恢复旧状态\n从头重建证据链
 ```
+
+退出阈值基于**密度感知**，而非固定天数：
+
+| 密度等级 | 条件 | dormant 阈值 |
+|----------|------|-------------|
+| 高密度 | 过去 30 天活跃 ≥ 20 天 | 连续 3 天无数据 |
+| 中密度 | 过去 30 天活跃 ≥ 10 天 | 连续 7 天无数据 |
+| 低密度 | 过去 30 天活跃 < 10 天 | 连续 14 天无数据 |
+| retired | dormant 后持续 | 30 天 |
 
 ---
 
@@ -296,25 +322,12 @@ sequenceDiagram
 
 ---
 
-## Step 5 只处理"已入库对象"
-
-```mermaid
-graph LR
-    INLIB["已进入 trusted_cell_library\n的 Cell\n→ Step 5 深度维护"]
-    NOTINLIB["尚在 waiting / observing\n从未入库的 Cell\n→ Step 3 继续积累，Step 5 不管"]
-
-    NOTE["退出链路（dormant/retired）\n只作用于曾经入库的对象"]
-    INLIB -.- NOTE
-```
-
----
-
 ## 维护统计（step5_maintenance_log）
 
 每次运行记录：
-- 碰撞检测：发现了多少碰撞 `cell_id`，新增了多少
-- 多质心：触发检测多少个，确认多质心多少个
-- GPS 异常：漂移/时段集中/迁移嫌疑各多少条
-- 防毒化：命中多少个，按维度分布
-- 退出：新进入 dormant 多少，新 retired 多少，重新激活多少
-- 数据窗口：平均窗口观测量，归档了多少条明细
+- **碰撞检测**：发现了多少碰撞 `cell_id`，新增了多少（A 类 / B 类各自统计）
+- **多质心**：触发检测多少个，确认多质心多少个（Cell 级 / BS 级）
+- **GPS 异常**：漂移/时段集中/迁移嫌疑各多少条
+- **防毒化**：命中多少个，按维度分布（质心漂移/P90膨胀/设备突增）
+- **退出**：新进入 dormant 多少，新 retired 多少，重新激活多少
+- **数据窗口**：平均窗口观测量，归档了多少条明细
