@@ -6,11 +6,11 @@ import Pagination from '../../components/common/Pagination.vue'
 import SummaryCard from '../../components/common/SummaryCard.vue'
 import StatusTag from '../../components/common/StatusTag.vue'
 import { getMaintenanceCells, getMaintenanceStats, runMaintenance, type MaintenanceCellItem, type MaintenanceStatsPayload } from '../../api/maintenance'
-import { fmt, pct } from '../../composables/useFormat'
+import { fmt } from '../../composables/useFormat'
 import { DRIFT_LABELS, type DriftPattern } from '../../types'
 
 const driftKeys: DriftPattern[] = ['stable', 'large_coverage', 'insufficient', 'moderate_drift', 'collision', 'migration']
-const selectedKind = ref<'anomaly' | 'collision' | 'migration' | 'multi_centroid' | 'all'>('all')
+const selectedKind = ref<'anomaly' | 'collision' | 'migration' | 'multi_centroid' | 'dormant' | 'retired' | 'all'>('all')
 const cells = ref<MaintenanceCellItem[]>([])
 const expandedIdx = ref<number | null>(null)
 const page = ref(1)
@@ -19,7 +19,7 @@ const totalCount = ref(0)
 const totalPages = ref(0)
 const running = ref(false)
 const stats = ref<MaintenanceStatsPayload>({
-  version: { run_id: '', dataset_key: 'sample_6lac', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
+  version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
     published_cell_count: 0, published_bs_count: 0, published_lac_count: 0,
     collision_cell_count: 0, multi_centroid_cell_count: 0, dynamic_cell_count: 0, anomaly_bs_count: 0,
@@ -70,7 +70,7 @@ function densityLabel(days: number): { label: string; style: string } {
 
 function fmtRsrp(v: any): string {
   if (v == null) return '-'
-  return Number(v).toFixed(3)
+  return Number(v).toFixed(2)
 }
 
 function fmtTime(v: string | null): string {
@@ -169,7 +169,7 @@ onMounted(async () => {
         </tr>
       </thead>
       <tbody>
-        <template v-for="(item, idx) in cells" :key="`${item.operator_code}-${item.lac}-${item.cell_id}`">
+        <template v-for="(item, idx) in cells" :key="`${item.operator_code}-${item.lac}-${item.cell_id}-${item.tech_norm || ''}`">
           <tr class="clickable-row" :class="{ 'antitoxin-row': item.antitoxin_hit }" @click="toggle(idx)">
             <td class="expand-icon">{{ expandedIdx === idx ? '▾' : '▸' }}</td>
             <td class="text-xs">{{ item.operator_cn || item.operator_code }}</td>
@@ -226,7 +226,7 @@ onMounted(async () => {
                 <div class="detail-section">
                   <div class="section-title">数据质量</div>
                   <div class="detail-grid">
-                    <div class="detail-item"><span class="dl">独立观测点</span><span class="dv">{{ fmt(item.independent_obs) }} ({{ fmt(item.distinct_dev_id) }} 台)</span></div>
+                    <div class="detail-item"><span class="dl">独立观测点</span><span class="dv">{{ item.independent_obs != null ? fmt(item.independent_obs) : '-' }} ({{ item.distinct_dev_id != null ? fmt(item.distinct_dev_id) : '-' }} 台)</span></div>
                     <div class="detail-item"><span class="dl">滑窗观测量</span><span class="dv">{{ fmt(item.window_obs_count) }}</span></div>
                     <div class="detail-item"><span class="dl">锚点资格</span><span class="dv" :style="item.anchor_eligible ? 'color:var(--c-success)' : ''">{{ item.anchor_eligible ? '是' : '否' }}</span></div>
                     <div class="detail-item"><span class="dl">基线资格</span><span class="dv" :style="!item.baseline_eligible ? 'color:var(--c-danger)' : ''">{{ item.baseline_eligible ? '是' : '否（被阻断）' }}</span></div>

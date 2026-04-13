@@ -109,8 +109,9 @@ onMounted(async () => {
     <div class="card">
       <div class="font-semibold text-sm mb-sm">边界说明</div>
       <ul class="note-list">
-        <li>同报文定义：<code>record_id</code> 相同的多行记录</li>
-        <li>GPS / RSRP / WiFi：事件时间差值 ≤ {{ timeWindowSeconds }} 秒</li>
+        <li><strong>cell_infos</strong> 行之间可全字段互补（同 <code>record_id</code>）</li>
+        <li><strong>ss1（时间差 ≤ {{ timeWindowSeconds }}s）</strong>：同 <code>record_id + cell_id</code> 且时间差 ≤ {{ timeWindowSeconds }}s 时允许全补</li>
+        <li><strong>ss1（时间差 > {{ timeWindowSeconds }}s）</strong>：只补运营商 / LAC，不补 GPS / 信号</li>
         <li>运营商 / LAC：总是可补，不受时间约束</li>
         <li>不覆盖已有值：仅对仍为空的 <code>*_filled</code> 列补齐</li>
         <li>这不是 Step 4 知识补数，不读取可信库</li>

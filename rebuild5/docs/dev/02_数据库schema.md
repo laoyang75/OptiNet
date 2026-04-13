@@ -78,7 +78,7 @@
 |----|------|------|
 | `etl_parsed` | 记录 × Cell | 解析后的结构化记录 |
 | `etl_cleaned` | 记录 × Cell | 清洗后（含 event_time_std） |
-| `etl_filled` | 记录 × Cell | 同报文补齐后 |
+| `etl_filled` | 视图兼容层 | 兼容 rebuild4 的只读别名，实际底表仍是 `etl_cleaned` |
 
 ### Step 2: 基础画像 + 路由
 

@@ -31,18 +31,30 @@ def search_service(
 
 
 @router.get('/cell/{cell_id}')
-def get_cell(cell_id: int) -> dict[str, object]:
-    return success_envelope(get_service_cell_payload(cell_id))
+def get_cell(
+    cell_id: int,
+    operator_code: str | None = None,
+    lac: int | None = Query(None),
+    tech_norm: str | None = None,
+) -> dict[str, object]:
+    return success_envelope(
+        get_service_cell_payload(
+            cell_id,
+            operator_code=operator_code,
+            lac=lac,
+            tech_norm=tech_norm,
+        )
+    )
 
 
 @router.get('/bs/{bs_id}')
-def get_bs(bs_id: int) -> dict[str, object]:
-    return success_envelope(get_service_bs_payload(bs_id))
+def get_bs(bs_id: int, operator_code: str | None = None, lac: int | None = Query(None)) -> dict[str, object]:
+    return success_envelope(get_service_bs_payload(bs_id, operator_code=operator_code, lac=lac))
 
 
 @router.get('/lac/{lac}')
-def get_lac(lac: int) -> dict[str, object]:
-    return success_envelope(get_service_lac_payload(lac))
+def get_lac(lac: int, operator_code: str | None = None) -> dict[str, object]:
+    return success_envelope(get_service_lac_payload(lac, operator_code=operator_code))
 
 
 @router.get('/coverage')

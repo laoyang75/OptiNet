@@ -12,7 +12,7 @@ import {
   fetchTrend, type TrendPoint,
 } from '../../api/evaluation'
 import { fmt } from '../../composables/useFormat'
-import type { LifecycleState } from '../../types'
+import { STATE_LABELS, type LifecycleState } from '../../types'
 
 const emptyDistribution: Record<LifecycleState, number> = {
   excellent: 0, qualified: 0, observing: 0, waiting: 0, dormant: 0, retired: 0,
@@ -25,6 +25,7 @@ const payload = ref<EvaluationOverviewPayload>({
   lac_distribution: { ...emptyDistribution },
   diff_summary: { new: 0, promoted: 0, demoted: 0, eligibility_changed: 0, geometry_changed: 0, unchanged: 0 },
   counts: { cell_total: 0, bs_total: 0, lac_total: 0, anchor_eligible_cells: 0 },
+  cleanup: { waiting_pruned_cells: 0, dormant_marked_cells: 0 },
 })
 
 const snapshot = ref<SnapshotPayload>({
@@ -68,11 +69,11 @@ const STATE_COLORS: Record<string, string> = {
 function trendPath(layer: 'cell' | 'bs' | 'lac', state: LifecycleState): string {
   if (trendPoints.value.length === 0) return ''
   const pts = trendPoints.value
-  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p[layer][s])))
+  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p[layer]?.[s] ?? 0)))
   const w = 480, h = 120
   return pts.map((p, i) => {
     const x = pts.length === 1 ? w / 2 : (i / (pts.length - 1)) * w
-    const y = h - (p[layer][state] / maxVal) * (h - 10)
+    const y = h - ((p[layer]?.[state] ?? 0) / maxVal) * (h - 10)
     return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
   }).join(' ')
 }
@@ -90,7 +91,20 @@ function trendPath(layer: 'cell' | 'bs' | 'lac', state: LifecycleState): string 
     <SummaryCard title="LAC 总量" :value="fmt(payload.counts.lac_total)" />
     <SummaryCard title="本批新增" :value="fmt(payload.diff_summary.new)" color="var(--c-success)" />
     <SummaryCard title="本批晋升" :value="fmt(payload.diff_summary.promoted)" color="var(--c-primary)" />
-    <SummaryCard title="锚点 Cell" :value="fmt(payload.counts.anchor_eligible_cells)" subtitle="anchor_eligible" />
+    <SummaryCard title="锚点 Cell" :value="fmt(payload.counts.anchor_eligible_cells)" subtitle="具备锚点资格" />
+  </div>
+
+  <div class="card mb-lg">
+    <div class="font-semibold text-sm mb-sm">候选池清理</div>
+    <div class="flex gap-lg wrap-row text-sm">
+      <span>本批等待超时清理 <strong class="font-mono">{{ fmt(payload.cleanup.waiting_pruned_cells) }}</strong></span>
+      <span>本批 dormant 转移
+        <strong class="font-mono">
+          <template v-if="payload.cleanup.dormant_marked_cells > 0">{{ fmt(payload.cleanup.dormant_marked_cells) }}</template>
+          <template v-else>待开发</template>
+        </strong>
+      </span>
+    </div>
   </div>
 
   <!-- 三层状态分布 -->
@@ -125,7 +139,7 @@ function trendPath(layer: 'cell' | 'bs' | 'lac', state: LifecycleState): string 
               <tr><th>cell_id</th><th>LAC</th><th>运营商</th><th>前</th><th></th><th>现</th><th>类型</th><th>原因</th></tr>
             </thead>
             <tbody>
-              <tr v-for="d in snapshot.items.slice(0, 50)" :key="d.cell_id + '-' + d.diff_kind">
+              <tr v-for="d in snapshot.items.slice(0, 50)" :key="d.cell_id + '-' + d.lac + '-' + d.operator_code + '-' + (d.tech_norm || '') + '-' + d.diff_kind">
                 <td class="font-mono">{{ d.cell_id }}</td>
                 <td class="font-mono">{{ d.lac }}</td>
                 <td class="font-mono">{{ d.operator_code }}</td>
@@ -163,7 +177,7 @@ function trendPath(layer: 'cell' | 'bs' | 'lac', state: LifecycleState): string 
         </svg>
         <div class="flex gap-md mt-xs">
           <span v-for="s in STATES" :key="s" class="text-xs flex items-center gap-xs">
-            <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ s }}
+            <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ STATE_LABELS[s] }}
           </span>
         </div>
       </div>

@@ -53,7 +53,8 @@ onMounted(async () => {
     </div>
 
     <div class="card">
-      <div class="font-semibold text-sm mb-md">解析前后字段覆盖率</div>
+      <div class="font-semibold text-sm mb-md">Step 1 产出覆盖变化</div>
+      <div class="text-xs text-secondary mb-sm">当前展示为 Step 1 当前汇总口径，非纯解析阶段独立审计。</div>
       <table class="data-table">
         <thead><tr><th>字段</th><th style="width:140px">解析前</th><th style="width:140px">解析后</th><th>说明</th></tr></thead>
         <tbody>

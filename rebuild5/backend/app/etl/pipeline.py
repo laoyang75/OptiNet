@@ -22,6 +22,8 @@ def run_step1_pipeline() -> dict[str, Any]:
         clean_result = step1_clean()
         before_coverage = calculate_field_coverage(CLEAN_STAGE_TABLE, filled=False)
         fill_result = step1_fill()
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rebuild5.etl_cleaned (event_time_std)')
+        execute('ANALYZE rebuild5.etl_cleaned')
         after_coverage = calculate_field_coverage(FINAL_OUTPUT_TABLE, filled=True)
         # Drop intermediate tables no longer needed
         execute('DROP TABLE IF EXISTS rebuild5.etl_clean_stage')

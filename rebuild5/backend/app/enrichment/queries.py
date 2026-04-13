@@ -40,7 +40,7 @@ def get_enrichment_stats_payload() -> dict[str, Any]:
     )
     if not row:
         return {
-            'version': {'run_id': '', 'dataset_key': 'sample_6lac', 'snapshot_version': 'v0', 'snapshot_version_prev': 'v0'},
+            'version': {'run_id': '', 'dataset_key': '', 'snapshot_version': 'v0', 'snapshot_version_prev': 'v0'},
             'summary': {
                 'total_path_a': 0, 'donor_matched_count': 0,
                 'gps_filled': 0, 'rsrp_filled': 0, 'rsrq_filled': 0, 'sinr_filled': 0,
@@ -100,6 +100,9 @@ def get_enrichment_coverage_payload() -> dict[str, Any]:
 
 
 def get_enrichment_anomalies_payload(page: int = 1, page_size: int = 50) -> dict[str, Any]:
+    latest_batch = _safe_fetchone(
+        'SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5.gps_anomaly_log'
+    ) or {'batch_id': 0}
     result = paginate(
         """
         SELECT
@@ -109,8 +112,10 @@ def get_enrichment_anomalies_payload(page: int = 1, page_size: int = 50) -> dict
             distance_to_donor_m, anomaly_type, anomaly_threshold_m,
             anomaly_source, is_collision_id, donor_snapshot_version
         FROM rebuild5.gps_anomaly_log
+        WHERE batch_id = %s
         ORDER BY distance_to_donor_m DESC NULLS LAST, event_time_std DESC
         """,
+        (int(latest_batch['batch_id']),),
         page=page,
         page_size=page_size,
     )

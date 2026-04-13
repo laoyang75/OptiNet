@@ -42,7 +42,7 @@ def build_maintenance_stats_payload(summary: dict[str, Any] | None, drift_rows: 
     return {
         'version': {
             'run_id': row.get('run_id', ''),
-            'dataset_key': row.get('dataset_key', 'sample_6lac'),
+            'dataset_key': row.get('dataset_key', ''),
             'snapshot_version': row.get('snapshot_version', 'v0'),
             'snapshot_version_prev': row.get('snapshot_version_prev', 'v0'),
         },
@@ -89,6 +89,10 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
         where_clauses.append('is_multi_centroid')
     elif kind == 'anomaly':
         where_clauses.append('(is_collision OR is_multi_centroid OR is_dynamic OR drift_pattern IN (\'migration\', \'large_coverage\', \'moderate_drift\'))')
+    elif kind == 'dormant':
+        where_clauses.append("lifecycle_state = 'dormant'")
+    elif kind == 'retired':
+        where_clauses.append("lifecycle_state = 'retired'")
 
     where_sql = ''
     if where_clauses:
@@ -100,19 +104,16 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
             t.operator_code, t.operator_cn, t.lac, t.bs_id, t.cell_id, t.tech_norm,
             t.lifecycle_state, t.position_grade, t.anchor_eligible, t.baseline_eligible,
             t.p50_radius_m, t.p90_radius_m, t.center_lon, t.center_lat,
-            t.drift_pattern, t.max_spread_m, t.net_drift_m, t.drift_ratio,
+            t.drift_pattern, t.centroid_pattern, t.max_spread_m, t.net_drift_m, t.drift_ratio,
             t.gps_anomaly_type, t.is_collision, t.is_dynamic, t.is_multi_centroid,
             t.antitoxin_hit, t.cell_scale, t.window_obs_count, t.last_observed_at, t.independent_obs, t.distinct_dev_id,
             t.rsrp_avg, t.rsrq_avg, t.sinr_avg, t.pressure_avg,
             t.gps_valid_count, t.gps_confidence, t.signal_confidence, t.observed_span_hours, t.active_days,
             t.active_days_30d, t.consecutive_inactive_days,
-            geo.province_name, geo.city_name, geo.district_name
+            loc.province_name, loc.city_name, loc.district_name
         FROM rebuild5.trusted_cell_library t
-        LEFT JOIN (
-            SELECT cell_id::text AS cell_id, province_name, city_name, district_name
-            FROM rebuild4.sample_cell_profile
-            WHERE province_name IS NOT NULL
-        ) geo ON t.cell_id::text = geo.cell_id
+        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
+            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
         WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
         {where_sql}
         ORDER BY t.is_collision DESC, t.is_multi_centroid DESC, t.p90_radius_m DESC NULLS LAST, t.cell_id
@@ -126,7 +127,7 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
     if multi_ids:
         centroid_rows = _safe_fetchall(
             """
-            SELECT cell_id, cluster_id, center_lon, center_lat, obs_count, dev_count, share_ratio
+            SELECT cell_id, tech_norm, cluster_id, center_lon, center_lat, obs_count, dev_count, share_ratio
             FROM rebuild5.cell_centroid_detail
             WHERE cell_id = ANY(%s) AND batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.cell_centroid_detail)
             ORDER BY cell_id, cluster_id
@@ -134,10 +135,12 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
             (multi_ids,),
         )
         for row in centroid_rows:
-            centroids_by_cell.setdefault(row['cell_id'], []).append(row)
+            key = f"{row['cell_id']}|{row.get('tech_norm') or ''}"
+            centroids_by_cell.setdefault(key, []).append(row)
 
     for item in result['items']:
-        item['centroids'] = centroids_by_cell.get(item['cell_id'], [])
+        key = f"{item['cell_id']}|{item.get('tech_norm') or ''}"
+        item['centroids'] = centroids_by_cell.get(key, [])
 
     return {'items': result['items'], 'kind': kind, '_page_info': result}
 
@@ -146,15 +149,18 @@ def get_maintenance_bs_payload(page: int = 1, page_size: int = 50) -> dict[str, 
     result = paginate(
         """
         SELECT
-            operator_code, operator_cn, lac, bs_id, lifecycle_state,
-            anchor_eligible, baseline_eligible, total_cells, qualified_cells, excellent_cells,
-            center_lon, center_lat, gps_p50_dist_m, gps_p90_dist_m,
-            classification, position_grade, anomaly_cell_ratio,
-            is_multi_centroid, window_active_cell_count,
-            (classification = 'large_spread') AS large_spread
-        FROM rebuild5.trusted_bs_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
-        ORDER BY large_spread DESC, anomaly_cell_ratio DESC, total_cells DESC, bs_id
+            t.operator_code, t.operator_cn, t.lac, t.bs_id, t.lifecycle_state,
+            t.anchor_eligible, t.baseline_eligible, t.total_cells, t.qualified_cells, t.excellent_cells,
+            t.center_lon, t.center_lat, t.gps_p50_dist_m, t.gps_p90_dist_m,
+            t.classification, t.position_grade, t.anomaly_cell_ratio,
+            t.is_multi_centroid, t.window_active_cell_count,
+            (t.classification = 'large_spread') AS large_spread,
+            loc.province_name, loc.city_name, loc.district_name
+        FROM rebuild5.trusted_bs_library t
+        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
+            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
+        ORDER BY large_spread DESC, t.anomaly_cell_ratio DESC, t.total_cells DESC, t.bs_id
         """,
         page=page,
         page_size=page_size,
@@ -166,15 +172,18 @@ def get_maintenance_lac_payload(page: int = 1, page_size: int = 50) -> dict[str,
     result = paginate(
         """
         SELECT
-            operator_code, operator_cn, lac, lifecycle_state,
-            anchor_eligible, baseline_eligible,
-            total_bs, qualified_bs, qualified_bs_ratio,
-            area_km2, anomaly_bs_ratio,
-            boundary_stability_score, active_bs_count, retired_bs_count,
-            trend
-        FROM rebuild5.trusted_lac_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)
-        ORDER BY anomaly_bs_ratio DESC, total_bs DESC, lac
+            t.operator_code, t.operator_cn, t.lac, t.lifecycle_state,
+            t.anchor_eligible, t.baseline_eligible,
+            t.total_bs, t.qualified_bs, t.qualified_bs_ratio,
+            t.area_km2, t.anomaly_bs_ratio,
+            t.boundary_stability_score, t.active_bs_count, t.retired_bs_count,
+            t.trend,
+            loc.province_name, loc.city_name, loc.district_name
+        FROM rebuild5.trusted_lac_library t
+        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
+            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)
+        ORDER BY t.anomaly_bs_ratio DESC, t.total_bs DESC, t.lac
         """,
         page=page,
         page_size=page_size,
@@ -221,7 +230,7 @@ def get_maintenance_cell_detail_payload(cell_id: int) -> dict[str, Any] | None:
             operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
             lifecycle_state, position_grade, anchor_eligible, baseline_eligible,
             p50_radius_m, p90_radius_m, center_lon, center_lat,
-            drift_pattern, max_spread_m, net_drift_m, drift_ratio,
+            drift_pattern, centroid_pattern, max_spread_m, net_drift_m, drift_ratio,
             gps_anomaly_type, is_collision, is_dynamic, is_multi_centroid,
             antitoxin_hit, cell_scale, window_obs_count, last_observed_at,
             independent_obs, distinct_dev_id,
@@ -240,9 +249,10 @@ def get_maintenance_cell_detail_payload(cell_id: int) -> dict[str, Any] | None:
         SELECT cluster_id, center_lon, center_lat, obs_count, radius_m
         FROM rebuild5.cell_centroid_detail
         WHERE cell_id = %s
+          AND tech_norm IS NOT DISTINCT FROM %s
         ORDER BY obs_count DESC
         """,
-        (cell_id,),
+        (cell_id, row.get('tech_norm')),
     )
     return {**row, 'centroids': centroids}
 
@@ -291,7 +301,7 @@ def get_antitoxin_hits_payload(page: int = 1, page_size: int = 50) -> dict[str, 
               AND antitoxin_hit = true
         ),
         prev AS (
-            SELECT operator_code, lac, cell_id,
+            SELECT operator_code, lac, cell_id, tech_norm,
                    center_lon, center_lat, p90_radius_m, distinct_dev_id
             FROM rebuild5.trusted_cell_library
             WHERE batch_id = (
@@ -322,6 +332,7 @@ def get_antitoxin_hits_payload(page: int = 1, page_size: int = 50) -> dict[str, 
         FROM curr c
         LEFT JOIN prev p
           ON p.operator_code = c.operator_code AND p.lac = c.lac AND p.cell_id = c.cell_id
+         AND p.tech_norm IS NOT DISTINCT FROM c.tech_norm
         ORDER BY
             COALESCE(CASE WHEN p.center_lon IS NOT NULL AND c.center_lon IS NOT NULL
                 THEN SQRT(POWER((c.center_lon - p.center_lon) * 85300, 2)

@@ -40,7 +40,7 @@ export interface ServiceSearchPayload {
     q: string
     level: string
     operator_code: string | null
-    limit: number
+    limit?: number
     page?: number
     page_size?: number
   }
@@ -127,7 +127,7 @@ export interface ServiceCellDetail {
   sinr_avg?: number | null
   pressure_avg?: number | null
   independent_obs?: number | null
-  unique_devices?: number | null
+  distinct_dev_id?: number | null
   active_days_30d?: number | null
 }
 
@@ -171,16 +171,34 @@ export function getServiceSearch(q = '', level = 'cell', operatorCode?: string |
   return apiGet<ServiceSearchPayload>(`/api/service/search?${params.toString()}`)
 }
 
-export function getServiceCell(cellId: number): Promise<ServiceCellDetail> {
-  return apiGet<ServiceCellDetail>(`/api/service/cell/${cellId}`)
+export function getServiceCell(
+  cellId: number,
+  context?: { operator_code?: string | null; lac?: number | null; tech_norm?: string | null },
+): Promise<ServiceCellDetail> {
+  const params = new URLSearchParams()
+  if (context?.operator_code) params.set('operator_code', context.operator_code)
+  if (context?.lac != null) params.set('lac', String(context.lac))
+  if (context?.tech_norm) params.set('tech_norm', context.tech_norm)
+  const qs = params.toString()
+  return apiGet<ServiceCellDetail>(`/api/service/cell/${cellId}${qs ? `?${qs}` : ''}`)
 }
 
-export function getServiceBS(bsId: number): Promise<ServiceBSDetail> {
-  return apiGet<ServiceBSDetail>(`/api/service/bs/${bsId}`)
+export function getServiceBS(
+  bsId: number,
+  context?: { operator_code?: string | null; lac?: number | null },
+): Promise<ServiceBSDetail> {
+  const params = new URLSearchParams()
+  if (context?.operator_code) params.set('operator_code', context.operator_code)
+  if (context?.lac != null) params.set('lac', String(context.lac))
+  const qs = params.toString()
+  return apiGet<ServiceBSDetail>(`/api/service/bs/${bsId}${qs ? `?${qs}` : ''}`)
 }
 
-export function getServiceLAC(lac: number): Promise<ServiceLACDetail> {
-  return apiGet<ServiceLACDetail>(`/api/service/lac/${lac}`)
+export function getServiceLAC(lac: number, context?: { operator_code?: string | null }): Promise<ServiceLACDetail> {
+  const params = new URLSearchParams()
+  if (context?.operator_code) params.set('operator_code', context.operator_code)
+  const qs = params.toString()
+  return apiGet<ServiceLACDetail>(`/api/service/lac/${lac}${qs ? `?${qs}` : ''}`)
 }
 
 export function getServiceCoverage(): Promise<ServiceCoveragePayload> {

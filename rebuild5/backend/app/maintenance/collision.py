@@ -8,7 +8,7 @@ A-class: absolute collision — same (operator_code, tech_norm, lac, cell_id) ap
 """
 from __future__ import annotations
 
-from ..core.database import execute
+from ..core.database import execute, fetchone
 
 
 def detect_collisions(
@@ -84,7 +84,22 @@ def _detect_absolute_collision(
       is_collision=TRUE, drift_pattern='collision',
       antitoxin_hit=TRUE, baseline_eligible=FALSE
     """
-    # First find cells with multiple BS (tiny subset), then only compare those pairs
+    # First check if there are ANY cells with multiple BS — if not, skip entirely
+    multi_bs_count = fetchone(
+        """
+        SELECT COUNT(*) AS cnt FROM (
+            SELECT operator_code, tech_norm, lac, cell_id
+            FROM rebuild5.trusted_cell_library
+            WHERE batch_id = %s
+            GROUP BY operator_code, tech_norm, lac, cell_id
+            HAVING COUNT(DISTINCT bs_id) > 1
+        ) t
+        """,
+        (batch_id,),
+    )
+    if not multi_bs_count or int(multi_bs_count['cnt']) == 0:
+        return  # No multi-BS cells → no absolute collisions possible
+
     execute(
         """
         UPDATE rebuild5.trusted_cell_library c

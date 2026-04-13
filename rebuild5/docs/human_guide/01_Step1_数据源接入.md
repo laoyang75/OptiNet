@@ -33,7 +33,7 @@ flowchart TD
     P4["1.4 清洗（ODS 过滤）\n19条规则去除无效值\n主键级错误才删行，其余置空"]
     P5["1.5 字段对齐\n同一条报文内互补\ncell_infos ↔ ss1 字段互补"]
 
-    OUT["✅ etl_cleaned\n66列，Step 1 最终产出"]
+    OUT["✅ etl_cleaned\n70列，Step 1 最终产出"]
 
     SRC --> P1 --> P2 --> P3 --> P4 --> P5 --> OUT
 
@@ -172,14 +172,14 @@ flowchart TD
 
 ---
 
-## 产出：etl_cleaned 的 66 列结构
+## 产出：etl_cleaned 的 70 列结构
 
 | 分类 | 列数 | 说明 |
 |------|------|------|
-| 基础结构化列 | 45 | 解析直接产出 |
-| 清洗派生列 | 7 | 清洗阶段补加（`bs_id`、`sector_id`、`operator_cn`、`report_ts`、`cell_ts_std`、`gps_ts`、`has_cell_id`） |
+| 基础结构化列 | 47 | 解析直接产出（含 `dataset_key`、`source_table` 两个上下文字段） |
+| 清洗派生列 | 9 | 清洗阶段补加（`bs_id`、`sector_id`、`operator_cn`、`report_ts`、`cell_ts_std`、`gps_ts`、`event_time_std`、`event_time_source`、`has_cell_id`） |
 | 字段对齐结果列 | 14 | 同报文对齐阶段补加 |
-| **最终输出总列数** | **66** | Step 1 最终 `etl_cleaned` |
+| **最终输出总列数** | **70** | Step 1 最终 `etl_cleaned` |
 
 **关键约定**：`*_raw` 字段代表原始真相，永远不被覆盖；`*_filled` 字段是对齐或补数后的可用值，供后续步骤使用。
 
@@ -197,7 +197,7 @@ flowchart TD
 
 ---
 
-## 运行统计（etl_run_stats）
+## 运行统计（step1_run_stats）
 
 每次 Step 1 运行后记录一条统计快照，记录：
 - 解析输入/输出行数、扩展比

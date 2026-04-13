@@ -11,7 +11,7 @@ import {
   fetchBSRuleImpact, type RuleImpactPayload,
   fetchTrend, type TrendPoint,
 } from '../../api/evaluation'
-import type { LifecycleState } from '../../types'
+import { STATE_LABELS, type LifecycleState } from '../../types'
 
 const distribution = ref({ excellent: 0, qualified: 0, observing: 0, waiting: 0, dormant: 0, retired: 0 })
 const items = ref<BSEvaluationItem[]>([])
@@ -64,11 +64,11 @@ const STATE_COLORS: Record<string, string> = {
 function trendPath(state: LifecycleState): string {
   if (trendPoints.value.length === 0) return ''
   const pts = trendPoints.value
-  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p.bs[s] ?? 0)))
+  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p.bs?.[s] ?? 0)))
   const w = 600, h = 140
   return pts.map((p, i) => {
     const x = pts.length === 1 ? w / 2 : (i / (pts.length - 1)) * w
-    const y = h - ((p.bs[state] ?? 0) / maxVal) * (h - 10)
+    const y = h - ((p.bs?.[state] ?? 0) / maxVal) * (h - 10)
     return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
   }).join(' ')
 }
@@ -87,7 +87,7 @@ function trendPath(state: LifecycleState): string {
       <thead>
         <tr>
           <th>bs_id</th><th>LAC</th><th>运营商</th><th>状态</th><th>锚点</th>
-          <th>总 Cell</th><th>qualified+ Cell</th><th>excellent Cell</th><th>大覆盖</th><th>晋升分析</th>
+          <th>总 Cell</th><th>合格+ Cell</th><th>优秀 Cell</th><th>大覆盖</th><th>晋升分析</th>
         </tr>
       </thead>
       <tbody>
@@ -108,9 +108,9 @@ function trendPath(state: LifecycleState): string {
             <span v-else class="text-muted text-xs">-</span>
           </td>
           <td class="text-xs text-secondary">
-            <template v-if="b.excellent_cells >= 1">有 excellent Cell，已达标</template>
-            <template v-else-if="b.qualified_cells >= 3">qualified+ ≥ 3，已达标</template>
-            <template v-else>差 {{ Math.max(0, 3 - b.qualified_cells) }} 个 qualified+ Cell</template>
+            <template v-if="b.excellent_cells >= 1">有优秀 Cell，已达标</template>
+            <template v-else-if="b.qualified_cells >= 3">合格+ ≥ 3，已达标</template>
+            <template v-else>差 {{ Math.max(0, 3 - b.qualified_cells) }} 个合格+ Cell</template>
           </td>
         </tr>
         <tr v-if="items.length === 0">
@@ -143,9 +143,9 @@ function trendPath(state: LifecycleState): string {
   <div class="card mt-lg">
     <div class="font-semibold text-sm mb-sm">BS 晋升规则</div>
     <ul class="text-xs text-secondary" style="padding-left:18px;line-height:2">
-      <li><strong>qualified</strong>：≥ 1 个 excellent Cell，或 ≥ 3 个 qualified+ Cell</li>
-      <li><strong>observing</strong>：至少 1 个下属 Cell 有 GPS 证据</li>
-      <li><strong>anchor_eligible</strong>：至少 1 个下属 Cell 为 anchor_eligible</li>
+      <li><strong>合格</strong>：≥ 1 个优秀 Cell，或 ≥ 3 个合格+ Cell</li>
+      <li><strong>观察</strong>：至少 1 个下属 Cell 有 GPS 证据</li>
+      <li><strong>锚点资格</strong>：至少 1 个下属 Cell 具备锚点资格</li>
       <li>BS 不直接读取原始报文，只看下属 Cell 聚合结果</li>
     </ul>
   </div>
@@ -158,7 +158,7 @@ function trendPath(state: LifecycleState): string {
     </svg>
     <div class="flex gap-md mt-xs">
       <span v-for="s in STATES" :key="s" class="text-xs flex items-center gap-xs">
-        <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ s }}
+        <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ STATE_LABELS[s] }}
       </span>
     </div>
   </div>

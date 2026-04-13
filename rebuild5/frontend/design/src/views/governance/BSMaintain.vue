@@ -9,7 +9,7 @@ import { getMaintenanceBS, getMaintenanceStats, type MaintenanceBSItem, type Mai
 import { fmt, pct } from '../../composables/useFormat'
 
 const stats = ref<MaintenanceStatsPayload>({
-  version: { run_id: '', dataset_key: 'sample_6lac', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
+  version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
     published_cell_count: 0, published_bs_count: 0, published_lac_count: 0,
     collision_cell_count: 0, multi_centroid_cell_count: 0, dynamic_cell_count: 0, anomaly_bs_count: 0,
@@ -35,7 +35,7 @@ function classTag(key: string | null) {
   return classCfg[key || 'normal_spread'] || { label: key || '-', cls: '' }
 }
 
-const activeBs = computed(() => bsItems.value.filter(i => i.lifecycle_state === 'active').length)
+const qualifiedBs = computed(() => bsItems.value.filter(i => i.lifecycle_state === 'qualified').length)
 const observingBs = computed(() => bsItems.value.filter(i => i.lifecycle_state === 'observing').length)
 const collisionBs = computed(() => bsItems.value.filter(i => i.classification === 'collision_bs').length)
 const largeBs = computed(() => bsItems.value.filter(i => i.classification === 'large_spread' || i.large_spread).length)
@@ -85,8 +85,8 @@ onMounted(loadData)
   <!-- Summary cards -->
   <div class="grid grid-7 mb-lg">
     <SummaryCard title="总数" :value="fmt(stats.summary.published_bs_count)" />
-    <SummaryCard title="Active" :value="fmt(activeBs)" color="var(--c-success)" />
-    <SummaryCard title="Observing" :value="fmt(observingBs)" color="var(--c-dormant)" />
+    <SummaryCard title="合格" :value="fmt(qualifiedBs)" color="var(--c-success)" />
+    <SummaryCard title="观察" :value="fmt(observingBs)" color="var(--c-dormant)" />
     <SummaryCard title="碰撞" :value="fmt(collisionBs)" color="var(--c-danger)" />
     <SummaryCard title="大覆盖" :value="fmt(largeBs)" color="#d97706" />
     <SummaryCard title="多质心" :value="fmt(multiCentroidBs)" color="#7c3aed" />

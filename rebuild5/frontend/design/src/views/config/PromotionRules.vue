@@ -10,7 +10,7 @@ function toRecord(value: unknown): Record<string, any> {
 }
 
 const config = ref<SystemConfigPayload>({
-  current_version: { dataset_key: 'sample_6lac', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
+  current_version: { dataset_key: '', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
   datasets: [],
   params: {},
 })
@@ -61,7 +61,7 @@ onMounted(async () => {
       { label: 'P90 半径', value: '< ' + String(excellent.max_p90_radius_m ?? 0), unit: 'm' },
       { label: '观测跨度', value: '≥ ' + String(excellent.min_observed_span_hours ?? 0), unit: 'h' },
     ]" />
-    <RuleCard title="Cell 锚点资格 (anchor_eligible)" :rules="[
+    <RuleCard title="Cell 锚点资格" :rules="[
       { label: 'GPS 有效数', value: '≥ ' + String(anchorable.min_gps_valid_count ?? 0), unit: '条' },
       { label: '独立设备数', value: '≥ ' + String(anchorable.min_distinct_devices ?? 0), unit: '台' },
       { label: 'P90 半径', value: '< ' + String(anchorable.max_p90_radius_m ?? 0), unit: 'm' },
@@ -77,7 +77,7 @@ onMounted(async () => {
   <div class="grid grid-2 gap-lg mb-lg">
     <RuleCard title="BS → qualified 条件（满足任一）" :rules="[
       { label: '下属 excellent Cell', value: '≥ ' + String(bsQualified.min_excellent_cells ?? 0), unit: '个' },
-      { label: '或 qualified+ Cell', value: '≥ ' + String(bsQualified.min_qualified_cells ?? 0), unit: '个' },
+      { label: '或合格+ Cell', value: '≥ ' + String(bsQualified.min_qualified_cells ?? 0), unit: '个' },
     ]" />
     <RuleCard title="LAC → qualified 条件（满足任一）" :rules="[
       { label: 'qualified BS', value: '≥ ' + String(lacQualified.min_qualified_bs ?? 0), unit: '个' },

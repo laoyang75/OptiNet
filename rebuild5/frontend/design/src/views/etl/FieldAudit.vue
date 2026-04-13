@@ -58,7 +58,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader title="字段审计" :description="`${rawFields} 列原始字段经 JSON 解析、展开后的目标表结构。共 ${totalFields} 个字段，按 cell_id 拆行。`" />
+  <PageHeader title="字段定义" :description="`当前页展示 Step 1 冻结字段定义与目标结构（${rawFields} 列原始 → ${totalFields} 个目标字段），不代表实时源表覆盖率审计。`" />
 
   <div class="category-grid mb-lg">
     <div v-for="(count, cat) in categorySummary" :key="cat" class="cat-chip">

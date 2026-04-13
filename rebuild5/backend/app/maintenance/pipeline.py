@@ -27,7 +27,13 @@ from .publish_bs_lac import (
 )
 from .publish_cell import publish_cell_library
 from .schema import ensure_maintenance_schema
-from .window import build_daily_centroids, recalculate_cell_metrics, refresh_sliding_window
+from .window import (
+    build_cell_activity_stats,
+    build_cell_metrics_base,
+    build_cell_radius_stats,
+    build_daily_centroids,
+    refresh_sliding_window,
+)
 from .writers import collect_step5_stats, write_run_log, write_step5_stats
 
 
@@ -42,16 +48,18 @@ def _latest_step3() -> dict[str, Any] | None:
     )
 
 
-def _latest_published_snapshot_version() -> str:
+def _latest_published_snapshot_version(*, current_batch_id: int) -> str:
     if not relation_exists('rebuild5.trusted_cell_library'):
         return 'v0'
     row = fetchone(
         """
         SELECT snapshot_version
         FROM rebuild5.trusted_cell_library
+        WHERE batch_id < %s
         ORDER BY batch_id DESC, cell_id
         LIMIT 1
-        """
+        """,
+        (current_batch_id,),
     )
     return str(row['snapshot_version']) if row else 'v0'
 
@@ -60,39 +68,98 @@ def run_maintenance_pipeline() -> dict[str, Any]:
     # -- Prepare --
     # cell_sliding_window is persistent across batches (continuous window) — do NOT drop
     execute('DROP TABLE IF EXISTS rebuild5.cell_daily_centroid')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_metrics_base')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_radius_stats')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_activity_stats')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_drift_stats')
     execute('DROP TABLE IF EXISTS rebuild5.cell_metrics_window')
     execute('DROP TABLE IF EXISTS rebuild5.cell_anomaly_summary')
-    execute('DROP TABLE IF EXISTS rebuild5_meta.step5_run_stats')
     ensure_maintenance_schema()
 
     step3 = _latest_step3()
     if not step3:
         return _empty_stats()
 
+    import time as _time
+    _timings = {}
+    def _tick(label):
+        _timings[label] = _time.time()
+    def _report():
+        keys = list(_timings.keys())
+        for i in range(1, len(keys)):
+            print(f"  {keys[i]}: {_timings[keys[i]] - _timings[keys[i-1]]:.0f}s")
+
+    _tick('start')
     run_id = f"maint_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     batch_id = int(step3['batch_id'])
     snapshot_version = str(step3['snapshot_version'])
-    snapshot_version_prev = _latest_published_snapshot_version()
+    snapshot_version_prev = _latest_published_snapshot_version(current_batch_id=batch_id)
     antitoxin = flatten_antitoxin_thresholds(load_antitoxin_params())
 
     # -- 5.0 Window preparation --
+    _tick('sliding_window')
     refresh_sliding_window(batch_id=batch_id)
-    # Index for daily centroid GROUP BY and metrics JOIN
     execute('CREATE INDEX IF NOT EXISTS idx_csw_cell ON rebuild5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id)')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_csw_lookup
+        ON rebuild5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id, tech_norm, event_time_std)
+        """
+    )
+    _tick('daily_centroids')
     build_daily_centroids(batch_id=batch_id)
-    recalculate_cell_metrics(batch_id=batch_id)
-    # Indexes for drift self-join and publish JOIN
-    execute('CREATE INDEX IF NOT EXISTS idx_cdc_cell_date ON rebuild5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, obs_date)')
-    execute('CREATE INDEX IF NOT EXISTS idx_cmw_cell ON rebuild5.cell_metrics_window (batch_id, operator_code, lac, cell_id)')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cdc_cell_date
+        ON rebuild5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, tech_norm, obs_date)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cdc_lookup
+        ON rebuild5.cell_daily_centroid (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    _tick('metrics_base')
+    build_cell_metrics_base(batch_id=batch_id)
+    _tick('metrics_radius')
+    build_cell_radius_stats()
+    _tick('metrics_activity')
+    build_cell_activity_stats()
 
-    # -- 5.2 Cell maintenance (drift metrics + GPS anomaly summary) --
+    # -- 5.2 Cell maintenance --
+    _tick('drift_metrics')
     compute_drift_metrics(batch_id=batch_id)
-    compute_gps_anomaly_summary(batch_id=batch_id)
-    # Index for publish JOIN
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cmw_cell
+        ON rebuild5.cell_metrics_window (batch_id, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cmw_lookup
+        ON rebuild5.cell_metrics_window (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    _tick('anomaly_summary')
+    compute_gps_anomaly_summary(batch_id=batch_id, antitoxin=antitoxin)
     if relation_exists('rebuild5.cell_anomaly_summary'):
-        execute('CREATE INDEX IF NOT EXISTS idx_cas_cell ON rebuild5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id)')
+        execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_cas_cell
+            ON rebuild5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id, tech_norm)
+            """
+        )
+        execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_cas_lookup
+            ON rebuild5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id, tech_norm)
+            """
+        )
 
     # -- 5.3 Publish trusted_cell_library --
+    _tick('publish_cell')
     publish_cell_library(
         run_id=run_id, batch_id=batch_id,
         snapshot_version=snapshot_version,
@@ -101,9 +168,18 @@ def run_maintenance_pipeline() -> dict[str, Any]:
     )
     # Index for collision self-join and BS/LAC publish
     execute('CREATE INDEX IF NOT EXISTS idx_tcl_collision ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_tcl_batch_cell_id ON rebuild5.trusted_cell_library (batch_id, cell_id)')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tcl_abs_collision
+        ON rebuild5.trusted_cell_library (batch_id, operator_code, tech_norm, lac, cell_id, bs_id)
+        """
+    )
     execute('CREATE INDEX IF NOT EXISTS idx_tcl_bs ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, bs_id)')
+    execute('ANALYZE rebuild5.trusted_cell_library')
 
-    # -- 5.1 Collision detection (after cell publish — UPDATEs trusted_cell_library) --
+    # -- 5.1 Collision detection --
+    _tick('collision')
     detect_collisions(
         batch_id=batch_id,
         snapshot_version=snapshot_version,
@@ -111,19 +187,35 @@ def run_maintenance_pipeline() -> dict[str, Any]:
     )
 
     # -- 5.4 BS + LAC --
-    publish_cell_centroid_detail(batch_id=batch_id, snapshot_version=snapshot_version)
+    _tick('bs_lac')
+    publish_cell_centroid_detail(
+        batch_id=batch_id,
+        snapshot_version=snapshot_version,
+        multi_centroid_threshold_m=antitoxin['multi_centroid_trigger_min_p90_m'],
+        spread_threshold_m=antitoxin['collision_min_spread_m'],
+    )
+    execute('ANALYZE rebuild5.trusted_cell_library')
     publish_bs_library(
         run_id=run_id, batch_id=batch_id,
         snapshot_version=snapshot_version,
         snapshot_version_prev=snapshot_version_prev,
         antitoxin=antitoxin,
     )
-    publish_bs_centroid_detail(batch_id=batch_id, snapshot_version=snapshot_version)
+    execute('ANALYZE rebuild5.trusted_bs_library')
+    publish_bs_centroid_detail(
+        batch_id=batch_id,
+        snapshot_version=snapshot_version,
+        large_spread_threshold_m=antitoxin['bs_max_cell_to_bs_distance_m'],
+    )
     publish_lac_library(
         run_id=run_id, batch_id=batch_id,
         snapshot_version=snapshot_version,
         snapshot_version_prev=snapshot_version_prev,
     )
+
+    _tick('done')
+    print('[Step 5 子步骤耗时]')
+    _report()
 
     # -- Stats --
     stats = collect_step5_stats(

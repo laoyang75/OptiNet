@@ -62,7 +62,7 @@ function metricValue(item: ServiceSearchItem): string {
 
 function fmtNum(v: number | null | undefined): string {
   if (v === null || v === undefined) return '-'
-  return typeof v === 'number' ? v.toFixed(1) : String(v)
+  return typeof v === 'number' ? v.toFixed(2) : String(v)
 }
 
 async function loadDetail(item: ServiceSearchItem): Promise<void> {
@@ -71,11 +71,20 @@ async function loadDetail(item: ServiceSearchItem): Promise<void> {
   bsDetail.value = null
   lacDetail.value = null
   if (item.level === 'cell' && item.cell_id !== null) {
-    cellDetail.value = await getServiceCell(item.cell_id)
+    cellDetail.value = await getServiceCell(item.cell_id, {
+      operator_code: item.operator_code,
+      lac: item.lac,
+      tech_norm: item.tech_norm,
+    })
   } else if (item.level === 'bs' && item.bs_id !== null) {
-    bsDetail.value = await getServiceBS(item.bs_id)
+    bsDetail.value = await getServiceBS(item.bs_id, {
+      operator_code: item.operator_code,
+      lac: item.lac,
+    })
   } else if (item.level === 'lac' && item.lac !== null) {
-    lacDetail.value = await getServiceLAC(item.lac)
+    lacDetail.value = await getServiceLAC(item.lac, {
+      operator_code: item.operator_code,
+    })
   }
 }
 
@@ -113,7 +122,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader title="基站查询" description="查询 Cell / BS / LAC 的位置、质量和标签。面向业务用户的简洁查询入口。">
+  <PageHeader title="站点查询" description="查询 Cell / BS / LAC 的位置、质量和风险提示。当前支持关键词查询与结果详情；运营商筛选和坐标范围查询待开发。">
     <div class="text-xs text-secondary">
       数据集 {{ payload.version.dataset_key || '-' }} ｜ 发布 {{ payload.version.run_id || '-' }} ｜ {{ payload.version.snapshot_version_prev }} → {{ payload.version.snapshot_version }}
     </div>
@@ -140,8 +149,8 @@ onMounted(async () => {
           <th>状态</th>
           <th>质量 / 分类</th>
           <th>{{ level === 'lac' ? 'qualified BS 比例' : 'P90 (m)' }}</th>
-          <th>可信锚点</th>
-          <th>基线资格</th>
+          <th>可用于补数</th>
+          <th>可参与维护</th>
         </tr>
       </thead>
       <tbody>
@@ -171,7 +180,8 @@ onMounted(async () => {
   </div>
 
   <div class="card mt-lg">
-    <div class="font-semibold text-sm mb-md">{{ detailTitle }}</div>
+        <div class="font-semibold text-sm mb-md">{{ detailTitle }}</div>
+        <div class="text-xs text-secondary mb-md">运营商筛选、LAC筛选和坐标范围查询待开发。</div>
 
     <!-- Cell 完整画像 -->
     <div v-if="selectedItem?.level === 'cell' && cellDetail" class="detail-sections">
@@ -193,6 +203,7 @@ onMounted(async () => {
           <div><span class="text-muted">纬度</span><strong class="font-mono">{{ cellDetail.center_lat ?? '-' }}</strong></div>
           <div><span class="text-muted">P50 半径</span><strong class="font-mono">{{ cellDetail.p50_radius_m ? Math.round(cellDetail.p50_radius_m) + 'm' : '-' }}</strong></div>
           <div><span class="text-muted">P90 半径</span><strong class="font-mono">{{ cellDetail.p90_radius_m ? Math.round(cellDetail.p90_radius_m) + 'm' : '-' }}</strong></div>
+          <div><span class="text-muted">物理位置</span><strong>{{ (cellDetail as any).province_name || '' }} {{ (cellDetail as any).city_name || '' }} {{ (cellDetail as any).district_name || '-' }}</strong></div>
         </div>
       </div>
 
@@ -201,18 +212,18 @@ onMounted(async () => {
         <div class="detail-grid">
           <div><span class="text-muted">位置质量</span><strong>{{ cellDetail.position_grade || '-' }}</strong></div>
           <div><span class="text-muted">生命周期</span><strong><StatusTag v-if="cellDetail.lifecycle_state" :state="cellDetail.lifecycle_state as any" size="sm" /><span v-else>-</span></strong></div>
-          <div><span class="text-muted">可信锚点</span><strong>{{ cellDetail.anchor_eligible ? '✓ 是' : '否' }}</strong></div>
-          <div><span class="text-muted">基线资格</span><strong>{{ cellDetail.baseline_eligible ? '✓ 是' : '否' }}</strong></div>
+          <div><span class="text-muted">可用于补数</span><strong>{{ cellDetail.anchor_eligible ? '✓ 是' : '否' }}</strong></div>
+          <div><span class="text-muted">可参与维护</span><strong>{{ cellDetail.baseline_eligible ? '✓ 是' : '否' }}</strong></div>
         </div>
       </div>
 
       <div class="detail-section">
         <div class="detail-section-title">标签</div>
         <div class="detail-grid">
-          <div><span class="text-muted">漂移分类</span><strong>{{ cellDetail.drift_pattern || '-' }}</strong></div>
-          <div><span class="text-muted">碰撞</span><strong :class="{ 'warn-text': cellDetail.is_collision }">{{ cellDetail.is_collision ? '⚠ 是' : '否' }}</strong></div>
-          <div><span class="text-muted">动态</span><strong :class="{ 'warn-text': cellDetail.is_dynamic }">{{ cellDetail.is_dynamic ? '⚠ 是' : '否' }}</strong></div>
-          <div><span class="text-muted">多质心</span><strong :class="{ 'warn-text': cellDetail.is_multi_centroid }">{{ cellDetail.is_multi_centroid ? '⚠ 是' : '否' }}</strong></div>
+          <div><span class="text-muted">空间行为</span><strong>{{ cellDetail.drift_pattern || '-' }}</strong></div>
+          <div><span class="text-muted">复用风险</span><strong :class="{ 'warn-text': cellDetail.is_collision }">{{ cellDetail.is_collision ? '⚠ 是' : '否' }}</strong></div>
+          <div><span class="text-muted">动态特征</span><strong :class="{ 'warn-text': cellDetail.is_dynamic }">{{ cellDetail.is_dynamic ? '⚠ 是' : '否' }}</strong></div>
+          <div><span class="text-muted">多位置特征</span><strong :class="{ 'warn-text': cellDetail.is_multi_centroid }">{{ cellDetail.is_multi_centroid ? '⚠ 是' : '否' }}</strong></div>
         </div>
       </div>
 
@@ -230,7 +241,7 @@ onMounted(async () => {
         <div class="detail-section-title">活跃度</div>
         <div class="detail-grid">
           <div><span class="text-muted">独立观测数</span><strong class="font-mono">{{ cellDetail.independent_obs ?? '-' }}</strong></div>
-          <div><span class="text-muted">独立设备数</span><strong class="font-mono">{{ cellDetail.unique_devices ?? '-' }}</strong></div>
+          <div><span class="text-muted">独立设备数</span><strong class="font-mono">{{ cellDetail.distinct_dev_id ?? '-' }}</strong></div>
           <div><span class="text-muted">近 30 天活跃</span><strong class="font-mono">{{ cellDetail.active_days_30d ?? '-' }} 天</strong></div>
         </div>
       </div>
@@ -244,9 +255,10 @@ onMounted(async () => {
         <div><span class="text-muted">分类</span><strong>{{ bsDetail.classification || '-' }}</strong></div>
         <div><span class="text-muted">P90 扩散</span><strong>{{ bsDetail.gps_p90_dist_m ? Math.round(bsDetail.gps_p90_dist_m) + 'm' : '-' }}</strong></div>
         <div><span class="text-muted">总 Cell</span><strong class="font-mono">{{ bsDetail.total_cells ?? '-' }}</strong></div>
-        <div><span class="text-muted">qualified Cell</span><strong class="font-mono">{{ bsDetail.qualified_cells ?? '-' }}</strong></div>
-        <div><span class="text-muted">excellent Cell</span><strong class="font-mono">{{ bsDetail.excellent_cells ?? '-' }}</strong></div>
+        <div><span class="text-muted">合格 Cell</span><strong class="font-mono">{{ bsDetail.qualified_cells ?? '-' }}</strong></div>
+        <div><span class="text-muted">优秀 Cell</span><strong class="font-mono">{{ bsDetail.excellent_cells ?? '-' }}</strong></div>
         <div><span class="text-muted">异常 Cell 占比</span><strong class="font-mono">{{ bsDetail.anomaly_cell_ratio != null ? pct(bsDetail.anomaly_cell_ratio) : '-' }}</strong></div>
+        <div><span class="text-muted">物理位置</span><strong>{{ (bsDetail as any).province_name || '' }} {{ (bsDetail as any).city_name || '' }} {{ (bsDetail as any).district_name || '-' }}</strong></div>
       </div>
       <table class="data-table compact-table">
         <thead>
@@ -270,16 +282,17 @@ onMounted(async () => {
       <div class="detail-grid mb-md">
         <div><span class="text-muted">运营商</span><strong>{{ lacDetail.operator_cn || lacDetail.operator_code || '-' }}</strong></div>
         <div><span class="text-muted">状态</span><strong>{{ lacDetail.lifecycle_state || '-' }}</strong></div>
-        <div><span class="text-muted">qualified BS</span><strong>{{ lacDetail.qualified_bs ?? '-' }} / {{ lacDetail.total_bs ?? '-' }}</strong></div>
-        <div><span class="text-muted">qualified 比例</span><strong>{{ lacDetail.qualified_bs_ratio !== undefined ? pct(lacDetail.qualified_bs_ratio) : '-' }}</strong></div>
+        <div><span class="text-muted">合格 BS</span><strong>{{ lacDetail.qualified_bs ?? '-' }} / {{ lacDetail.total_bs ?? '-' }}</strong></div>
+        <div><span class="text-muted">合格比例</span><strong>{{ lacDetail.qualified_bs_ratio !== undefined ? pct(lacDetail.qualified_bs_ratio) : '-' }}</strong></div>
         <div>
           <span class="text-muted">趋势</span>
           <strong :style="{ color: trendColor(lacDetail.trend) }">{{ lacDetail.trend || '-' }}</strong>
         </div>
+        <div><span class="text-muted">物理位置</span><strong>{{ (lacDetail as any).province_name || '' }} {{ (lacDetail as any).city_name || '' }} {{ (lacDetail as any).district_name || '-' }}</strong></div>
       </div>
       <table class="data-table compact-table">
         <thead>
-          <tr><th>bs_id</th><th>状态</th><th>分类</th><th>总 Cell</th><th>qualified+ Cell</th></tr>
+          <tr><th>bs_id</th><th>状态</th><th>分类</th><th>总 Cell</th><th>合格+ Cell</th></tr>
         </thead>
         <tbody>
           <tr v-for="bs in lacDetail.bs_items" :key="bs.bs_id">

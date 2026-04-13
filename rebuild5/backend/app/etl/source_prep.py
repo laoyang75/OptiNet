@@ -151,6 +151,7 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
             """
         )
         execute_fn('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rebuild5.raw_gps ("记录数唯一标识")')
+        execute_fn('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rebuild5.raw_gps (ts)')
         execute_fn('DROP TABLE IF EXISTS rebuild5.raw_lac')
 
         counts = fetchone_fn(

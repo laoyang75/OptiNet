@@ -71,8 +71,9 @@ export interface TrendPayload {
   points: TrendPoint[]
 }
 
-export function fetchTrend(): Promise<TrendPayload> {
-  return apiGet<TrendPayload>('/api/evaluation/trend')
+export async function fetchTrend(): Promise<TrendPayload> {
+  const raw = await apiGet<{ points?: TrendPoint[]; batches?: TrendPoint[] }>('/api/evaluation/trend')
+  return { points: raw.points ?? raw.batches ?? [] }
 }
 
 /* ---------- Overview ---------- */
@@ -99,6 +100,10 @@ export interface EvaluationOverviewPayload {
     lac_total: number
     anchor_eligible_cells: number
   }
+  cleanup: {
+    waiting_pruned_cells: number
+    dormant_marked_cells: number
+  }
 }
 
 export function getEvaluationOverview(batchId?: number): Promise<EvaluationOverviewPayload> {
@@ -111,6 +116,7 @@ export interface SnapshotItem {
   cell_id: string
   lac: string
   operator_code: string
+  tech_norm?: string | null
   prev: LifecycleState | null
   curr: LifecycleState | null
   diff_kind: string

@@ -17,7 +17,7 @@ const driftKeys: DriftPattern[] = ['stable', 'large_coverage', 'insufficient', '
 
 const running = ref(false)
 const stats = ref<MaintenanceStatsPayload>({
-  version: { run_id: '', dataset_key: 'sample_6lac', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
+  version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
     published_cell_count: 0, published_bs_count: 0, published_lac_count: 0,
     collision_cell_count: 0, multi_centroid_cell_count: 0, dynamic_cell_count: 0, anomaly_bs_count: 0,

@@ -22,7 +22,7 @@ LATEST_STATS = {
     'clean_rules': [
         {
             'id': 'ODS-006',
-            'name': 'CellID=0 置空',
+            'name': 'CellID=0 删行',
             'desc': '无有效小区标识',
             'violations': 12,
             'deleted_rows': 12,
@@ -57,7 +57,7 @@ def test_build_clean_rule_rows_uses_frontend_field_names() -> None:
     assert rows == [
         {
             'rule_id': 'ODS-006',
-            'rule_name': 'CellID=0 置空',
+            'rule_name': 'CellID=0 删行',
             'description': '无有效小区标识',
             'hit_count': 12,
             'drop_count': 12,

@@ -1,114 +1,67 @@
 from rebuild5.backend.app.profile.logic import classify_cell_state, classify_diff_kind
 
 
-def test_classify_cell_state_waiting_when_obs_or_devs_insufficient() -> None:
+def _params() -> dict[str, float]:
+    return {
+        'waiting_min_obs': 1,
+        'qualified_min_obs': 10,
+        'excellent_min_obs': 30,
+    }
+
+
+def test_classify_cell_state_waiting_when_no_observation() -> None:
     assert classify_cell_state(
-        independent_obs=2,
-        distinct_dev_id=2,
-        p90_radius_m=120.0,
-        observed_span_hours=36.0,
+        independent_obs=0,
+        distinct_dev_id=0,
+        p90_radius_m=None,
+        observed_span_hours=None,
         is_collision_id=False,
-        params={
-            'waiting_min_obs': 3,
-            'waiting_min_devs': 2,
-            'qualified_min_obs': 3,
-            'qualified_min_devs': 2,
-            'qualified_max_p90': 1500,
-            'qualified_min_span_hours': 24,
-            'excellent_min_obs': 8,
-            'excellent_min_devs': 3,
-            'excellent_max_p90': 500,
-            'excellent_min_span_hours': 24,
-        },
+        params=_params(),
     ) == 'waiting'
 
 
-def test_classify_cell_state_observing_when_waiting_cleared_but_qualified_not_met() -> None:
+def test_classify_cell_state_observing_when_observation_not_enough_for_qualified() -> None:
     assert classify_cell_state(
         independent_obs=4,
-        distinct_dev_id=2,
+        distinct_dev_id=1,
         p90_radius_m=1700.0,
-        observed_span_hours=36.0,
+        observed_span_hours=1.0,
         is_collision_id=False,
-        params={
-            'waiting_min_obs': 3,
-            'waiting_min_devs': 2,
-            'qualified_min_obs': 3,
-            'qualified_min_devs': 2,
-            'qualified_max_p90': 1500,
-            'qualified_min_span_hours': 24,
-            'excellent_min_obs': 8,
-            'excellent_min_devs': 3,
-            'excellent_max_p90': 500,
-            'excellent_min_span_hours': 24,
-        },
+        params=_params(),
     ) == 'observing'
 
 
-def test_classify_cell_state_qualified_when_all_qualified_thresholds_met() -> None:
+def test_classify_cell_state_qualified_depends_only_on_observation_count() -> None:
     assert classify_cell_state(
-        independent_obs=5,
-        distinct_dev_id=2,
-        p90_radius_m=640.0,
-        observed_span_hours=30.0,
+        independent_obs=12,
+        distinct_dev_id=1,
+        p90_radius_m=99999.0,
+        observed_span_hours=0.5,
         is_collision_id=False,
-        params={
-            'waiting_min_obs': 3,
-            'waiting_min_devs': 2,
-            'qualified_min_obs': 3,
-            'qualified_min_devs': 2,
-            'qualified_max_p90': 1500,
-            'qualified_min_span_hours': 24,
-            'excellent_min_obs': 8,
-            'excellent_min_devs': 3,
-            'excellent_max_p90': 500,
-            'excellent_min_span_hours': 24,
-        },
+        params=_params(),
     ) == 'qualified'
 
 
-def test_classify_cell_state_excellent_when_all_excellent_thresholds_met() -> None:
+def test_classify_cell_state_excellent_depends_only_on_observation_count() -> None:
     assert classify_cell_state(
-        independent_obs=12,
-        distinct_dev_id=4,
-        p90_radius_m=280.0,
-        observed_span_hours=60.0,
+        independent_obs=32,
+        distinct_dev_id=1,
+        p90_radius_m=99999.0,
+        observed_span_hours=0.5,
         is_collision_id=False,
-        params={
-            'waiting_min_obs': 3,
-            'waiting_min_devs': 2,
-            'qualified_min_obs': 3,
-            'qualified_min_devs': 2,
-            'qualified_max_p90': 1500,
-            'qualified_min_span_hours': 24,
-            'excellent_min_obs': 8,
-            'excellent_min_devs': 3,
-            'excellent_max_p90': 500,
-            'excellent_min_span_hours': 24,
-        },
+        params=_params(),
     ) == 'excellent'
 
 
-def test_classify_cell_state_collision_blocks_qualified() -> None:
+def test_classify_cell_state_collision_no_longer_blocks_lifecycle() -> None:
     assert classify_cell_state(
-        independent_obs=8,
-        distinct_dev_id=3,
-        p90_radius_m=300.0,
-        observed_span_hours=60.0,
+        independent_obs=32,
+        distinct_dev_id=1,
+        p90_radius_m=99999.0,
+        observed_span_hours=0.5,
         is_collision_id=True,
-        params={
-            'waiting_min_obs': 3,
-            'waiting_min_devs': 2,
-            'qualified_min_obs': 3,
-            'qualified_min_devs': 2,
-            'qualified_max_p90': 1500,
-            'qualified_min_span_hours': 24,
-            'excellent_min_obs': 8,
-            'excellent_min_devs': 3,
-            'excellent_max_p90': 500,
-            'excellent_min_span_hours': 24,
-        },
-    ) == 'observing'
+        params=_params(),
+    ) == 'excellent'
 
 
 def test_classify_diff_kind_returns_new_for_first_snapshot() -> None:

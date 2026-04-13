@@ -12,7 +12,7 @@ import {
   fetchLACRuleImpact, type RuleImpactPayload,
   fetchTrend, type TrendPoint,
 } from '../../api/evaluation'
-import type { LifecycleState } from '../../types'
+import { STATE_LABELS, type LifecycleState } from '../../types'
 
 const distribution = ref({ excellent: 0, qualified: 0, observing: 0, waiting: 0, dormant: 0, retired: 0 })
 const items = ref<LACEvaluationItem[]>([])
@@ -65,11 +65,11 @@ const STATE_COLORS: Record<string, string> = {
 function trendPath(state: LifecycleState): string {
   if (trendPoints.value.length === 0) return ''
   const pts = trendPoints.value
-  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p.lac[s] ?? 0)))
+  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p.lac?.[s] ?? 0)))
   const w = 600, h = 140
   return pts.map((p, i) => {
     const x = pts.length === 1 ? w / 2 : (i / (pts.length - 1)) * w
-    const y = h - ((p.lac[state] ?? 0) / maxVal) * (h - 10)
+    const y = h - ((p.lac?.[state] ?? 0) / maxVal) * (h - 10)
     return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
   }).join(' ')
 }
@@ -88,7 +88,7 @@ function trendPath(state: LifecycleState): string {
       <thead>
         <tr>
           <th>LAC</th><th>运营商</th><th>状态</th><th>锚点</th>
-          <th>总 BS</th><th>qualified BS</th><th style="width:160px">qualified 比例</th><th>晋升分析</th>
+          <th>总 BS</th><th>合格 BS</th><th style="width:160px">合格比例</th><th>晋升分析</th>
         </tr>
       </thead>
       <tbody>
@@ -105,10 +105,10 @@ function trendPath(state: LifecycleState): string {
           <td><PercentBar :value="l.qualified_bs_ratio" /></td>
           <td class="text-xs text-secondary">
             <template v-if="l.qualified_bs >= 3 || l.qualified_bs_ratio >= 0.1">
-              已达标（qualified BS ≥ 3 或占比 ≥ 10%）
+              已达标（合格 BS ≥ 3 或占比 ≥ 10%）
             </template>
             <template v-else>
-              差 {{ Math.max(0, 3 - l.qualified_bs) }} 个 qualified BS
+              差 {{ Math.max(0, 3 - l.qualified_bs) }} 个合格 BS
             </template>
           </td>
         </tr>
@@ -142,8 +142,8 @@ function trendPath(state: LifecycleState): string {
   <div class="card mt-lg">
     <div class="font-semibold text-sm mb-sm">LAC 晋升规则</div>
     <ul class="text-xs text-secondary" style="padding-left:18px;line-height:2">
-      <li><strong>qualified</strong>：qualified BS ≥ 3，或 qualified BS / 全部 BS ≥ 10%</li>
-      <li><strong>observing</strong>：至少 1 个下属 BS 为非 waiting</li>
+      <li><strong>合格</strong>：合格 BS ≥ 3，或合格 BS / 全部 BS ≥ 10%</li>
+      <li><strong>观察</strong>：至少 1 个下属 BS 为非等待态</li>
       <li>LAC 不跳过 BS 直接从 Cell 重判</li>
     </ul>
   </div>
@@ -156,7 +156,7 @@ function trendPath(state: LifecycleState): string {
     </svg>
     <div class="flex gap-md mt-xs">
       <span v-for="s in STATES" :key="s" class="text-xs flex items-center gap-xs">
-        <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ s }}
+        <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ STATE_LABELS[s] }}
       </span>
     </div>
   </div>

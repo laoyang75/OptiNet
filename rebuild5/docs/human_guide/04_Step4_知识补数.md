@@ -25,7 +25,7 @@ flowchart LR
     style ER fill:#c8e6c9,stroke:#388e3c
 ```
 
-**Step 4 只处理 Path A 记录**（已命中可信库的那批数据）。Path B 的数据去了 Step 3，不经过 Step 4。
+**Step 4 只处理 Path A 记录**（已命中可信库的那批数据）。Path B 的数据去了 Step 3，不经过 Step 4。GPS 异常初筛只对原始且有效的 GPS 证据做比对，不使用 Step 4 补出来的 GPS 反向自比对。
 
 ---
 

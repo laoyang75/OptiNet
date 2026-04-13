@@ -204,47 +204,20 @@ def get_etl_coverage_payload() -> dict[str, Any]:
     latest = _latest_stats() or {}
     before = latest.get('field_coverage_before') or {}
     after = latest.get('field_coverage') or {}
-    try:
-        gps_source = fetchone(
-            """
-            SELECT
-                COUNT(*) FILTER (WHERE gps_fill_source = 'raw_gps') AS raw_gps,
-                COUNT(*) FILTER (WHERE gps_fill_source = 'ss1_own') AS ss1_own,
-                COUNT(*) FILTER (WHERE gps_fill_source = 'same_cell') AS same_cell,
-                COUNT(*) FILTER (WHERE gps_fill_source = 'none') AS none_count,
-                COUNT(*) AS total
-            FROM rebuild5.etl_cleaned
-            """
-        ) or {'raw_gps': 0, 'ss1_own': 0, 'same_cell': 0, 'none_count': 0, 'total': 0}
-    except Exception as exc:
-        if _missing_relation(exc):
-            gps_source = {'raw_gps': 0, 'ss1_own': 0, 'same_cell': 0, 'none_count': 0, 'total': 0}
-        else:
-            raise
-    total = int(gps_source['total']) if gps_source else 0
 
-    # Get WiFi fill stats
-    try:
-        wifi_stats = fetchone(
-            """
-            SELECT
-                COUNT(*) FILTER (WHERE wifi_name IS NOT NULL) AS wifi_name_before,
-                COUNT(*) FILTER (WHERE wifi_name_filled IS NOT NULL) AS wifi_name_after,
-                COUNT(*) FILTER (WHERE wifi_mac IS NOT NULL) AS wifi_mac_before,
-                COUNT(*) FILTER (WHERE wifi_mac_filled IS NOT NULL) AS wifi_mac_after,
-                COUNT(*) AS total
-            FROM rebuild5.etl_cleaned
-            """
-        ) or {}
-    except Exception as exc:
-        if _missing_relation(exc):
-            wifi_stats = {}
-        else:
-            raise
-
+    # Read from cached fill_details in step1_run_stats (avoid full-table scan on 45M+ rows)
     fill_details = latest.get('fill_details') or {}
     fill_after = fill_details.get('after') or {}
     fill_before = fill_details.get('before') or {}
+    total = int(fill_after.get('total', 0)) or int(latest.get('cleaned_record_count', 0))
+
+    # GPS source distribution from cached fill_details
+    gps_raw = int(fill_after.get('gps_raw_gps', 0))
+    gps_ss1 = int(fill_after.get('gps_ss1_own', 0))
+    gps_same_cell = total - gps_raw - gps_ss1 - int(fill_after.get('gps_none', 0))
+    if gps_same_cell < 0:
+        gps_same_cell = 0
+    gps_none = int(fill_after.get('gps_none', 0))
 
     def _count_and_pct(count: int, total_: int) -> dict[str, Any]:
         return {'count': count, 'rate': round(count / total_, 4) if total_ else 0}
@@ -287,30 +260,12 @@ def get_etl_coverage_payload() -> dict[str, Any]:
                 'source': 'same_cell',
                 'note': '总是可补（不受时间约束）',
             },
-            {
-                'field': 'WiFi 名称',
-                'before': round(int(wifi_stats.get('wifi_name_before', 0)) / total, 4) if total else 0,
-                'after': round(int(wifi_stats.get('wifi_name_after', 0)) / total, 4) if total else 0,
-                'before_count': int(wifi_stats.get('wifi_name_before', 0)),
-                'filled_count': int(wifi_stats.get('wifi_name_after', 0)) - int(wifi_stats.get('wifi_name_before', 0)),
-                'source': 'same_cell',
-                'note': '时间差 ≤ 60s 才补',
-            },
-            {
-                'field': 'WiFi MAC',
-                'before': round(int(wifi_stats.get('wifi_mac_before', 0)) / total, 4) if total else 0,
-                'after': round(int(wifi_stats.get('wifi_mac_after', 0)) / total, 4) if total else 0,
-                'before_count': int(wifi_stats.get('wifi_mac_before', 0)),
-                'filled_count': int(wifi_stats.get('wifi_mac_after', 0)) - int(wifi_stats.get('wifi_mac_before', 0)),
-                'source': 'same_cell',
-                'note': '时间差 ≤ 60s 才补',
-            },
         ],
         'source_distribution': {
-            'raw_gps': _count_and_pct(int(gps_source['raw_gps']), total),
-            'ss1_own': _count_and_pct(int(gps_source['ss1_own']), total),
-            'same_cell': _count_and_pct(int(gps_source['same_cell']), total),
-            'none': _count_and_pct(int(gps_source['none_count']), total),
+            'raw_gps': _count_and_pct(gps_raw, total),
+            'ss1_own': _count_and_pct(gps_ss1, total),
+            'same_cell': _count_and_pct(gps_same_cell, total),
+            'none': _count_and_pct(gps_none, total),
         },
         'total_records': total,
         'time_window_seconds': 60,

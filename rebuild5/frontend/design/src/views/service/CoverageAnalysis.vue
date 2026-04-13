@@ -46,7 +46,7 @@ onMounted(async () => {
         <tr>
           <th>运营商</th>
           <th>可信 Cell 数</th>
-          <th style="width:160px">qualified+ 占比</th>
+          <th style="width:160px">合格+ 占比</th>
           <th style="width:160px">excellent 占比</th>
           <th>平均 P90 (m)</th>
         </tr>
@@ -76,7 +76,7 @@ onMounted(async () => {
       <div class="text-xs text-secondary mt-sm">{{ bestPrecision ? Math.round(bestPrecision.avg_p90) + 'm 平均 P90' : '暂无数据' }}</div>
     </div>
     <div class="card">
-      <div class="font-semibold text-sm mb-sm">excellent 占比最高</div>
+      <div class="font-semibold text-sm mb-sm">优秀占比最高</div>
       <div class="text-xl font-semibold">{{ bestExcellent?.operator_cn || '-' }}</div>
       <div class="text-xs text-secondary mt-sm">{{ bestExcellent ? (bestExcellent.excellent_pct * 100).toFixed(1) + '%' : '暂无数据' }}</div>
     </div>

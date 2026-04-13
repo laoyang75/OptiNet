@@ -54,26 +54,19 @@ def flatten_profile_thresholds(params: dict[str, Any] | None = None) -> dict[str
     bs = payload.get('bs', {})
     lac = payload.get('lac', {})
     return {
-        'waiting_min_obs': float(waiting.get('min_independent_obs', 3)),
-        'waiting_min_devs': float(waiting.get('min_distinct_devices', 2)),
-        'qualified_min_obs': float(qualified.get('min_independent_obs', 3)),
-        'qualified_min_devs': float(qualified.get('min_distinct_devices', 2)),
-        'qualified_max_p90': float(qualified.get('max_p90_radius_m') or 0),
-        'qualified_min_span_hours': float(qualified.get('min_observed_span_hours', 24)),
-        'excellent_min_obs': float(excellent.get('min_independent_obs', 8)),
-        'excellent_min_devs': float(excellent.get('min_distinct_devices', 3)),
-        'excellent_max_p90': float(excellent.get('max_p90_radius_m') or 0),
-        'excellent_min_span_hours': float(excellent.get('min_observed_span_hours', 24)),
+        'waiting_min_obs': float(waiting.get('min_independent_obs', 1)),
+        'qualified_min_obs': float(qualified.get('min_independent_obs', 10)),
+        'excellent_min_obs': float(excellent.get('min_independent_obs', 30)),
         'anchorable_min_gps_valid_count': float(anchorable.get('min_gps_valid_count', 10)),
         'anchorable_min_distinct_devices': float(anchorable.get('min_distinct_devices', 2)),
         'anchorable_max_p90': float(anchorable.get('max_p90_radius_m') or 0),
         'anchorable_min_span_hours': float(anchorable.get('min_observed_span_hours', 24)),
         'bs_observing_min_cells_with_gps': float(bs.get('observing', {}).get('min_cells_with_gps', 1)),
-        'bs_qualified_min_excellent_cells': float(bs.get('qualified', {}).get('min_excellent_cells', 1)),
-        'bs_qualified_min_qualified_cells': float(bs.get('qualified', {}).get('min_qualified_cells', 3)),
+        'bs_excellent_min_excellent_cells': float(bs.get('excellent', {}).get('min_excellent_cells', 1)),
+        'bs_qualified_min_qualified_cells': float(bs.get('qualified', {}).get('min_qualified_cells', 2)),
         'lac_observing_min_non_waiting_bs': float(lac.get('observing', {}).get('min_non_waiting_bs', 1)),
-        'lac_qualified_min_qualified_bs': float(lac.get('qualified', {}).get('min_qualified_bs', 3)),
-        'lac_qualified_min_qualified_bs_ratio': float(lac.get('qualified', {}).get('min_qualified_bs_ratio', 0.1)),
+        'lac_excellent_min_excellent_bs': float(lac.get('excellent', {}).get('min_excellent_bs', 30)),
+        'lac_qualified_min_excellent_bs': float(lac.get('qualified', {}).get('min_excellent_bs', 10)),
         # gps_confidence (count-based per 00_全局约定)
         'gps_confidence_high_min_gps': float(payload.get('gps_confidence', {}).get('high', {}).get('min_gps_valid', 20)),
         'gps_confidence_high_min_devs': float(payload.get('gps_confidence', {}).get('high', {}).get('min_devs', 3)),
@@ -138,16 +131,13 @@ def classify_cell_state(
     is_collision_id: bool,
     params: dict[str, float],
 ) -> str:
-    span = float(observed_span_hours or 0)
-    p90 = float(p90_radius_m) if p90_radius_m is not None else None
-    if independent_obs < params['waiting_min_obs'] or distinct_dev_id < params['waiting_min_devs']:
+    del distinct_dev_id, p90_radius_m, observed_span_hours, is_collision_id
+    if independent_obs < params['waiting_min_obs']:
         return 'waiting'
-    if not is_collision_id and independent_obs >= params['excellent_min_obs'] and distinct_dev_id >= params['excellent_min_devs']:
-        if p90 is not None and p90 < params['excellent_max_p90'] and span >= params['excellent_min_span_hours']:
-            return 'excellent'
-    if not is_collision_id and independent_obs >= params['qualified_min_obs'] and distinct_dev_id >= params['qualified_min_devs']:
-        if p90 is not None and p90 < params['qualified_max_p90'] and span >= params['qualified_min_span_hours']:
-            return 'qualified'
+    if independent_obs >= params['excellent_min_obs']:
+        return 'excellent'
+    if independent_obs >= params['qualified_min_obs']:
+        return 'qualified'
     return 'observing'
 
 

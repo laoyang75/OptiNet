@@ -67,7 +67,6 @@ export interface EnrichmentAnomalyItem {
 
 export interface EnrichmentAnomaliesPayload {
   items: EnrichmentAnomalyItem[]
-  limit: number
 }
 
 export function getEnrichmentStats(): Promise<EnrichmentStatsPayload> {
@@ -78,8 +77,8 @@ export function getEnrichmentCoverage(): Promise<EnrichmentCoveragePayload> {
   return apiGet<EnrichmentCoveragePayload>('/api/enrichment/coverage')
 }
 
-export function getEnrichmentAnomalies(limit = 200): Promise<EnrichmentAnomaliesPayload> {
-  return apiGet<EnrichmentAnomaliesPayload>(`/api/enrichment/anomalies?limit=${limit}`)
+export function getEnrichmentAnomalies(pageSize = 200): Promise<EnrichmentAnomaliesPayload> {
+  return apiGet<EnrichmentAnomaliesPayload>(`/api/enrichment/anomalies?page_size=${pageSize}`)
 }
 
 export function runEnrichment(): Promise<Record<string, unknown>> {

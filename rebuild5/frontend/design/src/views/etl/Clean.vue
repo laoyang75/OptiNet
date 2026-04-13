@@ -29,7 +29,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader title="清洗" description="ODS 清洗规则命中情况。查看哪些数据被删除及原因。" />
+  <PageHeader title="清洗" description="ODS 清洗 19 条规则命中情况。查看哪些数据被删除及原因。最终删行条件为 cell_id IS NULL 或 event_time_std IS NULL。" />
 
   <div class="grid grid-4 mb-lg">
     <SummaryCard title="输入记录" :value="fmt(summary.inputRecords)" />

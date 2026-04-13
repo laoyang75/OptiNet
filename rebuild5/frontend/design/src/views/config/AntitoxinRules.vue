@@ -12,12 +12,12 @@ function toRecord(value: unknown): Record<string, any> {
 }
 
 const config = ref<SystemConfigPayload>({
-  current_version: { dataset_key: 'sample_6lac', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
+  current_version: { dataset_key: '', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
   datasets: [],
   params: {},
 })
 const maintenance = ref<MaintenanceStatsPayload>({
-  version: { run_id: '', dataset_key: 'sample_6lac', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
+  version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
     published_cell_count: 0,
     published_bs_count: 0,
@@ -36,10 +36,10 @@ const migration = computed(() => toRecord(antitoxin.value.migration))
 const bs = computed(() => toRecord(antitoxin.value.bs))
 
 const rules = computed(() => [
-  { type: '碰撞 (collision)', condition: `max_spread_m ≥ ${collision.value.min_spread_m ?? 0}m`, effect: 'baseline_eligible = false，阻断基线刷新', link: '/governance/cell' },
-  { type: '迁移 (migration)', condition: `max_spread_m ≥ ${migration.value.min_spread_m ?? 0}m`, effect: 'baseline_eligible = false，等待迁移确认', link: '/governance/cell' },
-  { type: '面积异常 (BS)', condition: `gps_p90_dist_m > ${bs.value.max_cell_to_bs_distance_m ?? 0}m`, effect: 'BS baseline_eligible = false', link: '/governance/bs' },
-  { type: '多质心 (multi_centroid)', condition: '空间聚类发现 ≥ 2 个稳定簇', effect: 'baseline_eligible = false，标记多质心', link: '/governance/cell' },
+  { type: '碰撞', condition: `max_spread_m ≥ ${collision.value.min_spread_m ?? 0}m`, effect: '阻断基线资格，阻断基线刷新', link: '/governance/cell' },
+  { type: '迁移', condition: `max_spread_m ≥ ${migration.value.min_spread_m ?? 0}m`, effect: '阻断基线资格，等待迁移确认', link: '/governance/cell' },
+  { type: '面积异常 (BS)', condition: `gps_p90_dist_m > ${bs.value.max_cell_to_bs_distance_m ?? 0}m`, effect: 'BS 阻断基线资格', link: '/governance/bs' },
+  { type: '多质心', condition: '空间聚类发现 ≥ 2 个稳定簇', effect: '阻断基线资格，标记多质心', link: '/governance/cell' },
   { type: 'GPS 异常时序', condition: '补数阶段连续命中异常轨迹', effect: '进入人工审核，不参与基线刷新', link: '/governance/cell' },
 ])
 
@@ -58,7 +58,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader title="防毒化规则" description="以下异常会阻断 baseline_eligible，防止异常数据污染基线刷新。只读展示。">
+  <PageHeader title="防毒化规则" description="以下异常会阻断基线资格，防止异常数据污染基线刷新。只读展示。">
     <div class="text-xs text-secondary">
       当前版本 {{ config.current_version.snapshot_version }} ｜ 最近维护 {{ maintenance.version.run_id || '-' }}
     </div>
@@ -94,7 +94,7 @@ onMounted(async () => {
   <div class="card mt-lg">
     <div class="font-semibold text-sm mb-sm">防毒化原则</div>
     <ul class="text-xs text-secondary" style="padding-left:18px;line-height:2">
-      <li>防毒化是对 <code>baseline_eligible</code> 的阻断，不是对 <code>anchor_eligible</code> 的阻断</li>
+      <li>防毒化是对基线资格的阻断，不是对锚点资格的阻断</li>
       <li>被阻断的对象仍可以作为展示结果被查询，但不会影响正式库刷新</li>
       <li>碰撞、迁移与 BS 面积阈值已外化到 <code>antitoxin_params.yaml</code>；多质心与异常时序仍是固定逻辑</li>
     </ul>

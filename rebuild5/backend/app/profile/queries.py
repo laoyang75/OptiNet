@@ -107,7 +107,7 @@ def get_routing_payload() -> dict[str, Any]:
             },
             'rules': _rule_payload(),
             'version': {
-                'dataset_key': 'sample_6lac',
+                'dataset_key': '',
                 'run_id': '',
                 'snapshot_version_prev': 'v0',
                 'snapshot_version': 'v0',

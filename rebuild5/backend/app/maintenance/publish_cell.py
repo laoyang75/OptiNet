@@ -63,7 +63,7 @@ def publish_cell_library(
             rsrp_avg, rsrq_avg, sinr_avg, pressure_avg,
             drift_pattern, max_spread_m, net_drift_m, drift_ratio,
             gps_anomaly_type,
-            is_collision, is_dynamic, is_multi_centroid, antitoxin_hit,
+            is_collision, is_dynamic, is_multi_centroid, centroid_pattern, antitoxin_hit,
             cell_scale, last_maintained_at, last_observed_at, window_obs_count,
             active_days_30d, consecutive_inactive_days
         )
@@ -95,6 +95,7 @@ def publish_cell_library(
                 -- Anomaly
                 COALESCE(a.anomaly_count, 0) AS anomaly_count,
                 a.last_anomaly_at,
+                a.gps_anomaly_type,
                 -- Window
                 cw.max_event_time,
                 COALESCE(cw.window_obs_count, 0) AS window_obs_count,
@@ -104,20 +105,36 @@ def publish_cell_library(
                 prev.center_lon AS prev_center_lon,
                 prev.center_lat AS prev_center_lat,
                 prev.p90_radius_m AS prev_p90_radius_m,
-                prev.distinct_dev_id AS prev_distinct_dev_id
+                prev.distinct_dev_id AS prev_distinct_dev_id,
+                COALESCE(prev.is_dynamic, FALSE) AS prev_is_dynamic,
+                COALESCE(prev.is_multi_centroid, FALSE) AS prev_is_multi_centroid,
+                prev.centroid_pattern AS prev_centroid_pattern
             FROM rebuild5.trusted_snapshot_cell s
             LEFT JOIN rebuild5.cell_metrics_window cw
               ON {metrics_join}
              AND cw.batch_id = %s
              AND cw.operator_code = s.operator_code AND cw.lac = s.lac
              AND cw.bs_id = s.bs_id AND cw.cell_id = s.cell_id
+             AND cw.tech_norm IS NOT DISTINCT FROM s.tech_norm
             LEFT JOIN rebuild5.cell_anomaly_summary a
               ON {anomaly_join}
              AND a.batch_id = %s
              AND a.operator_code = s.operator_code AND a.lac = s.lac
              AND a.cell_id = s.cell_id
+             AND a.tech_norm IS NOT DISTINCT FROM s.tech_norm
             LEFT JOIN (
-                SELECT operator_code, lac, cell_id, center_lon, center_lat, p90_radius_m, distinct_dev_id
+                SELECT
+                    operator_code,
+                    lac,
+                    cell_id,
+                    tech_norm,
+                    center_lon,
+                    center_lat,
+                    p90_radius_m,
+                    distinct_dev_id,
+                    is_dynamic,
+                    is_multi_centroid,
+                    centroid_pattern
                 FROM rebuild5.trusted_cell_library
                 WHERE batch_id = (
                     SELECT COALESCE(MAX(batch_id), 0)
@@ -127,6 +144,7 @@ def publish_cell_library(
               ON {prev_join}
              AND prev.operator_code = s.operator_code AND prev.lac = s.lac
              AND prev.cell_id = s.cell_id
+             AND prev.tech_norm IS NOT DISTINCT FROM s.tech_norm
             WHERE s.batch_id = %s
               AND s.lifecycle_state IN ('qualified', 'excellent')
         )
@@ -185,25 +203,23 @@ def publish_cell_library(
             m.max_spread_m, m.net_drift_m, m.drift_ratio,
 
             -- gps_anomaly_type
-            CASE
-                WHEN m.anomaly_count >= 3 THEN 'migration_suspect'
-                WHEN m.anomaly_count > 0 THEN 'drift'
-                ELSE NULL
-            END,
+            m.gps_anomaly_type,
 
             FALSE AS is_collision,  -- set by collision.py after publish
 
             -- is_dynamic: spread > 1500 AND drift_pattern in (migration, large_coverage)
-            (COALESCE(m.max_spread_m, 0) > %s
+            (COALESCE(m.prev_is_dynamic, FALSE) OR (
+                COALESCE(m.max_spread_m, 0) > %s
              AND CASE
                  WHEN COALESCE(m.max_spread_m, 0) >= %s THEN TRUE
                  WHEN COALESCE(m.max_spread_m, 0) >= %s
                   AND COALESCE(m.max_spread_m, 0) < %s THEN TRUE
                  ELSE FALSE
-             END) AS is_dynamic,
+             END)) AS is_dynamic,
 
-            -- is_multi_centroid: p90 trigger
-            (COALESCE(m.p90_radius_m, 0) >= %s) AS is_multi_centroid,
+            -- is_multi_centroid is finalized by PostGIS stable-cluster analysis in publish_bs_lac.py
+            COALESCE(m.prev_is_multi_centroid, FALSE) AS is_multi_centroid,
+            m.prev_centroid_pattern AS centroid_pattern,
 
             -- antitoxin_hit
             (
@@ -267,8 +283,6 @@ def publish_cell_library(
             antitoxin['collision_min_spread_m'],                             # migration check
             antitoxin['stable_max_spread_m'],                                # large_coverage lower
             antitoxin['drift_large_coverage_max_spread_m'],                  # large_coverage upper
-            # is_multi_centroid
-            antitoxin['multi_centroid_trigger_min_p90_m'],
             # antitoxin_hit
             antitoxin['antitoxin_max_centroid_shift_m'],
             antitoxin['antitoxin_max_p90_ratio'],
@@ -333,7 +347,7 @@ def _carry_forward_previous_cells(
             rsrp_avg, rsrq_avg, sinr_avg, pressure_avg,
             drift_pattern, max_spread_m, net_drift_m, drift_ratio,
             gps_anomaly_type,
-            is_collision, is_dynamic, is_multi_centroid, antitoxin_hit,
+            is_collision, is_dynamic, is_multi_centroid, centroid_pattern, antitoxin_hit,
             cell_scale, last_maintained_at, last_observed_at, window_obs_count,
             active_days_30d, consecutive_inactive_days
         )
@@ -353,6 +367,7 @@ def _carry_forward_previous_cells(
                   AND curr.operator_code = prev.operator_code
                   AND curr.lac = prev.lac
                   AND curr.cell_id = prev.cell_id
+                  AND curr.tech_norm IS NOT DISTINCT FROM prev.tech_norm
             )
         ),
         merged AS (
@@ -385,6 +400,7 @@ def _carry_forward_previous_cells(
                 -- Anomaly
                 COALESCE(a.anomaly_count, 0) AS anomaly_count,
                 a.last_anomaly_at,
+                a.gps_anomaly_type,
                 -- Window
                 cw.max_event_time,
                 COALESCE(cw.window_obs_count, p.window_obs_count, 0) AS window_obs_count,
@@ -394,18 +410,23 @@ def _carry_forward_previous_cells(
                 p.center_lon AS prev_center_lon,
                 p.center_lat AS prev_center_lat,
                 p.p90_radius_m AS prev_p90_radius_m,
-                p.distinct_dev_id AS prev_distinct_dev_id
+                p.distinct_dev_id AS prev_distinct_dev_id,
+                COALESCE(p.is_dynamic, FALSE) AS prev_is_dynamic,
+                COALESCE(p.is_multi_centroid, FALSE) AS prev_is_multi_centroid,
+                p.centroid_pattern AS prev_centroid_pattern
             FROM prev_cells p
             LEFT JOIN rebuild5.cell_metrics_window cw
               ON {metrics_join}
              AND cw.batch_id = %s
              AND cw.operator_code = p.operator_code AND cw.lac = p.lac
              AND cw.bs_id = p.bs_id AND cw.cell_id = p.cell_id
+             AND cw.tech_norm IS NOT DISTINCT FROM p.tech_norm
             LEFT JOIN rebuild5.cell_anomaly_summary a
               ON {anomaly_join}
              AND a.batch_id = %s
              AND a.operator_code = p.operator_code AND a.lac = p.lac
              AND a.cell_id = p.cell_id
+             AND a.tech_norm IS NOT DISTINCT FROM p.tech_norm
         )
         SELECT
             %s::int, %s::text, %s::text, %s::text, %s::text, NOW(),
@@ -457,23 +478,21 @@ def _carry_forward_previous_cells(
             END AS drift_pattern,
             m.max_spread_m, m.net_drift_m, m.drift_ratio,
 
-            CASE
-                WHEN m.anomaly_count >= 3 THEN 'migration_suspect'
-                WHEN m.anomaly_count > 0 THEN 'drift'
-                ELSE NULL
-            END,
+            m.gps_anomaly_type,
 
             FALSE AS is_collision,
 
-            (COALESCE(m.max_spread_m, 0) > %s
+            (COALESCE(m.prev_is_dynamic, FALSE) OR (
+                COALESCE(m.max_spread_m, 0) > %s
              AND CASE
                  WHEN COALESCE(m.max_spread_m, 0) >= %s THEN TRUE
                  WHEN COALESCE(m.max_spread_m, 0) >= %s
                   AND COALESCE(m.max_spread_m, 0) < %s THEN TRUE
                  ELSE FALSE
-             END) AS is_dynamic,
+             END)) AS is_dynamic,
 
-            (COALESCE(m.p90_radius_m, 0) >= %s) AS is_multi_centroid,
+            COALESCE(m.prev_is_multi_centroid, FALSE) AS is_multi_centroid,
+            m.prev_centroid_pattern AS centroid_pattern,
 
             (
                 (m.prev_center_lon IS NOT NULL AND m.center_lon IS NOT NULL
@@ -540,8 +559,6 @@ def _carry_forward_previous_cells(
             antitoxin['collision_min_spread_m'],
             antitoxin['stable_max_spread_m'],
             antitoxin['drift_large_coverage_max_spread_m'],
-            # is_multi_centroid
-            antitoxin['multi_centroid_trigger_min_p90_m'],
             # antitoxin_hit
             antitoxin['antitoxin_max_centroid_shift_m'],
             antitoxin['antitoxin_max_p90_ratio'],

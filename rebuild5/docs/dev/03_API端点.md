@@ -113,9 +113,9 @@
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/service/cell/:cell_id` | 查询可信 Cell 画像 |
-| GET | `/api/service/bs/:bs_id` | 查询可信 BS 画像 |
-| GET | `/api/service/lac/:lac` | 查询可信 LAC 画像 |
+| GET | `/api/service/cell/:cell_id` | 查询可信 Cell 画像；支持 `operator_code / lac / tech_norm` 上下文参数 |
+| GET | `/api/service/bs/:bs_id` | 查询可信 BS 画像；支持 `operator_code / lac` 上下文参数 |
+| GET | `/api/service/lac/:lac` | 查询可信 LAC 画像；支持 `operator_code` 上下文参数 |
 | GET | `/api/service/search` | 按条件搜索可信对象 |
 
 ### 系统
@@ -151,7 +151,7 @@
 | 晋级规则 | `/config/promotion` | `/api/system/config` |
 | 防毒化规则 | `/config/antitoxin` | `/api/system/config` |
 | 数据保留策略 | `/config/retention` | `/api/system/config` |
-| 基站查询 | `/service/query` | `/api/service/search`, `/api/service/cell/:id`, `/api/service/bs/:id` |
+| 站点查询 | `/service/query` | `/api/service/search`, `/api/service/cell/:id`, `/api/service/bs/:id`, `/api/service/lac/:lac` |
 | 覆盖分析 | `/service/coverage` | `/api/service/search`, `/api/service/lac/:lac` |
 | 统计报表 | `/service/report` | `/api/maintenance/stats`, `/api/evaluation/stats` |
 

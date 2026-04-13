@@ -98,7 +98,7 @@ flowchart TD
     PB["profile_base\n（本批新增指标）"]
     HIST["历史评估池\n（上一版快照候选对象累计证据）"]
 
-    MERGE["按 (operator_code, lac, cell_id) 合并\n累计指标\n\n⚠️ 中位数/分位数必须基于原始明细重算\n不能直接拼上批汇总值"]
+    MERGE["按 (operator_code, tech_norm, lac, cell_id) 合并\n累计指标\n\n说明：当前仍按批次重算\n“分钟级”只表示 Step 2 的批内观察点去重"]
 
     JUDGE["按规则判定 lifecycle_state\n+ 三层资格（is_registered / anchor_eligible / baseline_eligible）"]
 
@@ -130,7 +130,7 @@ graph TD
 
 | 资格 | 判定规则 | 阈值来源 |
 |------|----------|----------|
-| `is_registered` | 首次出现可解析的 `(operator_code, lac, cell_id)` 即注册 | 结构规则 |
+| `is_registered` | 首次出现可解析的 `(operator_code, tech_norm, lac, cell_id)` 即注册 | 结构规则 |
 | `anchor_eligible` | `gps_valid_count ≥ 10` 且 `distinct_dev_id ≥ 2` 且 `p90_radius_m < 1500` 且 `observed_span_hours ≥ 24` 且无碰撞阻断 | `anchorable.*` |
 | `baseline_eligible` | 已 `anchor_eligible=true`，且无防毒化异常，且满足成熟条件 | 逻辑冻结，成熟阈值在 Step 5 执行 |
 
@@ -169,8 +169,9 @@ flowchart TD
 
 | 清理场景 | 对象 | 处理方式 |
 |----------|------|----------|
-| 等待超时 | `waiting` 态且从未入库的 Cell，连续 N 天无新数据 | 从评估池删除，不走退出链路 |
-| 已入库对象超时 | `qualified+` 对象长期无新数据 | 标记 `dormant`，交给 Step 5.4 接管 |
+| 等待超时 | 候选池中的 `waiting / observing` Cell，当前按日批次口径连续 `45` 批未晋级 | 从评估池删除，不走退出链路 |
+| 已晋级对象 | `qualified / excellent` 对象 | 从候选池移除，交给 Step 5 / 正式库链路接管 |
+| 已入库对象超时 | `qualified+` 对象长期无新数据 | `dormant` 逻辑暂留待 Step 5.4 接管 |
 
 ---
 

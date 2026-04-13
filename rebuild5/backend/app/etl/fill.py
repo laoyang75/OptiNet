@@ -43,23 +43,26 @@ def step1_fill() -> dict[str, Any]:
             WHERE cell_id IS NOT NULL
             GROUP BY record_id, cell_id
         ),
-        -- Pool B: time-sensitive fields from cell_infos — no time limit
+        -- Pool B: full-fill fields from cell_infos — no time limit
         ci_pool AS (
             SELECT record_id, cell_id,
                 (array_agg(lon_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
                     FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS ci_lon,
                 (array_agg(lat_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
                     FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS ci_lat,
-                (array_agg(rsrp) FILTER (WHERE rsrp IS NOT NULL))[1] AS ci_rsrp,
-                (array_agg(rsrq) FILTER (WHERE rsrq IS NOT NULL))[1] AS ci_rsrq,
-                (array_agg(sinr) FILTER (WHERE sinr IS NOT NULL))[1] AS ci_sinr,
+                (array_agg(rsrp ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE rsrp IS NOT NULL))[1] AS ci_rsrp,
+                (array_agg(rsrq ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE rsrq IS NOT NULL))[1] AS ci_rsrq,
+                (array_agg(sinr ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE sinr IS NOT NULL))[1] AS ci_sinr,
                 (array_agg(wifi_name) FILTER (WHERE wifi_name IS NOT NULL))[1] AS ci_wifi_name,
                 (array_agg(wifi_mac) FILTER (WHERE wifi_mac IS NOT NULL))[1] AS ci_wifi_mac
             FROM rebuild5.etl_clean_stage
             WHERE cell_id IS NOT NULL AND cell_origin = 'cell_infos'
             GROUP BY record_id, cell_id
         ),
-        -- Pool C: time-sensitive fields from ss1 — per-field best + timestamp for 60s check
+        -- Pool C: time-sensitive fields from ss1 — strongest donor row wins, still gated by 60s
         ss1_pool AS (
             SELECT record_id, cell_id,
                 (array_agg(lon_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
@@ -68,12 +71,18 @@ def step1_fill() -> dict[str, Any]:
                     FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_lat,
                 (array_agg(cell_ts_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
                     FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_gps_ts,
-                (array_agg(rsrp) FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp,
-                (array_agg(cell_ts_raw) FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp_ts,
-                (array_agg(rsrq) FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq,
-                (array_agg(cell_ts_raw) FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq_ts,
-                (array_agg(sinr) FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr,
-                (array_agg(cell_ts_raw) FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr_ts,
+                (array_agg(rsrp ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp,
+                (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp_ts,
+                (array_agg(rsrq ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq,
+                (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq_ts,
+                (array_agg(sinr ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr,
+                (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
+                    FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr_ts,
                 (array_agg(wifi_name) FILTER (WHERE wifi_name IS NOT NULL))[1] AS s_wifi_name,
                 (array_agg(wifi_mac) FILTER (WHERE wifi_mac IS NOT NULL))[1] AS s_wifi_mac,
                 (array_agg(cell_ts_raw) FILTER (WHERE wifi_name IS NOT NULL))[1] AS s_wifi_ts
@@ -93,6 +102,17 @@ def step1_fill() -> dict[str, Any]:
             c.has_cell_id, c.dev_id, c.ip, c.plmn_main, c.brand, c.model, c.sdk_ver, c.oaid, c.pkg_name,
             c.wifi_name, c.wifi_mac, c.cpu_info, c.pressure,
             c.bs_id, c.sector_id, c.operator_cn,
+            -- Full-fill policy: cell_infos donor is always allowed; ss1 donor needs <=60s
+            (
+                c.cell_origin = 'cell_infos'
+                OR ci.record_id IS NOT NULL
+                OR (
+                    s.record_id IS NOT NULL
+                    AND c.cell_ts_raw ~ '^\d{10}$'
+                    AND s.s_gps_ts ~ '^\d{10}$'
+                    AND ABS(c.cell_ts_raw::bigint - s.s_gps_ts::bigint) <= 60
+                )
+            ) AS allow_full_fill,
             -- Stable fields: operator (any source, no time limit)
             COALESCE(c.operator_code, sp.p_operator) AS operator_filled,
             CASE WHEN c.operator_code IS NOT NULL THEN 'original'
@@ -163,6 +183,7 @@ def step1_fill() -> dict[str, Any]:
         LEFT JOIN ss1_pool s ON s.record_id = c.record_id AND s.cell_id = c.cell_id
         """
     )
+    execute(f'ALTER TABLE {FINAL_OUTPUT_TABLE} SET (autovacuum_enabled = false)')
     execute(f'CREATE VIEW {COMPAT_FILLED_VIEW} AS SELECT * FROM {FINAL_OUTPUT_TABLE}')
 
     after = fetchone(

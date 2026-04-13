@@ -12,7 +12,7 @@ const router = createRouter({
     { path: '/global/history', component: () => import('../views/global/RunHistory.vue'), meta: { title: '运行历史', group: 'global' } },
     // ETL 数据接入
     { path: '/etl/source', component: () => import('../views/etl/DataSource.vue'), meta: { title: '数据源注册', group: 'etl' } },
-    { path: '/etl/field-audit', component: () => import('../views/etl/FieldAudit.vue'), meta: { title: '字段审计', group: 'etl' } },
+    { path: '/etl/field-audit', component: () => import('../views/etl/FieldAudit.vue'), meta: { title: '字段定义', group: 'etl' } },
     { path: '/etl/parse', component: () => import('../views/etl/Parse.vue'), meta: { title: '解析', group: 'etl' } },
     { path: '/etl/clean', component: () => import('../views/etl/Clean.vue'), meta: { title: '清洗', group: 'etl' } },
     { path: '/etl/fill', component: () => import('../views/etl/Fill.vue'), meta: { title: '补齐', group: 'etl' } },
@@ -34,7 +34,7 @@ const router = createRouter({
     { path: '/config/antitoxin', component: () => import('../views/config/AntitoxinRules.vue'), meta: { title: '防毒化规则', group: 'config' } },
     { path: '/config/retention', component: () => import('../views/config/RetentionPolicy.vue'), meta: { title: '数据保留策略', group: 'config' } },
     // 服务控制台
-    { path: '/service/query', component: () => import('../views/service/StationQuery.vue'), meta: { title: '基站查询', group: 'service' } },
+    { path: '/service/query', component: () => import('../views/service/StationQuery.vue'), meta: { title: '站点查询', group: 'service' } },
     { path: '/service/coverage', component: () => import('../views/service/CoverageAnalysis.vue'), meta: { title: '覆盖分析', group: 'service' } },
     { path: '/service/report', component: () => import('../views/service/StatsReport.vue'), meta: { title: '统计报表', group: 'service' } },
   ],

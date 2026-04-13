@@ -15,6 +15,29 @@ def ensure_maintenance_schema() -> None:
     _create_cell_sliding_window()
     _create_cell_daily_centroid()
     _create_cell_metrics_window()
+    _apply_maintenance_table_policies()
+    _ensure_maintenance_compat_columns()
+
+
+def _apply_maintenance_table_policies() -> None:
+    """Apply physical-table policies for Step 5 batch-owned tables.
+
+    trusted_*_library and collision/detail tables are rebuilt/overwritten by batch.
+    We manage their statistics explicitly in the pipeline, so disabling autovacuum
+    avoids background workers competing with long-running reruns.
+
+    cell_sliding_window is intentionally excluded: it is the cross-batch
+    persistent window and should keep default autovacuum behavior.
+    """
+    for table_name in (
+        'rebuild5.trusted_cell_library',
+        'rebuild5.trusted_bs_library',
+        'rebuild5.trusted_lac_library',
+        'rebuild5.collision_id_list',
+        'rebuild5.cell_centroid_detail',
+        'rebuild5.bs_centroid_detail',
+    ):
+        execute(f"ALTER TABLE {table_name} SET (autovacuum_enabled = false)")
 
 
 def _create_step5_run_stats() -> None:
@@ -84,6 +107,7 @@ def _create_trusted_cell_library() -> None:
             is_collision BOOLEAN NOT NULL DEFAULT FALSE,
             is_dynamic BOOLEAN NOT NULL DEFAULT FALSE,
             is_multi_centroid BOOLEAN NOT NULL DEFAULT FALSE,
+            centroid_pattern TEXT,
             antitoxin_hit BOOLEAN NOT NULL DEFAULT FALSE,
             cell_scale TEXT,
             last_maintained_at TIMESTAMPTZ,
@@ -91,7 +115,7 @@ def _create_trusted_cell_library() -> None:
             window_obs_count BIGINT NOT NULL DEFAULT 0,
             active_days_30d INTEGER DEFAULT 0,
             consecutive_inactive_days INTEGER DEFAULT 0,
-            PRIMARY KEY (batch_id, operator_code, lac, cell_id)
+            PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
         )
         """
     )
@@ -150,6 +174,7 @@ def _create_trusted_lac_library() -> None:
             baseline_eligible BOOLEAN NOT NULL,
             total_bs BIGINT NOT NULL,
             qualified_bs BIGINT NOT NULL,
+            excellent_bs BIGINT NOT NULL DEFAULT 0,
             qualified_bs_ratio DOUBLE PRECISION NOT NULL,
             area_km2 DOUBLE PRECISION,
             anomaly_bs_ratio DOUBLE PRECISION,
@@ -161,6 +186,7 @@ def _create_trusted_lac_library() -> None:
         )
         """
     )
+    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS excellent_bs BIGINT NOT NULL DEFAULT 0')
 
 
 def _create_collision_id_list() -> None:
@@ -191,14 +217,16 @@ def _create_cell_centroid_detail() -> None:
             lac BIGINT,
             bs_id BIGINT,
             cell_id BIGINT NOT NULL,
+            tech_norm TEXT,
             cluster_id INTEGER NOT NULL,
             is_primary BOOLEAN NOT NULL DEFAULT FALSE,
             center_lon DOUBLE PRECISION,
             center_lat DOUBLE PRECISION,
             obs_count BIGINT,
             dev_count BIGINT,
+            radius_m DOUBLE PRECISION,
             share_ratio DOUBLE PRECISION,
-            PRIMARY KEY (batch_id, operator_code, lac, cell_id, cluster_id)
+            PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm, cluster_id)
         )
         """
     )
@@ -225,6 +253,32 @@ def _create_bs_centroid_detail() -> None:
     )
 
 
+def _ensure_maintenance_compat_columns() -> None:
+    execute('ALTER TABLE rebuild5.cell_centroid_detail ADD COLUMN IF NOT EXISTS radius_m DOUBLE PRECISION')
+    execute('ALTER TABLE rebuild5.trusted_cell_library ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rebuild5.trusted_cell_library ADD COLUMN IF NOT EXISTS centroid_pattern TEXT')
+    execute('ALTER TABLE rebuild5.cell_centroid_detail ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rebuild5.cell_sliding_window ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rebuild5.cell_daily_centroid ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rebuild5.cell_metrics_window ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rebuild5.trusted_cell_library DROP CONSTRAINT IF EXISTS trusted_cell_library_pkey')
+    execute(
+        """
+        ALTER TABLE rebuild5.trusted_cell_library
+        ADD CONSTRAINT trusted_cell_library_pkey
+        PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('ALTER TABLE rebuild5.cell_centroid_detail DROP CONSTRAINT IF EXISTS cell_centroid_detail_pkey')
+    execute(
+        """
+        ALTER TABLE rebuild5.cell_centroid_detail
+        ADD CONSTRAINT cell_centroid_detail_pkey
+        PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm, cluster_id)
+        """
+    )
+
+
 def _create_cell_sliding_window() -> None:
     execute(
         """
@@ -236,6 +290,7 @@ def _create_cell_sliding_window() -> None:
             lac BIGINT,
             bs_id BIGINT,
             cell_id BIGINT,
+            tech_norm TEXT,
             dev_id TEXT,
             event_time_std TIMESTAMPTZ,
             gps_valid BOOLEAN,
@@ -261,6 +316,7 @@ def _create_cell_daily_centroid() -> None:
             lac BIGINT,
             bs_id BIGINT,
             cell_id BIGINT,
+            tech_norm TEXT,
             obs_date DATE NOT NULL,
             center_lon DOUBLE PRECISION,
             center_lat DOUBLE PRECISION,
@@ -284,6 +340,7 @@ def _create_cell_metrics_window() -> None:
             lac BIGINT,
             bs_id BIGINT,
             cell_id BIGINT,
+            tech_norm TEXT,
             -- recalculated spatial metrics
             center_lon DOUBLE PRECISION,
             center_lat DOUBLE PRECISION,

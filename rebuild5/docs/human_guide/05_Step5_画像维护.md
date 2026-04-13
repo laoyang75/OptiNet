@@ -67,11 +67,11 @@ mindmap
 
 ### A 类：绝对碰撞（真碰撞）
 
-同一 `(operator_code, lac, cell_id)` 在不同物理位置（不同 BS）出现，质心间距 ≥ 阈值。
+同一 `(operator_code, tech_norm, lac, cell_id)` 在不同物理位置（不同 BS）出现，质心间距 ≥ 阈值。
 
 | 项目 | 规则 |
 |------|------|
-| 扫描对象 | `trusted_cell_library` 中同一 `(operator_code, lac, cell_id)` 关联到不同 `bs_id` |
+| 扫描对象 | `trusted_cell_library` 中同一 `(operator_code, tech_norm, lac, cell_id)` 关联到不同 `bs_id` |
 | 命中条件 | 两个实例质心距离 ≥ `absolute_collision_min_distance_m`（当前 20km，可配置） |
 | 影响 | `is_collision=true`, `drift_pattern=collision`, `baseline_eligible=false`, `antitoxin_hit=true` |
 
@@ -131,7 +131,7 @@ flowchart TD
 graph LR
     PROBLEM["问题：\n如果无限累积历史观测\n画像会越来越像「长期平均」\n而不是「当前状态」"]
 
-    SOLUTION["解决：每个 Cell 维护一个滑动窗口\n核心原则：数量优先\n取「最近N天」和「最少M条」中的较大范围\n默认：N=7天，M=50条"]
+    SOLUTION["解决：每个 Cell 维护一个滑动窗口\n核心原则：数量优先\n取「最近N天」和「最少M条」中的较大范围\n默认：N=14天，M=1000条"]
 
     EXAMPLE["示例：\n最近7天有300条 → 只保留7天\n最近7天只有12条 → 向前回溯到凑够50条"]
 

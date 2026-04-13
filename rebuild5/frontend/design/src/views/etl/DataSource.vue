@@ -25,7 +25,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader title="数据源注册" description="查看当前数据集接入的原始数据源、来源范围和接入状态。" />
+  <PageHeader title="数据源注册" description="查看当前数据集接入的原始数据源、来源范围和接入状态。当前为单活只读模式，暂不支持在线新增 / 编辑 / 停用数据源。" />
 
   <div class="grid grid-3 mb-lg">
     <SummaryCard title="数据源总数" :value="sourceCount" :subtitle="`当前激活 ${sourceCount} 个`" />
@@ -63,7 +63,7 @@ onMounted(async () => {
           <td class="text-sm text-secondary">{{ s.lastSync || '-' }}</td>
         </tr>
         <tr v-if="sources.length === 0">
-          <td colspan="8" class="text-center text-secondary" style="padding:20px">暂无数据源，请先准备 sample_6lac 数据集</td>
+          <td colspan="8" class="text-center text-secondary" style="padding:20px">暂无数据源，请先准备当前数据集</td>
         </tr>
       </tbody>
     </table>

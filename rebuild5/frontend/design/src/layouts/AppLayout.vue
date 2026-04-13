@@ -30,7 +30,7 @@ const navSections: NavSection[] = [
         subTitle: 'Step 1 · 数据源接入',
         items: [
           { label: '数据源注册', path: '/etl/source', group: 'etl' },
-          { label: '字段审计', path: '/etl/field-audit', group: 'etl' },
+          { label: '字段定义', path: '/etl/field-audit', group: 'etl' },
           { label: '解析', path: '/etl/parse', group: 'etl' },
           { label: '清洗', path: '/etl/clean', group: 'etl' },
           { label: '补齐', path: '/etl/fill', group: 'etl' },
@@ -79,7 +79,7 @@ const navSections: NavSection[] = [
   {
     title: '服务控制台', key: 'service',
     items: [
-      { label: '基站查询', path: '/service/query', group: 'service' },
+      { label: '站点查询', path: '/service/query', group: 'service' },
       { label: '覆盖分析', path: '/service/coverage', group: 'service' },
       { label: '统计报表', path: '/service/report', group: 'service' },
     ]

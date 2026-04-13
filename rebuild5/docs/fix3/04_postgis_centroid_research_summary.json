@@ -1,0 +1,85 @@
+{
+  "generated_at": "2026-04-12T16:07:29.408057+00:00",
+  "dsn": "postgresql://postgres:123456@192.168.200.217:5433/ip_loc2",
+  "batch_id": 7,
+  "primary_param_key": "eps250_mp4_g25",
+  "bucket_summary": [
+    {
+      "research_bucket": "collision",
+      "cell_count": 25,
+      "avg_window_obs": "464.2",
+      "avg_p90_m": "41847.2"
+    },
+    {
+      "research_bucket": "gps_anomaly",
+      "cell_count": 25,
+      "avg_window_obs": "2142.5",
+      "avg_p90_m": "205.4"
+    },
+    {
+      "research_bucket": "large_coverage",
+      "cell_count": 25,
+      "avg_window_obs": "658.6",
+      "avg_p90_m": "964.3"
+    },
+    {
+      "research_bucket": "migration_dynamic",
+      "cell_count": 25,
+      "avg_window_obs": "489.5",
+      "avg_p90_m": "5161.8"
+    },
+    {
+      "research_bucket": "multi_flag",
+      "cell_count": 25,
+      "avg_window_obs": "1094.6",
+      "avg_p90_m": "3323.5"
+    },
+    {
+      "research_bucket": "stable_reference",
+      "cell_count": 25,
+      "avg_window_obs": "2304.4",
+      "avg_p90_m": "96.0"
+    }
+  ],
+  "point_summary": {
+    "candidate_count": 150,
+    "point_count": 33001
+  },
+  "primary_summary": {
+    "candidate_count": 149,
+    "dirty_signal_count": 0,
+    "single_large_coverage_count": 0,
+    "dual_centroid_count": 0,
+    "multi_centroid_count": 0,
+    "migration_like_count": 0,
+    "dynamic_multi_count": 0,
+    "collision_like_count": 0
+  },
+  "sensitivity": [
+    {
+      "param_key": "eps150_mp4_g25",
+      "research_class": "single_stable",
+      "cell_count": 149
+    },
+    {
+      "param_key": "eps250_mp4_g25",
+      "research_class": "single_stable",
+      "cell_count": 149
+    },
+    {
+      "param_key": "eps400_mp4_g25",
+      "research_class": "single_stable",
+      "cell_count": 149
+    }
+  ],
+  "label_comparison": [
+    {
+      "research_class": "single_stable",
+      "cell_count": 149,
+      "current_multi_count": 68,
+      "current_dynamic_count": 49,
+      "current_anomaly_count": 78
+    }
+  ],
+  "representative_cases": []
+}

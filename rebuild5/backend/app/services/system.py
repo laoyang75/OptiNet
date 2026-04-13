@@ -38,7 +38,7 @@ def build_system_config_payload(
 ) -> dict[str, Any]:
     current = next((row for row in datasets if row.get("is_current")), datasets[0] if datasets else None)
     current_version = {
-        "dataset_key": current.get("dataset_key", "sample_6lac") if current else "sample_6lac",
+        "dataset_key": current.get("dataset_key", "") if current else "",
         "run_id": current.get("last_run_id", "run_bootstrap") if current else "run_bootstrap",
         "snapshot_version": current.get("last_snapshot_version", "v0") if current else "v0",
         "status": current.get("last_run_status", "completed") if current else "completed",

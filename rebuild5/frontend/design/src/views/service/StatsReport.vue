@@ -103,10 +103,10 @@ onMounted(async () => {
           <th>LAC</th>
           <th>运营商</th>
           <th class="sortable-th" @click="toggleSort('cell_total')">Cell 总量{{ sortIndicator('cell_total') }}</th>
-          <th>qualified+ Cell</th>
-          <th>excellent Cell</th>
+          <th>合格+ Cell</th>
+          <th>优秀 Cell</th>
           <th class="sortable-th" @click="toggleSort('bs_total')">BS 总量{{ sortIndicator('bs_total') }}</th>
-          <th>qualified+ BS</th>
+          <th>合格+ BS</th>
           <th class="sortable-th" @click="toggleSort('avg_p90')">平均 P90 (m){{ sortIndicator('avg_p90') }}</th>
         </tr>
       </thead>
@@ -138,7 +138,7 @@ onMounted(async () => {
       <div class="text-xs text-secondary mt-sm">{{ worstP90 ? Math.round(worstP90.avg_p90) + 'm 平均 P90' : '暂无数据' }}</div>
     </div>
     <div class="card">
-      <div class="font-semibold text-sm mb-sm">qualified BS 占比最高</div>
+      <div class="font-semibold text-sm mb-sm">合格 BS 占比最高</div>
       <div class="text-xl font-semibold">{{ bestQualifiedBs ? 'LAC ' + bestQualifiedBs.lac : '-' }}</div>
       <div class="text-xs text-secondary mt-sm">{{ bestQualifiedBs ? ((bestQualifiedBs.qualified_bs_total / Math.max(bestQualifiedBs.bs_total, 1)) * 100).toFixed(1) + '%' : '暂无数据' }}</div>
     </div>
@@ -148,7 +148,7 @@ onMounted(async () => {
     <div class="font-semibold text-sm mb-sm">报表说明</div>
     <ul class="text-xs text-secondary" style="padding-left:18px;line-height:2">
       <li>所有数据基于快照版本 {{ payload.version.snapshot_version || 'v0' }}，数据集 {{ payload.version.dataset_key || '-' }}</li>
-      <li>qualified+ 包含 qualified 和 excellent 两个状态</li>
+      <li>合格+ 包含合格和优秀两个状态</li>
       <li>点击表头可排序（Cell 总量 / BS 总量 / 平均 P90）</li>
       <li>导出文件自动带上版本号，方便业务复核与回溯</li>
     </ul>

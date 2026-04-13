@@ -55,7 +55,7 @@ def ensure_enrichment_schema() -> None:
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.enriched_records (
+        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.enriched_records (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -101,19 +101,25 @@ def ensure_enrichment_schema() -> None:
             donor_batch_id INTEGER,
             donor_snapshot_version TEXT,
             donor_cell_id BIGINT,
+            donor_operator_code TEXT,
+            donor_lac BIGINT,
+            donor_tech_norm TEXT,
             donor_lifecycle_state TEXT,
             donor_position_grade TEXT,
             donor_center_lon DOUBLE PRECISION,
             donor_center_lat DOUBLE PRECISION,
+            path_a_is_collision BOOLEAN,
             donor_anchor_eligible BOOLEAN,
             donor_baseline_eligible BOOLEAN,
             PRIMARY KEY (batch_id, source_row_uid)
         )
         """
     )
+    execute("ALTER TABLE rebuild5.enriched_records SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rebuild5.enriched_records ADD COLUMN IF NOT EXISTS path_a_is_collision BOOLEAN")
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.gps_anomaly_log (
+        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.gps_anomaly_log (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -123,6 +129,7 @@ def ensure_enrichment_schema() -> None:
             lac BIGINT,
             bs_id BIGINT,
             cell_id BIGINT,
+            tech_norm TEXT,
             dev_id TEXT,
             event_time_std TIMESTAMPTZ,
             -- 原始 GPS
@@ -142,6 +149,8 @@ def ensure_enrichment_schema() -> None:
         )
         """
     )
+    execute("ALTER TABLE rebuild5.gps_anomaly_log SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rebuild5.gps_anomaly_log ADD COLUMN IF NOT EXISTS tech_norm TEXT")
 
 
 # ---------------------------------------------------------------------------

@@ -1,17 +1,10 @@
 cell:
   waiting:
-    min_independent_obs: 3
-    min_distinct_devices: 2
+    min_independent_obs: 1
   qualified:
-    min_independent_obs: 3
-    min_distinct_devices: 2
-    max_p90_radius_m: 1500
-    min_observed_span_hours: 24
+    min_independent_obs: 10
   excellent:
-    min_independent_obs: 8
-    min_distinct_devices: 3
-    max_p90_radius_m: 500
-    min_observed_span_hours: 24
+    min_independent_obs: 30
   anchorable:
     min_gps_valid_count: 10
     min_distinct_devices: 2
@@ -20,15 +13,17 @@ cell:
 bs:
   observing:
     min_cells_with_gps: 1
-  qualified:
+  excellent:
     min_excellent_cells: 1
-    min_qualified_cells: 3
+  qualified:
+    min_qualified_cells: 2
 lac:
   observing:
     min_non_waiting_bs: 1
+  excellent:
+    min_excellent_bs: 30
   qualified:
-    min_qualified_bs: 3
-    min_qualified_bs_ratio: 0.1
+    min_excellent_bs: 10
 gps_confidence:
   high:
     min_gps_valid: 20

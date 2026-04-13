@@ -9,7 +9,7 @@ function toRecord(value: unknown): Record<string, any> {
 }
 
 const config = ref<SystemConfigPayload>({
-  current_version: { dataset_key: 'sample_6lac', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
+  current_version: { dataset_key: '', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
   datasets: [],
   params: {},
 })
@@ -49,7 +49,7 @@ onMounted(async () => {
     <div class="card">
       <div class="font-semibold text-sm mb-md" style="color:var(--c-dormant)">休眠管理</div>
       <ul class="policy-list">
-        <li><span class="label">对象范围</span><span>qualified+ 对象</span></li>
+        <li><span class="label">对象范围</span><span>合格及以上对象</span></li>
         <li><span class="label">触发条件</span><span>连续 {{ dormant.max_inactive_batches ?? 0 }} 批无新数据</span></li>
         <li><span class="label">状态变化</span><span>→ dormant，暂停活跃维护</span></li>
         <li><span class="label">恢复条件</span><span>再次出现新数据时恢复</span></li>
@@ -72,7 +72,7 @@ onMounted(async () => {
   <div class="card">
     <div class="font-semibold text-sm mb-sm">生命周期退出说明</div>
     <ul class="text-xs text-secondary" style="padding-left:18px;line-height:2">
-      <li>退出链路：qualified+ → dormant → retired</li>
+      <li>退出链路：合格及以上 → 休眠 → 退出</li>
       <li>retired 对象再次出现时，不恢复旧状态，而是重新从 waiting 开始积累</li>
       <li>全部批次阈值已外化到 <code>retention_params.yaml</code>，页面展示的是当前生效值</li>
       <li>BS / LAC 的退出由下层联动触发</li>

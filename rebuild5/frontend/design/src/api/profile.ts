@@ -24,10 +24,16 @@ export interface RoutingMetrics {
   path_b_partial_cell_count: number
 }
 
+export interface RoutingRules {
+  collision_match_gps_threshold_m: number
+  obs_dedup_window_minutes: number
+  centroid_algorithm: string
+}
+
 export interface RoutingPayload {
   summary: RoutingSummary
   path_b_metrics: RoutingMetrics
-  rules: Record<string, unknown>
+  rules: RoutingRules
   version: {
     dataset_key: string
     run_id: string

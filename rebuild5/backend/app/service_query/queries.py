@@ -38,7 +38,7 @@ def _latest_version() -> dict[str, Any]:
         LIMIT 1
         """
     )
-    return row or {'run_id': '', 'dataset_key': 'sample_6lac', 'snapshot_version': 'v0', 'snapshot_version_prev': 'v0'}
+    return row or {'run_id': '', 'dataset_key': '', 'snapshot_version': 'v0', 'snapshot_version_prev': 'v0'}
 
 
 def _latest_batch_filter(table_name: str) -> str:
@@ -118,32 +118,65 @@ def search_service_payload(q: str | None = None, level: str = 'cell', operator_c
     return {'version': _latest_version(), 'query': {'q': query, 'level': level, 'operator_code': operator_code}, 'items': result['items'], '_page_info': result}
 
 
-def get_service_cell_payload(cell_id: int) -> dict[str, Any]:
+def get_service_cell_payload(
+    cell_id: int,
+    *,
+    operator_code: str | None = None,
+    lac: int | None = None,
+    tech_norm: str | None = None,
+) -> dict[str, Any]:
+    filters = [
+        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)',
+        't.cell_id = %s',
+    ]
+    params: list[Any] = [cell_id]
+    if operator_code is not None:
+        filters.append('t.operator_code = %s')
+        params.append(operator_code)
+    if lac is not None:
+        filters.append('t.lac = %s')
+        params.append(lac)
+    if tech_norm is not None:
+        filters.append('t.tech_norm IS NOT DISTINCT FROM %s')
+        params.append(tech_norm)
     row = _safe_fetchone(
-        """
-        SELECT *
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
-          AND cell_id = %s
-        ORDER BY p90_radius_m ASC NULLS LAST, operator_code, lac
+        f"""
+        SELECT t.*, loc.province_name, loc.city_name, loc.district_name
+        FROM rebuild5.trusted_cell_library t
+        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
+            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        WHERE {' AND '.join(filters)}
+        ORDER BY t.p90_radius_m ASC NULLS LAST, t.operator_code, t.lac
         LIMIT 1
         """,
-        (cell_id,),
+        tuple(params),
     )
     return row or {'cell_id': cell_id}
 
 
-def get_service_bs_payload(bs_id: int) -> dict[str, Any]:
+def get_service_bs_payload(bs_id: int, *, operator_code: str | None = None, lac: int | None = None) -> dict[str, Any]:
+    filters = [
+        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)',
+        't.bs_id = %s',
+    ]
+    params: list[Any] = [bs_id]
+    if operator_code is not None:
+        filters.append('t.operator_code = %s')
+        params.append(operator_code)
+    if lac is not None:
+        filters.append('t.lac = %s')
+        params.append(lac)
     row = _safe_fetchone(
-        """
-        SELECT *
-        FROM rebuild5.trusted_bs_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
-          AND bs_id = %s
-        ORDER BY total_cells DESC, operator_code, lac
+        f"""
+        SELECT t.*, loc.province_name, loc.city_name, loc.district_name
+        FROM rebuild5.trusted_bs_library t
+        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
+            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        WHERE {' AND '.join(filters)}
+        ORDER BY t.total_cells DESC, t.operator_code, t.lac
         LIMIT 1
         """,
-        (bs_id,),
+        tuple(params),
     )
     if not row:
         return {'bs_id': bs_id, 'cells': []}
@@ -161,17 +194,26 @@ def get_service_bs_payload(bs_id: int) -> dict[str, Any]:
     return row
 
 
-def get_service_lac_payload(lac: int) -> dict[str, Any]:
+def get_service_lac_payload(lac: int, *, operator_code: str | None = None) -> dict[str, Any]:
+    filters = [
+        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)',
+        't.lac = %s',
+    ]
+    params: list[Any] = [lac]
+    if operator_code is not None:
+        filters.append('t.operator_code = %s')
+        params.append(operator_code)
     row = _safe_fetchone(
-        """
-        SELECT *
-        FROM rebuild5.trusted_lac_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)
-          AND lac = %s
-        ORDER BY total_bs DESC, operator_code
+        f"""
+        SELECT t.*, loc.province_name, loc.city_name, loc.district_name
+        FROM rebuild5.trusted_lac_library t
+        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
+            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        WHERE {' AND '.join(filters)}
+        ORDER BY t.total_bs DESC, t.operator_code
         LIMIT 1
         """,
-        (lac,),
+        tuple(params),
     )
     if not row:
         return {'lac': lac, 'bs_items': []}

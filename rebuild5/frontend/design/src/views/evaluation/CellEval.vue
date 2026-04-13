@@ -12,7 +12,7 @@ import {
   fetchCellRuleImpact, type RuleImpactPayload,
   fetchTrend, type TrendPoint,
 } from '../../api/evaluation'
-import { OPERATORS } from '../../types'
+import { OPERATORS, STATE_LABELS } from '../../types'
 import type { LifecycleState } from '../../types'
 
 /* ---------- state ---------- */
@@ -95,11 +95,11 @@ const STATE_COLORS: Record<string, string> = {
 function trendPath(state: LifecycleState): string {
   if (trendPoints.value.length === 0) return ''
   const pts = trendPoints.value
-  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p.cell[s])))
+  const maxVal = Math.max(1, ...pts.flatMap(p => STATES.map(s => p.cell?.[s] ?? 0)))
   const w = 600, h = 140
   return pts.map((p, i) => {
     const x = pts.length === 1 ? w / 2 : (i / (pts.length - 1)) * w
-    const y = h - (p.cell[state] / maxVal) * (h - 10)
+    const y = h - ((p.cell?.[state] ?? 0) / maxVal) * (h - 10)
     return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
   }).join(' ')
 }
@@ -116,7 +116,12 @@ function trendPath(state: LifecycleState): string {
   <div class="card mb-lg flex gap-md items-center wrap-row">
     <select v-model="stateFilter" class="filter-select">
       <option value="">全部状态</option>
-      <option v-for="s in ['excellent','qualified','observing','waiting','dormant','retired']" :key="s">{{ s }}</option>
+      <option value="excellent">优秀</option>
+      <option value="qualified">合格</option>
+      <option value="observing">观察</option>
+      <option value="waiting">等待</option>
+      <option value="dormant">休眠</option>
+      <option value="retired">退出</option>
     </select>
     <select v-model="operatorFilter" class="filter-select">
       <option value="">全部运营商</option>
@@ -141,7 +146,7 @@ function trendPath(state: LifecycleState): string {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="c in filteredItems" :key="c.cell_id + '-' + c.lac + '-' + c.operator_code">
+        <tr v-for="c in filteredItems" :key="c.cell_id + '-' + c.lac + '-' + c.operator_code + '-' + c.tech_norm">
           <td class="font-mono font-semibold">{{ c.cell_id }}</td>
           <td class="font-mono">{{ c.lac }}</td>
           <td class="font-mono text-xs">{{ c.bs_id }}</td>
@@ -157,7 +162,7 @@ function trendPath(state: LifecycleState): string {
           <td class="font-mono">{{ Math.round(c.p90_radius_m || 0) }}</td>
           <td class="font-mono">{{ Math.round(c.observed_span_hours || 0) }}</td>
           <td class="font-mono">{{ c.active_days }}</td>
-          <td class="font-mono">{{ c.rsrp_avg ?? '-' }}</td>
+          <td class="font-mono">{{ c.rsrp_avg != null ? Number(c.rsrp_avg).toFixed(2) : '-' }}</td>
         </tr>
         <tr v-if="filteredItems.length === 0">
           <td colspan="13" class="text-center text-secondary" style="padding:20px">暂无匹配 Cell</td>
@@ -228,7 +233,7 @@ function trendPath(state: LifecycleState): string {
     </svg>
     <div class="flex gap-md mt-xs">
       <span v-for="s in STATES" :key="s" class="text-xs flex items-center gap-xs">
-        <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ s }}
+        <span class="legend-dot" :style="{ background: STATE_COLORS[s] }"></span>{{ STATE_LABELS[s] }}
       </span>
     </div>
   </div>

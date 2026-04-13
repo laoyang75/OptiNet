@@ -1,46 +1,797 @@
-"""Step 5.4 — Publish BS library, BS centroid detail, LAC library.
+"""Step 5.4 — Publish BS/LAC libraries and centroid details.
 
 BS: aggregated from trusted_cell_library (Cell → BS).
 LAC: aggregated from trusted_bs_library (BS → LAC).
 
-Fixes vs legacy:
+Current focus:
 - BS classification: all 5 types (collision_bs/dynamic_bs/large_spread/multi_centroid/normal_spread)
 - BS: is_multi_centroid, window_active_cell_count
 - LAC: active_bs_count, retired_bs_count, boundary_stability_score
-- Cell centroid detail: single-cluster primary stub (real clustering in multi_centroid.py)
+- Cell / BS centroid detail: lightweight multi-cluster split from staged centroids
 """
 from __future__ import annotations
 
 from typing import Any
 
-from ..core.database import execute
+from ..core.database import execute, get_conn
 from ..etl.source_prep import DATASET_KEY
+from ..profile.logic import (
+    flatten_antitoxin_thresholds,
+    flatten_profile_thresholds,
+    load_antitoxin_params,
+    load_profile_params,
+)
 
 
 # ---------------------------------------------------------------------------
-# Cell centroid detail (stub — real clustering in multi_centroid.py Round 5)
+# Cell centroid detail
 # ---------------------------------------------------------------------------
 
-def publish_cell_centroid_detail(*, batch_id: int, snapshot_version: str) -> None:
+
+def _postgis_centroid_config() -> dict[str, Any]:
+    payload = load_antitoxin_params()
+    cfg = payload.get('postgis_centroid', {})
+    return {
+        'lookback_batches': int(cfg.get('lookback_batches', 4)),
+        'candidate_min_window_obs': int(cfg.get('candidate_min_window_obs', 5)),
+        'candidate_min_active_days': int(cfg.get('candidate_min_active_days', 2)),
+        'candidate_min_p90_m': float(cfg.get('candidate_min_p90_m', 800)),
+        'candidate_min_max_spread_m': float(cfg.get('candidate_min_max_spread_m', 2200)),
+        'candidate_drift_patterns': tuple(cfg.get('candidate_drift_patterns', ['large_coverage', 'migration', 'collision', 'moderate_drift'])),
+        'snap_grid_m': float(cfg.get('snap_grid_m', 50)),
+        'cluster_eps_m': float(cfg.get('cluster_eps_m', 250)),
+        'cluster_min_points': int(cfg.get('cluster_min_points', 4)),
+        'stable_min_obs': int(cfg.get('stable_min_obs', 5)),
+        'stable_min_share': float(cfg.get('stable_min_share', 0.10)),
+        'stable_min_days': int(cfg.get('stable_min_days', 2)),
+        'stable_min_devs': int(cfg.get('stable_min_devs', 2)),
+        'stable_single_device_max_total_devs': int(cfg.get('stable_single_device_max_total_devs', 2)),
+        'dual_cluster_min_distance_m': float(cfg.get('dual_cluster_min_distance_m', 300)),
+        'migration_min_distance_m': float(cfg.get('migration_min_distance_m', 500)),
+        'migration_max_overlap_days': int(cfg.get('migration_max_overlap_days', 1)),
+        'moving_min_overlap_days': int(cfg.get('moving_min_overlap_days', 2)),
+        'moving_min_switches': int(cfg.get('moving_min_switches', 2)),
+        'multi_cluster_min_cluster_count': int(cfg.get('multi_cluster_min_cluster_count', 3)),
+        'recalc_min_p90_delta_m': float(cfg.get('recalc_min_p90_delta_m', 200)),
+        'recalc_min_window_obs_delta': int(cfg.get('recalc_min_window_obs_delta', 10)),
+    }
+
+def publish_cell_centroid_detail(
+    *,
+    batch_id: int,
+    snapshot_version: str,
+    multi_centroid_threshold_m: float | None = None,
+    spread_threshold_m: float | None = None,
+) -> None:
+    thresholds = flatten_antitoxin_thresholds(load_antitoxin_params())
+    centroid_cfg = _postgis_centroid_config()
+    multi_centroid_threshold_m = (
+        float(multi_centroid_threshold_m)
+        if multi_centroid_threshold_m is not None
+        else centroid_cfg['candidate_min_p90_m']
+    )
+    spread_threshold_m = (
+        float(spread_threshold_m)
+        if spread_threshold_m is not None
+        else centroid_cfg['candidate_min_max_spread_m']
+    )
+    snap_grid_m = centroid_cfg['snap_grid_m']
+    cluster_eps_m = centroid_cfg['cluster_eps_m']
+    cluster_min_points = centroid_cfg['cluster_min_points']
+    min_cluster_obs = centroid_cfg['stable_min_obs']
+    min_cluster_share = centroid_cfg['stable_min_share']
+    min_cluster_days = centroid_cfg['stable_min_days']
+    candidate_window_obs = centroid_cfg['candidate_min_window_obs']
+    candidate_active_days = centroid_cfg['candidate_min_active_days']
+    lookback_batches = centroid_cfg['lookback_batches']
+    drift_patterns_sql = ', '.join(f"'{value}'" for value in centroid_cfg['candidate_drift_patterns'])
+    window_batch_start = max(batch_id - lookback_batches, 0)
+    recalc_p90_delta_m = centroid_cfg['recalc_min_p90_delta_m']
+    recalc_window_obs_delta = centroid_cfg['recalc_min_window_obs_delta']
+    stage_tables = (
+        'rebuild5._cell_centroid_candidates',
+        'rebuild5._cell_centroid_points',
+        'rebuild5._cell_centroid_grid_points',
+        'rebuild5._cell_centroid_clustered_grid',
+        'rebuild5._cell_centroid_labelled_points',
+        'rebuild5._cell_centroid_valid_clusters',
+        'rebuild5._cell_centroid_daily_presence',
+        'rebuild5._cell_centroid_classification',
+    )
+    for table_name in stage_tables:
+        execute(f'DROP TABLE IF EXISTS {table_name}')
     execute('DELETE FROM rebuild5.cell_centroid_detail WHERE batch_id = %s', (batch_id,))
     execute(
-        """
-        INSERT INTO rebuild5.cell_centroid_detail (
-            batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, cluster_id,
-            is_primary, center_lon, center_lat, obs_count, dev_count, share_ratio
+        f"""
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_candidates AS
+        WITH prev AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                p90_radius_m,
+                window_obs_count,
+                drift_pattern,
+                gps_anomaly_type,
+                is_dynamic,
+                is_multi_centroid,
+                centroid_pattern
+            FROM rebuild5.trusted_cell_library
+            WHERE batch_id = (
+                SELECT COALESCE(MAX(batch_id), 0)
+                FROM rebuild5.trusted_cell_library
+                WHERE batch_id < {batch_id}
+            )
         )
-        SELECT batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, 1,
-               TRUE, center_lon, center_lat, independent_obs, distinct_dev_id, 1.0
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = %s AND is_multi_centroid
+        SELECT
+            t.batch_id,
+            t.operator_code,
+            t.lac,
+            t.bs_id,
+            t.cell_id,
+            t.tech_norm
+        FROM rebuild5.trusted_cell_library t
+        LEFT JOIN prev p
+          ON p.operator_code = t.operator_code
+         AND p.lac IS NOT DISTINCT FROM t.lac
+         AND p.bs_id IS NOT DISTINCT FROM t.bs_id
+         AND p.cell_id = t.cell_id
+         AND p.tech_norm IS NOT DISTINCT FROM t.tech_norm
+        WHERE t.batch_id = %s
+          AND COALESCE(t.window_obs_count, 0) >= {candidate_window_obs}
+          AND COALESCE(t.active_days, 0) >= {candidate_active_days}
+          AND (
+              t.gps_anomaly_type IS NOT NULL
+              OR t.is_collision
+              OR t.is_dynamic
+              OR t.is_multi_centroid
+              OR t.centroid_pattern IS NOT NULL
+              OR t.drift_pattern IN ({drift_patterns_sql})
+          )
+          AND (
+              p.cell_id IS NULL
+              OR p.gps_anomaly_type IS DISTINCT FROM t.gps_anomaly_type
+              OR COALESCE(p.is_dynamic, FALSE) <> COALESCE(t.is_dynamic, FALSE)
+              OR COALESCE(p.is_multi_centroid, FALSE) <> COALESCE(t.is_multi_centroid, FALSE)
+              OR p.centroid_pattern IS DISTINCT FROM t.centroid_pattern
+              OR p.drift_pattern IS DISTINCT FROM t.drift_pattern
+              OR ABS(COALESCE(t.p90_radius_m, 0) - COALESCE(p.p90_radius_m, 0)) >= {recalc_p90_delta_m}
+              OR ABS(COALESCE(t.window_obs_count, 0) - COALESCE(p.window_obs_count, 0)) >= {recalc_window_obs_delta}
+          )
         """,
         (batch_id,),
     )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_candidates_key
+        ON rebuild5._cell_centroid_candidates (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_candidates')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_points AS
+        SELECT
+            c.operator_code,
+            c.lac,
+            c.bs_id,
+            c.cell_id,
+            c.tech_norm,
+            w.source_row_uid,
+            w.dev_id,
+            DATE(w.event_time_std) AS obs_date,
+            ST_Transform(ST_SetSRID(ST_MakePoint(w.lon_final, w.lat_final), 4326), 3857) AS geom_3857,
+            ST_SnapToGrid(
+                ST_Transform(ST_SetSRID(ST_MakePoint(w.lon_final, w.lat_final), 4326), 3857),
+                {snap_grid_m}
+            ) AS snap_geom_3857
+        FROM rebuild5._cell_centroid_candidates c
+        JOIN rebuild5.cell_sliding_window w
+          ON w.batch_id BETWEEN {window_batch_start} AND {batch_id}
+         AND w.operator_code = c.operator_code
+         AND w.lac IS NOT DISTINCT FROM c.lac
+         AND w.bs_id IS NOT DISTINCT FROM c.bs_id
+         AND w.cell_id = c.cell_id
+         AND w.tech_norm IS NOT DISTINCT FROM c.tech_norm
+        WHERE w.gps_valid IS TRUE
+          AND w.lon_final IS NOT NULL
+          AND w.lat_final IS NOT NULL
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_points_key
+        ON rebuild5._cell_centroid_points (operator_code, lac, bs_id, cell_id, tech_norm, obs_date)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_points')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_grid_points AS
+        SELECT
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            snap_geom_3857,
+            COUNT(*) AS snap_obs_count
+        FROM rebuild5._cell_centroid_points
+        GROUP BY operator_code, lac, bs_id, cell_id, tech_norm, snap_geom_3857
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_grid_key
+        ON rebuild5._cell_centroid_grid_points (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_grid_points')
+    _execute_with_session_settings(
+        session_setup_sqls=['SET enable_nestloop = off'],
+        sql=f"""
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_clustered_grid AS
+        SELECT
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            snap_geom_3857,
+            COALESCE(
+                ST_ClusterDBSCAN(
+                    snap_geom_3857,
+                    eps => {cluster_eps_m},
+                    minpoints => {cluster_min_points}
+                ) OVER (
+                    PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm
+                ),
+                -1
+            ) AS cluster_id
+        FROM rebuild5._cell_centroid_grid_points
+        """,
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_clustered_grid_key
+        ON rebuild5._cell_centroid_clustered_grid (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_clustered_grid')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_labelled_points AS
+        SELECT
+            p.operator_code,
+            p.lac,
+            p.bs_id,
+            p.cell_id,
+            p.tech_norm,
+            p.source_row_uid,
+            p.dev_id,
+            p.obs_date,
+            p.geom_3857,
+            g.cluster_id
+        FROM rebuild5._cell_centroid_points p
+        JOIN rebuild5._cell_centroid_clustered_grid g
+          ON g.operator_code = p.operator_code
+         AND g.lac IS NOT DISTINCT FROM p.lac
+         AND g.bs_id IS NOT DISTINCT FROM p.bs_id
+         AND g.cell_id = p.cell_id
+         AND g.tech_norm IS NOT DISTINCT FROM p.tech_norm
+         AND g.snap_geom_3857 = p.snap_geom_3857
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_labelled_key
+        ON rebuild5._cell_centroid_labelled_points (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id, obs_date)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_labelled_points')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_valid_clusters AS
+        WITH cell_totals AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                COUNT(*) AS total_obs,
+                COUNT(DISTINCT dev_id) FILTER (WHERE dev_id IS NOT NULL) AS total_dev_count
+            FROM rebuild5._cell_centroid_points
+            GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        ),
+        cluster_obs AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                cluster_id,
+                COUNT(*) AS obs_count,
+                COUNT(DISTINCT dev_id) FILTER (WHERE dev_id IS NOT NULL) AS dev_count,
+                COUNT(DISTINCT obs_date) AS active_days
+            FROM rebuild5._cell_centroid_labelled_points
+            WHERE cluster_id >= 0
+            GROUP BY operator_code, lac, bs_id, cell_id, tech_norm, cluster_id
+        ),
+        cluster_centers AS (
+            SELECT
+                g.operator_code,
+                g.lac,
+                g.bs_id,
+                g.cell_id,
+                g.tech_norm,
+                c.cluster_id,
+                ST_SetSRID(
+                    ST_MakePoint(
+                        SUM(ST_X(g.snap_geom_3857) * g.snap_obs_count)::double precision / NULLIF(SUM(g.snap_obs_count), 0),
+                        SUM(ST_Y(g.snap_geom_3857) * g.snap_obs_count)::double precision / NULLIF(SUM(g.snap_obs_count), 0)
+                    ),
+                    3857
+                ) AS center_3857
+            FROM rebuild5._cell_centroid_grid_points g
+            JOIN rebuild5._cell_centroid_clustered_grid c
+              ON c.operator_code = g.operator_code
+             AND c.lac IS NOT DISTINCT FROM g.lac
+             AND c.bs_id IS NOT DISTINCT FROM g.bs_id
+             AND c.cell_id = g.cell_id
+             AND c.tech_norm IS NOT DISTINCT FROM g.tech_norm
+             AND c.snap_geom_3857 = g.snap_geom_3857
+            WHERE c.cluster_id >= 0
+            GROUP BY g.operator_code, g.lac, g.bs_id, g.cell_id, g.tech_norm, c.cluster_id
+        ),
+        cluster_radius AS (
+            SELECT
+                c.operator_code,
+                c.lac,
+                c.bs_id,
+                c.cell_id,
+                c.tech_norm,
+                c.cluster_id,
+                MAX(ST_Distance(g.snap_geom_3857, c.center_3857)) AS radius_m
+            FROM rebuild5._cell_centroid_grid_points g
+            JOIN rebuild5._cell_centroid_clustered_grid cg
+              ON cg.operator_code = g.operator_code
+             AND cg.lac IS NOT DISTINCT FROM g.lac
+             AND cg.bs_id IS NOT DISTINCT FROM g.bs_id
+             AND cg.cell_id = g.cell_id
+             AND cg.tech_norm IS NOT DISTINCT FROM g.tech_norm
+             AND cg.snap_geom_3857 = g.snap_geom_3857
+            JOIN cluster_centers c
+              ON c.operator_code = g.operator_code
+             AND c.lac IS NOT DISTINCT FROM g.lac
+             AND c.bs_id IS NOT DISTINCT FROM g.bs_id
+             AND c.cell_id = g.cell_id
+             AND c.tech_norm IS NOT DISTINCT FROM g.tech_norm
+             AND c.cluster_id = cg.cluster_id
+            WHERE cg.cluster_id >= 0
+            GROUP BY c.operator_code, c.lac, c.bs_id, c.cell_id, c.tech_norm, c.cluster_id
+        ),
+        cluster_stats AS (
+            SELECT
+                c.operator_code,
+                c.lac,
+                c.bs_id,
+                c.cell_id,
+                c.tech_norm,
+                c.cluster_id,
+                ST_X(ST_Transform(cc.center_3857, 4326)) AS center_lon,
+                ST_Y(ST_Transform(cc.center_3857, 4326)) AS center_lat,
+                cc.center_3857,
+                c.obs_count,
+                c.dev_count,
+                c.active_days,
+                COALESCE(r.radius_m, 0) AS radius_m,
+                t.total_obs,
+                t.total_dev_count,
+                c.obs_count::double precision / NULLIF(t.total_obs, 0) AS share_ratio
+            FROM cluster_obs c
+            JOIN cluster_centers cc
+              ON cc.operator_code = c.operator_code
+             AND cc.lac IS NOT DISTINCT FROM c.lac
+             AND cc.bs_id IS NOT DISTINCT FROM c.bs_id
+             AND cc.cell_id = c.cell_id
+             AND cc.tech_norm IS NOT DISTINCT FROM c.tech_norm
+             AND cc.cluster_id = c.cluster_id
+            JOIN cell_totals t
+              ON t.operator_code = c.operator_code
+             AND t.lac IS NOT DISTINCT FROM c.lac
+             AND t.bs_id IS NOT DISTINCT FROM c.bs_id
+             AND t.cell_id = c.cell_id
+             AND t.tech_norm IS NOT DISTINCT FROM c.tech_norm
+            LEFT JOIN cluster_radius r
+              ON r.operator_code = c.operator_code
+             AND r.lac IS NOT DISTINCT FROM c.lac
+             AND r.bs_id IS NOT DISTINCT FROM c.bs_id
+             AND r.cell_id = c.cell_id
+             AND r.tech_norm IS NOT DISTINCT FROM c.tech_norm
+             AND r.cluster_id = c.cluster_id
+        ),
+        filtered AS (
+            SELECT
+                *,
+                (
+                    obs_count >= GREATEST({min_cluster_obs}, CEIL(total_obs * {min_cluster_share})::integer)
+                    AND dev_count >= CASE
+                        WHEN COALESCE(total_dev_count, 0) <= {centroid_cfg['stable_single_device_max_total_devs']}
+                            THEN 1
+                        ELSE {centroid_cfg['stable_min_devs']}
+                    END
+                    AND active_days >= {min_cluster_days}
+                ) AS is_valid
+            FROM cluster_stats
+        ),
+        ranked AS (
+            SELECT
+                *,
+                COUNT(*) FILTER (WHERE is_valid) OVER (
+                    PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm
+                ) AS valid_cluster_count,
+                ROW_NUMBER() OVER (
+                    PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm
+                    ORDER BY obs_count DESC, dev_count DESC, cluster_id
+                ) AS cluster_rank
+            FROM filtered
+            WHERE is_valid
+        )
+        SELECT *
+        FROM ranked
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_valid_clusters_key
+        ON rebuild5._cell_centroid_valid_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_valid_clusters')
+    execute(
+        """
+        INSERT INTO rebuild5.cell_centroid_detail (
+            batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, tech_norm, cluster_id,
+            is_primary, center_lon, center_lat, obs_count, dev_count, radius_m, share_ratio
+        )
+        SELECT
+            %s::int,
+            %s::text,
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            cluster_id,
+            (cluster_rank = 1) AS is_primary,
+            center_lon,
+            center_lat,
+            obs_count,
+            dev_count,
+            radius_m,
+            share_ratio
+        FROM rebuild5._cell_centroid_valid_clusters
+        WHERE valid_cluster_count > 1
+        """,
+        (batch_id, snapshot_version),
+    )
+    execute(
+        f"""
+        INSERT INTO rebuild5.cell_centroid_detail (
+            batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, tech_norm, cluster_id,
+            is_primary, center_lon, center_lat, obs_count, dev_count, radius_m, share_ratio
+        )
+        SELECT
+            {batch_id}::int,
+            %s::text,
+            d.operator_code,
+            d.lac,
+            d.bs_id,
+            d.cell_id,
+            d.tech_norm,
+            d.cluster_id,
+            d.is_primary,
+            d.center_lon,
+            d.center_lat,
+            d.obs_count,
+            d.dev_count,
+            d.radius_m,
+            d.share_ratio
+        FROM rebuild5.cell_centroid_detail d
+        JOIN rebuild5.trusted_cell_library t
+          ON t.batch_id = {batch_id}
+         AND t.operator_code = d.operator_code
+         AND t.lac IS NOT DISTINCT FROM d.lac
+         AND t.bs_id IS NOT DISTINCT FROM d.bs_id
+         AND t.cell_id = d.cell_id
+         AND t.tech_norm IS NOT DISTINCT FROM d.tech_norm
+        LEFT JOIN rebuild5._cell_centroid_candidates c
+          ON c.operator_code = d.operator_code
+         AND c.lac IS NOT DISTINCT FROM d.lac
+         AND c.bs_id IS NOT DISTINCT FROM d.bs_id
+         AND c.cell_id = d.cell_id
+         AND c.tech_norm IS NOT DISTINCT FROM d.tech_norm
+        WHERE d.batch_id = (
+            SELECT COALESCE(MAX(batch_id), 0)
+            FROM rebuild5.cell_centroid_detail
+            WHERE batch_id < {batch_id}
+        )
+          AND c.cell_id IS NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM rebuild5.cell_centroid_detail curr
+              WHERE curr.batch_id = {batch_id}
+                AND curr.operator_code = d.operator_code
+                AND curr.lac IS NOT DISTINCT FROM d.lac
+                AND curr.bs_id IS NOT DISTINCT FROM d.bs_id
+                AND curr.cell_id = d.cell_id
+                AND curr.tech_norm IS NOT DISTINCT FROM d.tech_norm
+                AND curr.cluster_id = d.cluster_id
+          )
+        """,
+        (snapshot_version,),
+    )
+    execute('ANALYZE rebuild5.cell_centroid_detail')
+    execute(
+        """
+        UPDATE rebuild5.trusted_cell_library AS t
+        SET center_lon = d.center_lon,
+            center_lat = d.center_lat
+        FROM rebuild5._cell_centroid_valid_clusters d
+        WHERE t.batch_id = %s
+          AND d.cluster_rank = 1
+          AND d.operator_code = t.operator_code
+          AND d.lac IS NOT DISTINCT FROM t.lac
+          AND d.bs_id IS NOT DISTINCT FROM t.bs_id
+          AND d.cell_id = t.cell_id
+          AND d.tech_norm IS NOT DISTINCT FROM t.tech_norm
+        """,
+        (batch_id,),
+    )
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_daily_presence AS
+        SELECT
+            p.operator_code,
+            p.lac,
+            p.bs_id,
+            p.cell_id,
+            p.tech_norm,
+            p.obs_date,
+            p.cluster_id,
+            COUNT(*) AS obs_count
+        FROM rebuild5._cell_centroid_labelled_points p
+        JOIN rebuild5._cell_centroid_valid_clusters v
+          ON v.operator_code = p.operator_code
+         AND v.lac IS NOT DISTINCT FROM p.lac
+         AND v.bs_id IS NOT DISTINCT FROM p.bs_id
+         AND v.cell_id = p.cell_id
+         AND v.tech_norm IS NOT DISTINCT FROM p.tech_norm
+         AND v.cluster_id = p.cluster_id
+        GROUP BY p.operator_code, p.lac, p.bs_id, p.cell_id, p.tech_norm, p.obs_date, p.cluster_id
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_daily_presence_key
+        ON rebuild5._cell_centroid_daily_presence (operator_code, lac, bs_id, cell_id, tech_norm, obs_date, cluster_id)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_daily_presence')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5._cell_centroid_classification AS
+        WITH cluster_counts AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                COUNT(*) AS stable_cluster_count
+            FROM rebuild5._cell_centroid_valid_clusters
+            GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        ),
+        pair_distance AS (
+            SELECT
+                a.operator_code,
+                a.lac,
+                a.bs_id,
+                a.cell_id,
+                a.tech_norm,
+                MAX(ST_Distance(a.center_3857, b.center_3857)) AS max_pair_distance_m
+            FROM rebuild5._cell_centroid_valid_clusters a
+            JOIN rebuild5._cell_centroid_valid_clusters b
+              ON b.operator_code = a.operator_code
+             AND b.lac IS NOT DISTINCT FROM a.lac
+             AND b.bs_id IS NOT DISTINCT FROM a.bs_id
+             AND b.cell_id = a.cell_id
+             AND b.tech_norm IS NOT DISTINCT FROM a.tech_norm
+             AND b.cluster_id > a.cluster_id
+            GROUP BY a.operator_code, a.lac, a.bs_id, a.cell_id, a.tech_norm
+        ),
+        pair_overlap AS (
+            SELECT
+                a.operator_code,
+                a.lac,
+                a.bs_id,
+                a.cell_id,
+                a.tech_norm,
+                MAX(overlap_days) AS max_overlap_days
+            FROM (
+                SELECT
+                    a.operator_code,
+                    a.lac,
+                    a.bs_id,
+                    a.cell_id,
+                    a.tech_norm,
+                    a.cluster_id AS cluster_a,
+                    b.cluster_id AS cluster_b,
+                    COUNT(*) AS overlap_days
+                FROM rebuild5._cell_centroid_daily_presence a
+                JOIN rebuild5._cell_centroid_daily_presence b
+                  ON b.operator_code = a.operator_code
+                 AND b.lac IS NOT DISTINCT FROM a.lac
+                 AND b.bs_id IS NOT DISTINCT FROM a.bs_id
+                 AND b.cell_id = a.cell_id
+                 AND b.tech_norm IS NOT DISTINCT FROM a.tech_norm
+                 AND b.obs_date = a.obs_date
+                 AND b.cluster_id > a.cluster_id
+                GROUP BY a.operator_code, a.lac, a.bs_id, a.cell_id, a.tech_norm, a.cluster_id, b.cluster_id
+            ) a
+            GROUP BY a.operator_code, a.lac, a.bs_id, a.cell_id, a.tech_norm
+        ),
+        daily_primary AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                obs_date,
+                cluster_id,
+                ROW_NUMBER() OVER (
+                    PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm, obs_date
+                    ORDER BY obs_count DESC, cluster_id
+                ) AS day_rank
+            FROM rebuild5._cell_centroid_daily_presence
+        ),
+        switch_summary AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                COUNT(*) FILTER (
+                    WHERE prev_cluster_id IS NOT NULL
+                      AND prev_cluster_id <> cluster_id
+                ) AS cluster_switches
+            FROM (
+                SELECT
+                    operator_code,
+                    lac,
+                    bs_id,
+                    cell_id,
+                    tech_norm,
+                    obs_date,
+                    cluster_id,
+                    LAG(cluster_id) OVER (
+                        PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm
+                        ORDER BY obs_date
+                    ) AS prev_cluster_id
+                FROM daily_primary
+                WHERE day_rank = 1
+            ) x
+            GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        )
+        SELECT
+            c.operator_code,
+            c.lac,
+            c.bs_id,
+            c.cell_id,
+            c.tech_norm,
+            COALESCE(cc.stable_cluster_count, 0) AS stable_cluster_count,
+            COALESCE(pd.max_pair_distance_m, 0) AS max_pair_distance_m,
+            COALESCE(po.max_overlap_days, 0) AS max_overlap_days,
+            COALESCE(sw.cluster_switches, 0) AS cluster_switches,
+            CASE
+                WHEN COALESCE(cc.stable_cluster_count, 0) >= {centroid_cfg['multi_cluster_min_cluster_count']}
+                    THEN 'multi_cluster'
+                WHEN COALESCE(cc.stable_cluster_count, 0) = 2
+                 AND COALESCE(sw.cluster_switches, 0) >= {centroid_cfg['moving_min_switches']}
+                 AND COALESCE(po.max_overlap_days, 0) >= {centroid_cfg['moving_min_overlap_days']}
+                    THEN 'moving'
+                WHEN COALESCE(cc.stable_cluster_count, 0) = 2
+                 AND COALESCE(pd.max_pair_distance_m, 0) >= {centroid_cfg['migration_min_distance_m']}
+                 AND COALESCE(po.max_overlap_days, 0) <= {centroid_cfg['migration_max_overlap_days']}
+                    THEN 'migration'
+                WHEN COALESCE(cc.stable_cluster_count, 0) = 2
+                 AND COALESCE(pd.max_pair_distance_m, 0) >= {centroid_cfg['dual_cluster_min_distance_m']}
+                    THEN 'dual_cluster'
+                ELSE NULL
+            END AS centroid_pattern
+        FROM rebuild5._cell_centroid_candidates c
+        LEFT JOIN cluster_counts cc
+          ON cc.operator_code = c.operator_code
+         AND cc.lac IS NOT DISTINCT FROM c.lac
+         AND cc.bs_id IS NOT DISTINCT FROM c.bs_id
+         AND cc.cell_id = c.cell_id
+         AND cc.tech_norm IS NOT DISTINCT FROM c.tech_norm
+        LEFT JOIN pair_distance pd
+          ON pd.operator_code = c.operator_code
+         AND pd.lac IS NOT DISTINCT FROM c.lac
+         AND pd.bs_id IS NOT DISTINCT FROM c.bs_id
+         AND pd.cell_id = c.cell_id
+         AND pd.tech_norm IS NOT DISTINCT FROM c.tech_norm
+        LEFT JOIN pair_overlap po
+          ON po.operator_code = c.operator_code
+         AND po.lac IS NOT DISTINCT FROM c.lac
+         AND po.bs_id IS NOT DISTINCT FROM c.bs_id
+         AND po.cell_id = c.cell_id
+         AND po.tech_norm IS NOT DISTINCT FROM c.tech_norm
+        LEFT JOIN switch_summary sw
+          ON sw.operator_code = c.operator_code
+         AND sw.lac IS NOT DISTINCT FROM c.lac
+         AND sw.bs_id IS NOT DISTINCT FROM c.bs_id
+         AND sw.cell_id = c.cell_id
+         AND sw.tech_norm IS NOT DISTINCT FROM c.tech_norm
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_cell_centroid_classification_key
+        ON rebuild5._cell_centroid_classification (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5._cell_centroid_classification')
+    execute(
+        """
+        UPDATE rebuild5.trusted_cell_library AS t
+        SET is_multi_centroid = (COALESCE(c.stable_cluster_count, 0) >= 2),
+            is_dynamic = COALESCE(c.centroid_pattern = 'moving', FALSE),
+            centroid_pattern = c.centroid_pattern,
+            drift_pattern = CASE
+                WHEN c.centroid_pattern = 'migration' THEN 'migration'
+                ELSE t.drift_pattern
+            END
+        FROM rebuild5._cell_centroid_classification c
+        WHERE t.batch_id = %s
+          AND c.operator_code = t.operator_code
+          AND c.lac IS NOT DISTINCT FROM t.lac
+          AND c.bs_id IS NOT DISTINCT FROM t.bs_id
+          AND c.cell_id = t.cell_id
+          AND c.tech_norm IS NOT DISTINCT FROM t.tech_norm
+        """,
+        (batch_id,),
+    )
+    for table_name in reversed(stage_tables):
+        execute(f'DROP TABLE IF EXISTS {table_name}')
 
 
 # ---------------------------------------------------------------------------
 # BS library
 # ---------------------------------------------------------------------------
+
+
+def _execute_with_session_settings(
+    *,
+    session_setup_sqls: list[str],
+    sql: str,
+    params: tuple[Any, ...] | None = None,
+) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            for stmt in session_setup_sqls:
+                cur.execute(stmt)
+            cur.execute(sql, params)
+            for stmt in reversed(session_setup_sqls):
+                if stmt.upper().startswith('SET '):
+                    cur.execute(f"RESET {stmt.split()[1]}")
 
 def publish_bs_library(
     *,
@@ -50,9 +801,11 @@ def publish_bs_library(
     snapshot_version_prev: str,
     antitoxin: dict[str, float],
 ) -> None:
+    thresholds = flatten_profile_thresholds(load_profile_params())
     execute('DELETE FROM rebuild5.trusted_bs_library WHERE batch_id = %s', (batch_id,))
-    execute(
-        """
+    _execute_with_session_settings(
+        session_setup_sqls=['SET enable_nestloop = off'],
+        sql=f"""
         INSERT INTO rebuild5.trusted_bs_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
             operator_code, operator_cn, lac, bs_id, lifecycle_state,
@@ -65,9 +818,12 @@ def publish_bs_library(
         WITH cell_agg AS (
             SELECT
                 operator_code, lac, bs_id,
+                MAX(operator_cn) AS operator_cn,
                 COUNT(*) AS total_cells,
                 COUNT(*) FILTER (WHERE lifecycle_state IN ('qualified', 'excellent')) AS qualified_cells,
                 COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_cells,
+                COUNT(*) FILTER (WHERE lifecycle_state = 'retired') AS retired_cells,
+                COUNT(*) FILTER (WHERE lifecycle_state IN ('dormant', 'retired')) AS inactive_cells,
                 COUNT(*) FILTER (WHERE is_collision) AS collision_cells,
                 COUNT(*) FILTER (WHERE is_dynamic) AS dynamic_cells,
                 COUNT(*) FILTER (WHERE is_multi_centroid) AS multi_centroid_cells,
@@ -113,20 +869,26 @@ def publish_bs_library(
         )
         SELECT
             %s::int, %s::text, %s::text, %s::text, %s::text, NOW(),
-            s.operator_code, s.operator_cn, s.lac, s.bs_id,
-            s.lifecycle_state,
-            COALESCE(c.anchor_eligible, s.anchor_eligible),
-            COALESCE(c.baseline_eligible, s.baseline_eligible),
-            COALESCE(c.total_cells, s.cell_count),
-            COALESCE(c.qualified_cells, s.qualified_cell_count),
-            COALESCE(c.excellent_cells, s.excellent_cell_count),
-            COALESCE(bc.center_lon, s.center_lon),
-            COALESCE(bc.center_lat, s.center_lat),
-            COALESCE(bd.gps_p50_dist_m, s.gps_p50_dist_m),
-            COALESCE(bd.gps_p90_dist_m, s.gps_p90_dist_m),
+            c.operator_code, c.operator_cn, c.lac, c.bs_id,
+            CASE
+                WHEN c.excellent_cells >= {thresholds['bs_excellent_min_excellent_cells']} THEN 'excellent'
+                WHEN c.qualified_cells >= {thresholds['bs_qualified_min_qualified_cells']} THEN 'qualified'
+                WHEN c.total_cells > 0 AND c.total_cells = COALESCE(c.retired_cells, 0) THEN 'retired'
+                WHEN c.total_cells > 0 AND c.total_cells = COALESCE(c.inactive_cells, 0) THEN 'dormant'
+                ELSE 'observing'
+            END,
+            c.anchor_eligible,
+            c.baseline_eligible,
+            c.total_cells,
+            c.qualified_cells,
+            c.excellent_cells,
+            bc.center_lon,
+            bc.center_lat,
+            bd.gps_p50_dist_m,
+            bd.gps_p90_dist_m,
             -- classification: 5 types
             CASE
-                WHEN COALESCE(bd.gps_p90_dist_m, s.gps_p90_dist_m, 0) >= %s
+                WHEN COALESCE(bd.gps_p90_dist_m, 0) >= %s
                     THEN 'large_spread'
                 WHEN COALESCE(c.collision_cells, 0) > 0
                     THEN 'collision_bs'
@@ -136,45 +898,159 @@ def publish_bs_library(
                     THEN 'dynamic_bs'
                 ELSE 'normal_spread'
             END,
-            s.position_grade,
+            CASE
+                WHEN c.excellent_cells >= {thresholds['bs_excellent_min_excellent_cells']} THEN 'excellent'
+                WHEN c.qualified_cells >= {thresholds['bs_qualified_min_qualified_cells']} THEN 'good'
+                ELSE 'qualified'
+            END,
             COALESCE(c.anomaly_cells, 0)::double precision
                 / NULLIF(COALESCE(c.total_cells, 0), 0),
             -- is_multi_centroid (BS level)
             (COALESCE(c.multi_centroid_cells, 0) > 0),
             COALESCE(c.active_cell_count, 0)
-        FROM rebuild5.trusted_snapshot_bs s
-        LEFT JOIN cell_agg c
-          ON c.operator_code = s.operator_code AND c.lac = s.lac AND c.bs_id = s.bs_id
+        FROM cell_agg c
         LEFT JOIN bs_center bc
-          ON bc.operator_code = s.operator_code AND bc.lac = s.lac AND bc.bs_id = s.bs_id
+          ON bc.operator_code = c.operator_code AND bc.lac = c.lac AND bc.bs_id = c.bs_id
         LEFT JOIN bs_dist bd
-          ON bd.operator_code = s.operator_code AND bd.lac = s.lac AND bd.bs_id = s.bs_id
-        WHERE s.batch_id = %s AND s.lifecycle_state = 'qualified'
+          ON bd.operator_code = c.operator_code AND bd.lac = c.lac AND bd.bs_id = c.bs_id
         """,
-        (batch_id, batch_id, batch_id,
-         batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id,
-         antitoxin['bs_max_cell_to_bs_distance_m'], batch_id),
+        params=(
+            batch_id, batch_id, batch_id,
+            batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id,
+            antitoxin['bs_max_cell_to_bs_distance_m'],
+        ),
     )
 
 
 # ---------------------------------------------------------------------------
-# BS centroid detail (stub — real clustering in multi_centroid.py Round 5)
+# BS centroid detail
 # ---------------------------------------------------------------------------
 
-def publish_bs_centroid_detail(*, batch_id: int, snapshot_version: str) -> None:
+def publish_bs_centroid_detail(
+    *,
+    batch_id: int,
+    snapshot_version: str,
+    large_spread_threshold_m: float | None = None,
+) -> None:
+    thresholds = flatten_antitoxin_thresholds(load_antitoxin_params())
+    large_spread_threshold_m = (
+        float(large_spread_threshold_m)
+        if large_spread_threshold_m is not None
+        else thresholds['bs_max_cell_to_bs_distance_m']
+    )
     execute('DELETE FROM rebuild5.bs_centroid_detail WHERE batch_id = %s', (batch_id,))
     execute(
-        """
+        f"""
+        WITH candidates AS (
+            SELECT
+                batch_id,
+                operator_code,
+                lac,
+                bs_id,
+                center_lon AS ref_lon,
+                center_lat AS ref_lat
+            FROM rebuild5.trusted_bs_library
+            WHERE batch_id = %s
+              AND center_lon IS NOT NULL
+              AND center_lat IS NOT NULL
+              AND classification IN ('large_spread', 'multi_centroid', 'dynamic_bs')
+        ),
+        cell_points AS (
+            SELECT
+                c.operator_code,
+                c.lac,
+                c.bs_id,
+                t.center_lon,
+                t.center_lat,
+                COALESCE(t.window_obs_count, 0) AS obs_count,
+                SQRT(
+                    POWER((t.center_lon - c.ref_lon) * 85300, 2)
+                  + POWER((t.center_lat - c.ref_lat) * 111000, 2)
+                ) AS dist_to_ref_m
+            FROM candidates c
+            JOIN rebuild5.trusted_cell_library t
+              ON t.batch_id = c.batch_id
+             AND t.operator_code = c.operator_code
+             AND t.lac = c.lac
+             AND t.bs_id = c.bs_id
+            WHERE t.center_lon IS NOT NULL
+              AND t.center_lat IS NOT NULL
+        ),
+        labelled AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                center_lon,
+                center_lat,
+                obs_count,
+                CASE
+                    WHEN dist_to_ref_m >= {large_spread_threshold_m} THEN 2
+                    ELSE 1
+                END AS cluster_id
+            FROM cell_points
+        ),
+        agg AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cluster_id,
+                AVG(center_lon) AS center_lon,
+                AVG(center_lat) AS center_lat,
+                COUNT(*) AS cell_count,
+                SUM(obs_count) AS weighted_obs
+            FROM labelled
+            GROUP BY operator_code, lac, bs_id, cluster_id
+        ),
+        ranked AS (
+            SELECT
+                *,
+                COUNT(*) OVER (PARTITION BY operator_code, lac, bs_id) AS cluster_count,
+                SUM(cell_count) OVER (PARTITION BY operator_code, lac, bs_id) AS total_cells,
+                ROW_NUMBER() OVER (
+                    PARTITION BY operator_code, lac, bs_id
+                    ORDER BY weighted_obs DESC, cell_count DESC, cluster_id
+                ) AS cluster_rank
+            FROM agg
+        )
         INSERT INTO rebuild5.bs_centroid_detail (
             batch_id, snapshot_version, operator_code, lac, bs_id, cluster_id,
             is_primary, center_lon, center_lat, cell_count, share_ratio
         )
-        SELECT batch_id, snapshot_version, operator_code, lac, bs_id, 1,
-               TRUE, center_lon, center_lat, total_cells, 1.0
-        FROM rebuild5.trusted_bs_library
-        WHERE batch_id = %s AND classification = 'large_spread'
+        SELECT
+            %s::int,
+            %s::text,
+            operator_code,
+            lac,
+            bs_id,
+            cluster_id,
+            (cluster_rank = 1) AS is_primary,
+            center_lon,
+            center_lat,
+            cell_count,
+            cell_count::double precision / NULLIF(total_cells, 0) AS share_ratio
+        FROM ranked
+        WHERE cluster_count > 1
         """,
-        (batch_id,),
+        (batch_id, batch_id, snapshot_version),
+    )
+    execute(
+        """
+        UPDATE rebuild5.trusted_bs_library AS b
+        SET is_multi_centroid = TRUE,
+            classification = 'multi_centroid'
+        FROM (
+            SELECT DISTINCT operator_code, lac, bs_id
+            FROM rebuild5.bs_centroid_detail
+            WHERE batch_id = %s
+        ) d
+        WHERE b.batch_id = %s
+          AND d.operator_code = b.operator_code
+          AND d.lac = b.lac
+          AND d.bs_id = b.bs_id
+        """,
+        (batch_id, batch_id),
     )
 
 
@@ -189,14 +1065,15 @@ def publish_lac_library(
     snapshot_version: str,
     snapshot_version_prev: str,
 ) -> None:
+    thresholds = flatten_profile_thresholds(load_profile_params())
     execute('DELETE FROM rebuild5.trusted_lac_library WHERE batch_id = %s', (batch_id,))
     execute(
-        """
+        f"""
         INSERT INTO rebuild5.trusted_lac_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
             operator_code, operator_cn, lac, lifecycle_state,
             anchor_eligible, baseline_eligible,
-            total_bs, qualified_bs, qualified_bs_ratio,
+            total_bs, qualified_bs, excellent_bs, qualified_bs_ratio,
             area_km2, anomaly_bs_ratio,
             boundary_stability_score, active_bs_count, retired_bs_count,
             trend
@@ -204,8 +1081,10 @@ def publish_lac_library(
         WITH bs_agg AS (
             SELECT
                 operator_code, lac,
+                MAX(operator_cn) AS operator_cn,
                 COUNT(*) AS total_bs,
-                COUNT(*) FILTER (WHERE lifecycle_state = 'qualified') AS qualified_bs,
+                COUNT(*) FILTER (WHERE lifecycle_state IN ('qualified', 'excellent')) AS qualified_bs,
+                COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_bs,
                 COUNT(*) FILTER (WHERE lifecycle_state = 'dormant' OR lifecycle_state = 'retired')
                     AS retired_bs,
                 BOOL_OR(anchor_eligible) AS anchor_eligible,
@@ -239,14 +1118,21 @@ def publish_lac_library(
         )
         SELECT
             %s::int, %s::text, %s::text, %s::text, %s::text, NOW(),
-            s.operator_code, s.operator_cn, s.lac,
-            s.lifecycle_state,
-            COALESCE(ba.anchor_eligible, s.anchor_eligible),
-            COALESCE(ba.baseline_eligible, s.baseline_eligible),
-            COALESCE(ba.total_bs, s.bs_count),
-            COALESCE(ba.qualified_bs, s.qualified_bs_count),
+            ba.operator_code, ba.operator_cn, ba.lac,
+            CASE
+                WHEN ba.excellent_bs >= {thresholds['lac_excellent_min_excellent_bs']} THEN 'excellent'
+                WHEN ba.excellent_bs >= {thresholds['lac_qualified_min_excellent_bs']} THEN 'qualified'
+                WHEN ba.total_bs > 0 AND ba.total_bs = COALESCE(ba.retired_bs, 0) THEN 'retired'
+                WHEN COALESCE(ba.active_bs, 0) = 0 THEN 'dormant'
+                ELSE 'observing'
+            END,
+            ba.anchor_eligible,
+            ba.baseline_eligible,
+            ba.total_bs,
+            ba.qualified_bs,
+            ba.excellent_bs,
             COALESCE(ba.qualified_bs::double precision / NULLIF(ba.total_bs, 0), 0),
-            COALESCE(la.area_km2, s.area_km2),
+            COALESCE(la.area_km2, 0),
             COALESCE(ba.anomaly_bs_ratio, 0),
             -- boundary_stability_score: 1.0 if area stable, decreases with area change
             CASE
@@ -267,13 +1153,10 @@ def publish_lac_library(
                     THEN 'degrading'
                 ELSE 'stable'
             END
-        FROM rebuild5.trusted_snapshot_lac s
-        LEFT JOIN bs_agg ba ON ba.operator_code = s.operator_code AND ba.lac = s.lac
-        LEFT JOIN lac_area la ON la.operator_code = s.operator_code AND la.lac = s.lac
-        LEFT JOIN prev_lac p ON p.operator_code = s.operator_code AND p.lac = s.lac
-        WHERE s.batch_id = %s AND s.lifecycle_state = 'qualified'
+        FROM bs_agg ba
+        LEFT JOIN lac_area la ON la.operator_code = ba.operator_code AND la.lac = ba.lac
+        LEFT JOIN prev_lac p ON p.operator_code = ba.operator_code AND p.lac = ba.lac
         """,
         (batch_id, batch_id, batch_id,
-         batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id,
-         batch_id),
+         batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id),
     )

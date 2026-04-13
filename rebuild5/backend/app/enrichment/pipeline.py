@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from ..core.database import execute, fetchone
+from ..core.parallel import NUM_WORKERS_INSERT, parallel_execute  # multiprocessing-based
 from ..etl.source_prep import DATASET_KEY
 from ..profile.logic import flatten_antitoxin_thresholds, load_antitoxin_params
 from ..profile.pipeline import relation_exists
@@ -59,9 +60,6 @@ def _empty_stats(run_id: str, batch_id: int, sv: str, dsv: str) -> dict[str, Any
 # ---------------------------------------------------------------------------
 
 def run_enrichment_pipeline() -> dict[str, Any]:
-    execute('DROP TABLE IF EXISTS rebuild5.enriched_records')
-    execute('DROP TABLE IF EXISTS rebuild5.gps_anomaly_log')
-    execute('DROP TABLE IF EXISTS rebuild5_meta.step4_run_stats')
     ensure_enrichment_schema()
 
     run_id = f"enrich_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -90,6 +88,21 @@ def run_enrichment_pipeline() -> dict[str, Any]:
 
     _insert_enriched_records(batch_id, run_id)
     _insert_gps_anomaly_log(batch_id, anomaly_threshold_m, donor_batch_id)
+    execute('CREATE INDEX IF NOT EXISTS idx_enriched_batch ON rebuild5.enriched_records (batch_id)')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_enriched_batch_cell
+        ON rebuild5.enriched_records (batch_id, operator_code, lac, bs_id, cell_id)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_gps_anomaly_batch_cell
+        ON rebuild5.gps_anomaly_log (batch_id, operator_code, lac, cell_id)
+        """
+    )
+    execute('ANALYZE rebuild5.enriched_records')
+    execute('ANALYZE rebuild5.gps_anomaly_log')
 
     stats = _collect_step4_stats(
         run_id=run_id, batch_id=batch_id,
@@ -105,16 +118,19 @@ def run_enrichment_pipeline() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Step 1: Knowledge fill — path_a LEFT JOIN trusted_cell (anchor_eligible)
-# ---------------------------------------------------------------------------
 
 def _insert_enriched_records(batch_id: int, run_id: str) -> None:
     """Simple enricher: read donor fields directly from path_a_records (placed by Step 2).
 
     No re-JOIN to trusted_cell_library — Step 2 already confirmed the source cell.
+
+    并行策略：UNLOGGED + multiprocessing 12进程（基准测试：基线16.3s → 9.9s，1.6x加速）
+    psycopg % 问题：全部参数通过 inline_params f-string 内联，无 %s 参数化冲突。
     """
-    execute(
-        """
+    # 用 f-string 内联 run_id / dataset_key（含单引号），避免 psycopg % 转义
+    escaped_run_id = run_id.replace("'", "''")
+    escaped_dataset_key = DATASET_KEY.replace("'", "''")
+    sql_template = f"""
         INSERT INTO rebuild5.enriched_records (
             batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
             event_time_std, dev_id,
@@ -129,80 +145,149 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
             lac_final, lac_fill_source_final,
             tech_final, tech_fill_source_final,
             donor_batch_id, donor_snapshot_version, donor_cell_id,
+            donor_operator_code, donor_lac, donor_tech_norm,
             donor_lifecycle_state, donor_position_grade,
             donor_center_lon, donor_center_lat,
+            path_a_is_collision,
             donor_anchor_eligible, donor_baseline_eligible
         )
         SELECT
-            %s::int   AS batch_id,
-            %s::text  AS run_id,
-            %s::text  AS dataset_key,
+            {batch_id}::int   AS batch_id,
+            '{escaped_run_id}'::text  AS run_id,
+            '{escaped_dataset_key}'::text  AS dataset_key,
             COALESCE(p.source_tid::text, p.record_id) AS source_row_uid,
             p.record_id, p.source_table, p.event_time_std, p.dev_id,
             p.operator_code, p.operator_cn, p.lac, p.bs_id, p.cell_id, p.tech_norm,
             p.gps_valid, p.lon_raw, p.lat_raw,
 
             -- GPS: Step1 filled → donor center (from path_a_records) → NULL
-            COALESCE(p.lon_filled, p.donor_center_lon),
-            COALESCE(p.lat_filled, p.donor_center_lat),
+            COALESCE(
+                p.lon_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_center_lon END
+            ),
+            COALESCE(
+                p.lat_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_center_lat END
+            ),
             CASE WHEN p.lon_filled IS NOT NULL OR p.lat_filled IS NOT NULL
                      THEN COALESCE(p.gps_fill_source, 'none')
-                 WHEN p.donor_center_lon IS NOT NULL AND p.donor_center_lat IS NOT NULL
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE)
+                      AND p.donor_center_lon IS NOT NULL AND p.donor_center_lat IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
             CASE WHEN p.lon_filled IS NOT NULL OR p.lat_filled IS NOT NULL THEN NULL
-                 WHEN p.donor_center_lon IS NOT NULL AND p.donor_center_lat IS NOT NULL
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE)
+                      AND p.donor_center_lon IS NOT NULL AND p.donor_center_lat IS NOT NULL
                      THEN p.donor_position_grade
                  ELSE NULL END,
 
             -- RSRP
-            COALESCE(p.rsrp_filled, p.donor_rsrp_avg),
+            COALESCE(
+                p.rsrp_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_rsrp_avg END
+            ),
             CASE WHEN p.rsrp_filled IS NOT NULL THEN COALESCE(p.rsrp_fill_source, 'none')
-                 WHEN p.donor_rsrp_avg IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_rsrp_avg IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- RSRQ
-            COALESCE(p.rsrq_filled, p.donor_rsrq_avg),
+            COALESCE(
+                p.rsrq_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_rsrq_avg END
+            ),
             CASE WHEN p.rsrq_filled IS NOT NULL THEN 'original'
-                 WHEN p.donor_rsrq_avg IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_rsrq_avg IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- SINR
-            COALESCE(p.sinr_filled, p.donor_sinr_avg),
+            COALESCE(
+                p.sinr_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_sinr_avg END
+            ),
             CASE WHEN p.sinr_filled IS NOT NULL THEN 'original'
-                 WHEN p.donor_sinr_avg IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_sinr_avg IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- 气压
             CASE WHEN p.pressure ~ E'^-?[0-9]+\\.?[0-9]*$' THEN p.pressure::double precision
-                 ELSE p.donor_pressure_avg END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_pressure_avg
+                 ELSE NULL END,
             CASE WHEN p.pressure ~ E'^-?[0-9]+\\.?[0-9]*$' THEN 'original'
-                 WHEN p.donor_pressure_avg IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_pressure_avg IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- 运营商
-            COALESCE(p.operator_filled, p.donor_operator_code),
+            COALESCE(
+                p.operator_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_operator_code END
+            ),
             CASE WHEN p.operator_filled IS NOT NULL
                      THEN COALESCE(p.operator_fill_source, 'none')
-                 WHEN p.donor_operator_code IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_operator_code IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- LAC
-            COALESCE(p.lac_filled, p.donor_lac),
+            COALESCE(
+                p.lac_filled,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_lac END
+            ),
             CASE WHEN p.lac_filled IS NOT NULL
                      THEN COALESCE(p.lac_fill_source, 'none')
-                 WHEN p.donor_lac IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_lac IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- 制式
-            COALESCE(p.tech_norm, p.donor_tech_norm),
+            COALESCE(
+                p.tech_norm,
+                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_tech_norm END
+            ),
             CASE WHEN p.tech_norm IS NOT NULL THEN 'original'
-                 WHEN p.donor_tech_norm IS NOT NULL THEN 'trusted_cell' ELSE 'none' END,
+                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_tech_norm IS NOT NULL
+                     THEN 'trusted_cell'
+                 ELSE 'none' END,
 
             -- donor 审计 (directly from path_a_records)
             p.donor_batch_id, p.donor_snapshot_version, p.donor_cell_id,
+            p.donor_operator_code, p.donor_lac, p.donor_tech_norm,
             p.donor_lifecycle_state, p.donor_position_grade,
             p.donor_center_lon, p.donor_center_lat,
+            p.path_a_is_collision,
             p.donor_anchor_eligible, p.donor_baseline_eligible
 
         FROM rebuild5.path_a_records p
-        """,
-        (batch_id, run_id, DATASET_KEY),
-    )
+        WHERE TRUE
+          {{shard_filter}}
+        """
+
+    try:
+        parallel_execute(
+            sql_template,
+            shard_table_alias='p.',
+            num_workers=NUM_WORKERS_INSERT,
+            where_prefix='AND',
+        )
+    except RuntimeError as exc:
+        if 'No space left on device' not in str(exc):
+            raise
+        # Writing a logged/unlogged wide table from many workers can still hit
+        # relation-extension fallocate failures on the PG data volume even when
+        # `df` shows free space. Retrying with fewer workers trades throughput
+        # for a more stable append pattern. Keep previous batches' persisted
+        # debug data intact and only clear the current batch before retrying.
+        execute('DELETE FROM rebuild5.enriched_records WHERE batch_id = %s', (batch_id,))
+        execute('DELETE FROM rebuild5.gps_anomaly_log WHERE batch_id = %s', (batch_id,))
+        parallel_execute(
+            sql_template,
+            shard_table_alias='p.',
+            num_workers=4,
+            where_prefix='AND',
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -210,21 +295,11 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_batch_id: int) -> None:
-    has_collision = relation_exists('rebuild5.collision_id_list')
-    # Use same source version as Step 2 — not MAX(batch_id)
-    collision_filter = f"""
-         AND NOT EXISTS (
-             SELECT 1 FROM rebuild5.collision_id_list c
-             WHERE c.batch_id = {donor_batch_id}
-               AND c.cell_id = e.cell_id
-         )
-    """ if has_collision else ""
-
     execute(
         f"""
         INSERT INTO rebuild5.gps_anomaly_log (
             batch_id, run_id, dataset_key, source_row_uid, record_id,
-            operator_code, lac, bs_id, cell_id, dev_id, event_time_std,
+            operator_code, lac, bs_id, cell_id, tech_norm, dev_id, event_time_std,
             lon_raw, lat_raw,
             donor_center_lon, donor_center_lat, donor_snapshot_version,
             distance_to_donor_m, anomaly_type, anomaly_threshold_m,
@@ -232,7 +307,13 @@ def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_bat
         )
         SELECT
             batch_id, run_id, dataset_key, source_row_uid, record_id,
-            operator_code, lac, bs_id, cell_id, dev_id, event_time_std,
+            COALESCE(e.donor_operator_code, e.operator_final, e.operator_code),
+            COALESCE(e.donor_lac, e.lac_final, e.lac),
+            bs_id,
+            COALESCE(e.donor_cell_id, e.cell_id),
+            COALESCE(e.donor_tech_norm, e.tech_final, e.tech_norm),
+            dev_id,
+            event_time_std,
             lon_raw, lat_raw,
             donor_center_lon, donor_center_lat, donor_snapshot_version,
             SQRT(POWER((lon_raw - donor_center_lon) * 85300, 2)
@@ -243,11 +324,16 @@ def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_bat
             false
         FROM rebuild5.enriched_records e
         WHERE e.batch_id = %s
+          AND COALESCE(e.gps_valid, FALSE)
           AND e.lon_raw IS NOT NULL AND e.lat_raw IS NOT NULL
+          AND COALESCE(e.donor_anchor_eligible, FALSE)
           AND e.donor_center_lon IS NOT NULL AND e.donor_center_lat IS NOT NULL
+          AND COALESCE(e.donor_position_grade, '') <> ''
+          AND COALESCE(e.donor_operator_code, e.operator_final, e.operator_code) IS NOT NULL
+          AND COALESCE(e.donor_lac, e.lac_final, e.lac) IS NOT NULL
           AND SQRT(POWER((lon_raw - donor_center_lon) * 85300, 2)
                  + POWER((lat_raw - donor_center_lat) * 111000, 2)) > %s
-          {collision_filter}
+          AND NOT COALESCE(e.path_a_is_collision, FALSE)
         """,
         (anomaly_threshold_m, batch_id, anomaly_threshold_m),
     )
@@ -265,7 +351,10 @@ def _collect_step4_stats(
         """
         SELECT
             COUNT(*)                                                          AS total_path_a,
-            COUNT(*) FILTER (WHERE donor_batch_id IS NOT NULL)                AS donor_matched_count,
+            COUNT(*) FILTER (
+                WHERE donor_batch_id IS NOT NULL
+                  AND COALESCE(donor_anchor_eligible, FALSE)
+            )                                                                 AS donor_matched_count,
             COUNT(*) FILTER (WHERE gps_fill_source_final = 'trusted_cell')    AS gps_filled,
             COUNT(*) FILTER (WHERE rsrp_fill_source_final = 'trusted_cell')   AS rsrp_filled,
             COUNT(*) FILTER (WHERE rsrq_fill_source_final = 'trusted_cell')   AS rsrq_filled,
@@ -273,8 +362,14 @@ def _collect_step4_stats(
             COUNT(*) FILTER (WHERE operator_fill_source_final = 'trusted_cell') AS operator_filled,
             COUNT(*) FILTER (WHERE lac_fill_source_final = 'trusted_cell')    AS lac_filled,
             COUNT(*) FILTER (WHERE tech_fill_source_final = 'trusted_cell')   AS tech_filled,
-            COUNT(*) FILTER (WHERE donor_lifecycle_state = 'excellent')        AS donor_excellent_count,
-            COUNT(*) FILTER (WHERE donor_lifecycle_state = 'qualified')        AS donor_qualified_count,
+            COUNT(*) FILTER (
+                WHERE donor_lifecycle_state = 'excellent'
+                  AND COALESCE(donor_anchor_eligible, FALSE)
+            )                                                                 AS donor_excellent_count,
+            COUNT(*) FILTER (
+                WHERE donor_lifecycle_state = 'qualified'
+                  AND COALESCE(donor_anchor_eligible, FALSE)
+            )                                                                 AS donor_qualified_count,
             COUNT(*) FILTER (WHERE lon_final IS NULL)                          AS remaining_none_gps,
             COUNT(*) FILTER (WHERE rsrp_final IS NULL
                                AND rsrq_final IS NULL
@@ -290,28 +385,19 @@ def _collect_step4_stats(
         (batch_id,),
     )
 
-    collision_skip = 0
-    # Read donor_batch_id from step2_run_stats for consistent version
-    step2 = _latest_step2()
-    sv = str(step2['trusted_snapshot_version']) if step2 else 'v0'
-    stats_donor_batch = int(sv.lstrip('v')) if sv != 'v0' else 0
-    if relation_exists('rebuild5.collision_id_list'):
-        skip_row = fetchone(
-            """
-            SELECT COUNT(*) AS cnt
-            FROM rebuild5.enriched_records e
-            WHERE e.batch_id = %s
-              AND e.lon_raw IS NOT NULL AND e.lat_raw IS NOT NULL
-              AND e.donor_center_lon IS NOT NULL AND e.donor_center_lat IS NOT NULL
-              AND EXISTS (
-                  SELECT 1 FROM rebuild5.collision_id_list c
-                  WHERE c.batch_id = %s
-                    AND c.cell_id = e.cell_id
-              )
-            """,
-            (batch_id, stats_donor_batch),
-        )
-        collision_skip = int(skip_row['cnt']) if skip_row else 0
+    collision_skip_row = fetchone(
+        """
+        SELECT COUNT(*) AS cnt
+        FROM rebuild5.enriched_records
+        WHERE batch_id = %s
+          AND COALESCE(gps_valid, FALSE)
+          AND lon_raw IS NOT NULL AND lat_raw IS NOT NULL
+          AND COALESCE(donor_anchor_eligible, FALSE)
+          AND donor_center_lon IS NOT NULL AND donor_center_lat IS NOT NULL
+          AND COALESCE(path_a_is_collision, FALSE)
+        """,
+        (batch_id,),
+    )
 
     total = int(row['total_path_a']) if row else 0
     gps_f = int(row['gps_filled']) if row else 0
@@ -334,7 +420,7 @@ def _collect_step4_stats(
         'lac_filled': int(row['lac_filled']) if row else 0,
         'tech_filled': int(row['tech_filled']) if row else 0,
         'gps_anomaly_count': int(anomaly_cnt['cnt']) if anomaly_cnt else 0,
-        'collision_skip_anomaly_count': collision_skip,
+        'collision_skip_anomaly_count': int(collision_skip_row['cnt']) if collision_skip_row else 0,
         'donor_excellent_count': int(row['donor_excellent_count']) if row else 0,
         'donor_qualified_count': int(row['donor_qualified_count']) if row else 0,
         'gps_fill_rate': round(gps_f / total, 4) if total else 0.0,

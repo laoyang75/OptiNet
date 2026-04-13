@@ -15,7 +15,7 @@ import {
 import { fmt, pct } from '../../composables/useFormat'
 
 const emptyStats: EnrichmentStatsPayload = {
-  version: { run_id: '', dataset_key: 'sample_6lac', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
+  version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
     total_path_a: 0,
     donor_matched_count: 0,
@@ -75,14 +75,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader title="知识补数" description="Step 4 基于上一轮正式库的知识补数效果。仅处理 Path A 命中记录。">
+  <PageHeader title="知识补数" description="Step 4 基于上一轮正式库的知识补数效果。仅处理命中可信库（A）的记录。">
     <div class="text-xs text-secondary">
       数据集 {{ stats.version.dataset_key }} ｜ 运行 {{ stats.version.run_id || '-' }} ｜ {{ stats.version.snapshot_version_prev }} → {{ stats.version.snapshot_version }}
     </div>
   </PageHeader>
 
   <div class="grid grid-4 mb-lg">
-    <SummaryCard title="Path A 总量" :value="fmt(stats.summary.total_path_a)" :subtitle="'donor 命中 ' + fmt(stats.summary.donor_matched_count)" />
+    <SummaryCard title="命中可信库（A）总量" :value="fmt(stats.summary.total_path_a)" :subtitle="'补数来源命中 ' + fmt(stats.summary.donor_matched_count)" />
     <SummaryCard title="GPS 补数" :value="fmt(stats.summary.gps_filled)" :subtitle="pct(stats.coverage.gps_fill_rate) + ' 补齐率'" color="var(--c-primary)" />
     <SummaryCard title="信号补数" :value="fmt(stats.summary.rsrp_filled + stats.summary.rsrq_filled + stats.summary.sinr_filled)" :subtitle="pct(stats.coverage.signal_fill_rate) + ' 补齐率'" color="var(--c-qualified)" />
     <SummaryCard title="GPS 异常" :value="fmt(stats.summary.gps_anomaly_count)" :subtitle="pct(anomalyRate)" color="var(--c-danger)" />
@@ -99,7 +99,7 @@ onMounted(async () => {
           <td class="font-mono font-semibold">{{ item.field_name }}</td>
           <td class="font-mono">{{ fmt(item.filled_count) }}</td>
           <td><PercentBar :value="item.fill_rate" /></td>
-          <td class="text-xs text-secondary font-mono">{{ item.donor_source }}</td>
+          <td class="text-xs text-secondary font-mono">{{ item.donor_source }}</td> <!-- 补数来源 -->
         </tr>
         <tr v-if="fieldFills.length === 0">
           <td colspan="4" class="empty-row">暂无补数统计</td>
@@ -110,18 +110,18 @@ onMounted(async () => {
 
   <div class="grid grid-2 gap-lg">
     <div class="card">
-      <div class="font-semibold text-sm mb-md">donor 质量分布</div>
+      <div class="font-semibold text-sm mb-md">补数来源质量分布</div>
       <div class="flex flex-col gap-sm">
         <div class="metric-row">
-          <span class="text-sm">excellent donor</span>
+          <span class="text-sm">优秀来源</span>
           <span class="font-mono font-semibold" style="color:var(--c-excellent)">{{ fmt(stats.summary.donor_excellent_count) }}</span>
         </div>
         <div class="metric-row">
-          <span class="text-sm">qualified donor</span>
+          <span class="text-sm">合格来源</span>
           <span class="font-mono font-semibold" style="color:var(--c-qualified)">{{ fmt(stats.summary.donor_qualified_count) }}</span>
         </div>
         <div class="metric-row">
-          <span class="text-sm">可用 donor 总量</span>
+          <span class="text-sm">可用来源总量</span>
           <span class="font-mono">{{ fmt(donorTotal) }}</span>
         </div>
       </div>
@@ -129,6 +129,7 @@ onMounted(async () => {
 
     <div class="card">
       <div class="font-semibold text-sm mb-md">GPS 异常样本</div>
+      <div class="text-xs text-secondary mb-sm">当前仅展示最新批次异常样本；按运营商 / LAC / 来源质量 / 是否异常筛选待开发。</div>
       <div class="mini-table">
         <div v-for="item in anomalies" :key="item.record_id" class="mini-row">
           <div>
@@ -136,7 +137,7 @@ onMounted(async () => {
             <div class="text-xs text-secondary">cell {{ item.cell_id ?? '-' }} ｜ bs {{ item.bs_id ?? '-' }}</div>
           </div>
           <div class="mini-meta">
-            <span class="font-mono">{{ item.distance_to_donor_m ? Math.round(item.distance_to_donor_m) : '-' }}m</span>
+            <span class="font-mono">{{ item.distance_to_donor_m ? Math.round(item.distance_to_donor_m) : '-' }}m</span> <!-- 与补数来源距离 -->
             <span class="text-xs text-secondary">{{ formatDateTime(item.event_time_std) }}</span>
           </div>
         </div>

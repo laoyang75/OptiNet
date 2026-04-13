@@ -31,11 +31,20 @@ def test_service_cell_endpoint_wraps_payload(monkeypatch) -> None:
     monkeypatch.setattr(
         service_router,
         'get_service_cell_payload',
-        lambda cell_id: {'cell_id': cell_id, 'operator_code': '46000', 'lifecycle_state': 'excellent'},
+        lambda cell_id, operator_code=None, lac=None, tech_norm=None: {
+            'cell_id': cell_id,
+            'operator_code': operator_code or '46000',
+            'lac': lac,
+            'tech_norm': tech_norm,
+            'lifecycle_state': 'excellent',
+        },
     )
 
-    response = client.get('/api/service/cell/1001')
+    response = client.get('/api/service/cell/1001?operator_code=46000&lac=123&tech_norm=5G')
 
     assert response.status_code == 200
     assert response.json()['data']['cell_id'] == 1001
+    assert response.json()['data']['operator_code'] == '46000'
+    assert response.json()['data']['lac'] == 123
+    assert response.json()['data']['tech_norm'] == '5G'
     assert response.json()['error'] is None

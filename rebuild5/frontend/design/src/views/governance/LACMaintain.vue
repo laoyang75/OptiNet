@@ -10,7 +10,7 @@ import { getMaintenanceLAC, getMaintenanceStats, type MaintenanceLACItem, type M
 import { fmt, pct } from '../../composables/useFormat'
 
 const stats = ref<MaintenanceStatsPayload>({
-  version: { run_id: '', dataset_key: 'sample_6lac', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
+  version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
     published_cell_count: 0, published_bs_count: 0, published_lac_count: 0,
     collision_cell_count: 0, multi_centroid_cell_count: 0, dynamic_cell_count: 0, anomaly_bs_count: 0,
@@ -24,7 +24,7 @@ const pageSize = ref(20)
 const totalCount = ref(0)
 const totalPages = ref(0)
 
-const activeLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'active' || i.lifecycle_state === 'qualified').length)
+const qualifiedLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'qualified').length)
 const observingLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'observing').length)
 const waitingLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'waiting').length)
 const hasAnomalyLac = computed(() => lacItems.value.filter(i => (i.anomaly_bs_ratio ?? 0) > 0).length)
@@ -71,9 +71,9 @@ onMounted(loadData)
   <!-- Summary cards -->
   <div class="grid grid-5 mb-lg">
     <SummaryCard title="总数" :value="fmt(stats.summary.published_lac_count)" />
-    <SummaryCard title="Active" :value="fmt(activeLac)" color="var(--c-success)" />
-    <SummaryCard title="Observing" :value="fmt(observingLac)" color="var(--c-dormant)" />
-    <SummaryCard title="Waiting" :value="fmt(waitingLac)" />
+    <SummaryCard title="合格" :value="fmt(qualifiedLac)" color="var(--c-success)" />
+    <SummaryCard title="观察" :value="fmt(observingLac)" color="var(--c-dormant)" />
+    <SummaryCard title="等待" :value="fmt(waitingLac)" />
     <SummaryCard title="有异常BS" :value="fmt(hasAnomalyLac)" color="var(--c-danger)" />
   </div>
 

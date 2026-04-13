@@ -1,3 +1,11 @@
+# 已废弃：北京 7 天全量数据处理 Runbook
+
+本文件保留为历史记录，不再作为执行标准。
+
+当前标准 runbook 请使用：
+
+- `rebuild5/scripts/runbook_beijing_7d_standard.md`
+
 # Runbook: 北京 7 天全量数据处理
 
 ## 概述
