@@ -4,6 +4,8 @@
 适用范围：Fix4 最终整合版样例验证通过后的执行基线  
 当前状态：共享样例 `batch1-3` 已按当前有效逻辑重验证；`batch4-7` 为历史整合结果，后续如需严格口径一致，应在当前代码上重新补跑
 
+> **阅读前置**：本文件是操作手册，建议先阅读 [README.md](./README.md)（项目交接说明）了解状态机全貌，再进行操作。
+
 ## 1. 目标
 
 本 runbook 固化的是已经在样例库真实验证通过的执行路径：
@@ -20,13 +22,37 @@
 
 ## 2. 环境
 
+### 2.1 前置条件（跑通前必检）
+
+| 项目 | 要求 | 检查方式 |
+|---|---|---|
+| Python 版本 | Python 3.9+ | `python3 --version` |
+| 依赖库 | 已安装 | `pip show psycopg` |
+| PostgreSQL | 17，地址可访问 | `pg_isready -h 192.168.200.217 -p 5433` |
+| PostGIS 扩展 | 已启用 | `select postgis_version();`（在数据库内执行） |
+| 工作样例表 | 已就绪 | 见下方 2.3 节 |
+
+> **注意：** 本 runbook 的执行命令准备跟踪 Step2-5。Step1 ETL 已按共享样例预先跑完（产出 `etl_cleaned_shared_sample_local` 表），不需要重新执行 Step1。
+
+### 2.2 环境变量
+
 样例验证库：
 
 ```bash
 export REBUILD5_PG_DSN='postgresql://postgres:123456@192.168.200.217:5433/ip_loc2_fix4_codex'
 ```
 
-共享样例本地工作表：
+### 2.3 工作目录
+
+**以下所有命令均在仓库根目录下执行：**
+
+```bash
+cd /path/to/WangYou_Data   # 替换为实际仓库路径
+```
+
+### 2.4 共享样例工作表
+
+共享样例本地工作表（应已就绪，如没有请找擈手初始化）：
 
 - `rebuild5_fix4_work.raw_gps_shared_sample_local`
 - `rebuild5_fix4_work.etl_cleaned_shared_sample_local`
@@ -41,6 +67,8 @@ export REBUILD5_PG_DSN='postgresql://postgres:123456@192.168.200.217:5433/ip_loc
 | `focus_cells_shared_local` | 40 |
 
 ## 3. 重置
+
+> 在仓库根目录下执行：
 
 ```bash
 PGPASSWORD=123456 PGGSSENCMODE=disable \
@@ -96,6 +124,10 @@ python3 rebuild5/scripts/run_daily_increment_batch_loop.py \
 | 5 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
 | 6 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
 | 7 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
+
+> **历史结果待重验说明：** batch4-7 由旧版代码跑出，不代表当前逻辑结果。
+> - 如果云端团队需要全量口径一致，应先执行第 3 节全量重置，再对 batch1-7 全量重跑第 4 节命令。
+> - 如果只需验证主链闭环，batch1-3 已足够，暂不需要重跑 batch4-7。
 
 ### 5.3 Step4
 
@@ -180,6 +212,16 @@ order by 2 desc, 1;
 
 ## 7. 代码测试
 
+### 7.1 测试前置说明
+
+| 项目 | 说明 |
+|---|---|
+| 是否需要 DB 连接 | 部分测试是纯单元测试，无需 DB；`test_enrichment_queries.py` 等需要 `REBUILD5_PG_DSN` 已设置 |
+| 是否需要先重置 | 不需要；单测不依赖生产数据状态 |
+| 工作目录 | 仓库根目录 `WangYou_Data/` |
+
+### 7.2 测试命令
+
 本次与 Fix4 整合直接相关的测试命令：
 
 ```bash
@@ -191,6 +233,14 @@ pytest rebuild5/tests/test_profile_logic.py rebuild5/tests/test_publish_cell.py 
 
 - `33 passed`
 - `0 failed`
+
+### 7.3 如果测试失败
+
+| 错误类型 | 可能原因 | 排查方向 |
+|---|---|---|
+| `ImportError` | 依赖未安装 | 重新 `pip install -r rebuild5/backend/requirements.txt` |
+| `psycopg.OperationalError` | DB 无法连接 | 检查 `REBUILD5_PG_DSN` 环境变量和网络连通性 |
+| 逻辑断言失败 | 代码边界没对齐 | 对照失败函数所属文件，比对 [处理流程总览.md](./处理流程总览.md) 相山 |
 
 ## 8. 放行结论
 
