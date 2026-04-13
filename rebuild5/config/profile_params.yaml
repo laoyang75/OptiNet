@@ -1,6 +1,6 @@
 cell:
   waiting:
-    min_independent_obs: 1
+    min_independent_obs: 3
   qualified:
     min_independent_obs: 10
   excellent:

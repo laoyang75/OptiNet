@@ -10,6 +10,7 @@ from ..etl.source_prep import DATASET_KEY
 from .logic import (
     flatten_antitoxin_thresholds,
     flatten_profile_thresholds,
+    load_core_position_filter_params,
     load_antitoxin_params,
     load_profile_params,
 )
@@ -1020,10 +1021,215 @@ def build_profile_obs(run_id: str) -> None:
 
 
 def build_profile_base(run_id: str) -> None:
-    execute('DROP TABLE IF EXISTS rebuild5._profile_centroid')
+    core_filter = load_core_position_filter_params()
+    execute('DROP TABLE IF EXISTS rebuild5._profile_seed_grid')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5._profile_seed_grid AS
+        SELECT
+            run_id,
+            dataset_key,
+            operator_code,
+            lac,
+            cell_id,
+            tech_norm,
+            ST_SnapToGrid(
+                ST_Transform(ST_SetSRID(ST_MakePoint(lon, lat), 4326), 3857),
+                {core_filter['snap_grid_m']}
+            ) AS snap_geom_3857,
+            COUNT(*) AS obs_count
+        FROM rebuild5.profile_obs
+        WHERE lon IS NOT NULL
+          AND lat IS NOT NULL
+        GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm, snap_geom_3857
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_seed_grid')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_centroid AS
+        CREATE INDEX idx_profile_seed_grid_key
+        ON rebuild5._profile_seed_grid (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_primary_seed')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_primary_seed AS
+        SELECT
+            run_id,
+            dataset_key,
+            operator_code,
+            lac,
+            cell_id,
+            tech_norm,
+            snap_geom_3857
+        FROM (
+            SELECT
+                run_id,
+                dataset_key,
+                operator_code,
+                lac,
+                cell_id,
+                tech_norm,
+                snap_geom_3857,
+                obs_count,
+                ROW_NUMBER() OVER (
+                    PARTITION BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
+                    ORDER BY obs_count DESC, ST_X(snap_geom_3857), ST_Y(snap_geom_3857)
+                ) AS seed_rank
+            FROM rebuild5._profile_seed_grid
+        ) ranked
+        WHERE seed_rank = 1
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_primary_seed')
+    execute(
+        """
+        CREATE INDEX idx_profile_primary_seed_key
+        ON rebuild5._profile_primary_seed (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_seed_distance')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_seed_distance AS
+        SELECT
+            o.run_id,
+            o.dataset_key,
+            o.operator_code,
+            o.operator_cn,
+            o.lac,
+            o.cell_id,
+            o.tech_norm,
+            o.obs_minute,
+            o.obs_date,
+            o.lon,
+            o.lat,
+            ST_Distance(
+                ST_Transform(ST_SetSRID(ST_MakePoint(o.lon, o.lat), 4326), 3857),
+                s.snap_geom_3857
+            ) AS dist_to_seed_m
+        FROM rebuild5.profile_obs o
+        JOIN rebuild5._profile_primary_seed s
+          ON s.run_id = o.run_id
+         AND s.dataset_key = o.dataset_key
+         AND s.operator_code = o.operator_code
+         AND s.lac = o.lac
+         AND s.cell_id = o.cell_id
+         AND s.tech_norm = o.tech_norm
+        WHERE o.lon IS NOT NULL
+          AND o.lat IS NOT NULL
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_seed_distance')
+    execute(
+        """
+        CREATE INDEX idx_profile_seed_distance_key
+        ON rebuild5._profile_seed_distance (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_core_cutoff')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5._profile_core_cutoff AS
+        SELECT
+            run_id,
+            dataset_key,
+            operator_code,
+            lac,
+            cell_id,
+            tech_norm,
+            GREATEST(
+                {core_filter['keep_min_radius_m']},
+                LEAST(
+                    COALESCE(
+                        percentile_cont({core_filter['keep_quantile']})
+                            WITHIN GROUP (ORDER BY dist_to_seed_m),
+                        {core_filter['keep_min_radius_m']}
+                    ),
+                    {core_filter['keep_max_radius_m']}
+                )
+            ) AS keep_radius_m
+        FROM rebuild5._profile_seed_distance
+        GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_core_cutoff')
+    execute(
+        """
+        CREATE INDEX idx_profile_core_cutoff_key
+        ON rebuild5._profile_core_cutoff (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_core_points')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_core_points AS
+        SELECT
+            d.run_id,
+            d.dataset_key,
+            d.operator_code,
+            d.operator_cn,
+            d.lac,
+            d.cell_id,
+            d.tech_norm,
+            d.obs_minute,
+            d.obs_date,
+            d.lon,
+            d.lat,
+            c.keep_radius_m
+        FROM rebuild5._profile_seed_distance d
+        JOIN rebuild5._profile_core_cutoff c
+          ON c.run_id = d.run_id
+         AND c.dataset_key = d.dataset_key
+         AND c.operator_code = d.operator_code
+         AND c.lac = d.lac
+         AND c.cell_id = d.cell_id
+         AND c.tech_norm = d.tech_norm
+        WHERE d.dist_to_seed_m <= c.keep_radius_m
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_core_points')
+    execute(
+        """
+        CREATE INDEX idx_profile_core_points_key
+        ON rebuild5._profile_core_points (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_core_gps')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_core_gps AS
+        SELECT
+            run_id,
+            dataset_key,
+            operator_code,
+            operator_cn,
+            lac,
+            cell_id,
+            tech_norm,
+            COUNT(*) AS gps_valid_count,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon) AS center_lon,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat) AS center_lat,
+            MIN(obs_minute) AS first_obs_at,
+            MAX(obs_minute) AS last_obs_at,
+            EXTRACT(EPOCH FROM MAX(obs_minute) - MIN(obs_minute)) / 3600.0 AS observed_span_hours,
+            COUNT(DISTINCT obs_date) AS active_days
+        FROM rebuild5._profile_core_points
+        GROUP BY run_id, dataset_key, operator_code, operator_cn, lac, cell_id, tech_norm
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_core_gps')
+    execute(
+        """
+        CREATE INDEX idx_profile_core_gps_key
+        ON rebuild5._profile_core_gps (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_counts')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_counts AS
         SELECT
             run_id,
             dataset_key,
@@ -1034,9 +1240,6 @@ def build_profile_base(run_id: str) -> None:
             tech_norm,
             COUNT(*) AS independent_obs,
             COUNT(DISTINCT obs_date) AS independent_days,
-            COUNT(*) FILTER (WHERE lon IS NOT NULL AND lat IS NOT NULL) AS gps_valid_count,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon) AS center_lon,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat) AS center_lat,
             AVG(rsrp) AS rsrp_avg,
             AVG(rsrq) AS rsrq_avg,
             AVG(sinr) AS sinr_avg,
@@ -1050,8 +1253,13 @@ def build_profile_base(run_id: str) -> None:
         GROUP BY run_id, dataset_key, operator_code, operator_cn, lac, cell_id, tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_centroid')
-    execute('CREATE INDEX idx_tmp_centroid ON rebuild5._profile_centroid (run_id, dataset_key, operator_code, lac, cell_id)')
+    _disable_autovacuum('rebuild5._profile_counts')
+    execute(
+        """
+        CREATE INDEX idx_profile_counts_key
+        ON rebuild5._profile_counts (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
     execute('DROP TABLE IF EXISTS rebuild5._profile_devs')
     execute(
         """
@@ -1075,28 +1283,27 @@ def build_profile_base(run_id: str) -> None:
         """
         CREATE UNLOGGED TABLE rebuild5._profile_radius AS
         SELECT
-            o.run_id,
-            o.dataset_key,
-            o.operator_code,
-            o.lac,
-            o.cell_id,
-            o.tech_norm,
+            p.run_id,
+            p.dataset_key,
+            p.operator_code,
+            p.lac,
+            p.cell_id,
+            p.tech_norm,
             PERCENTILE_CONT(0.5) WITHIN GROUP (
-                ORDER BY SQRT(POWER((o.lon - c.center_lon) * 85300, 2) + POWER((o.lat - c.center_lat) * 111000, 2))
+                ORDER BY SQRT(POWER((p.lon - c.center_lon) * 85300, 2) + POWER((p.lat - c.center_lat) * 111000, 2))
             ) AS p50_radius_m,
             PERCENTILE_CONT(0.9) WITHIN GROUP (
-                ORDER BY SQRT(POWER((o.lon - c.center_lon) * 85300, 2) + POWER((o.lat - c.center_lat) * 111000, 2))
+                ORDER BY SQRT(POWER((p.lon - c.center_lon) * 85300, 2) + POWER((p.lat - c.center_lat) * 111000, 2))
             ) AS p90_radius_m
-        FROM rebuild5.profile_obs o
-        JOIN rebuild5._profile_centroid c
-          ON c.run_id = o.run_id
-         AND c.dataset_key = o.dataset_key
-         AND c.operator_code = o.operator_code
-         AND c.lac = o.lac
-         AND c.cell_id = o.cell_id
-         AND c.tech_norm = o.tech_norm
-        WHERE o.lon IS NOT NULL AND o.lat IS NOT NULL
-        GROUP BY o.run_id, o.dataset_key, o.operator_code, o.lac, o.cell_id, o.tech_norm
+        FROM rebuild5._profile_core_points p
+        JOIN rebuild5._profile_core_gps c
+          ON c.run_id = p.run_id
+         AND c.dataset_key = p.dataset_key
+         AND c.operator_code = p.operator_code
+         AND c.lac = p.lac
+         AND c.cell_id = p.cell_id
+         AND c.tech_norm = p.tech_norm
+        GROUP BY p.run_id, p.dataset_key, p.operator_code, p.lac, p.cell_id, p.tech_norm
         """
     )
     _disable_autovacuum('rebuild5._profile_radius')
@@ -1119,24 +1326,24 @@ def build_profile_base(run_id: str) -> None:
             d.independent_devs,
             c.independent_days,
             c.record_count,
-            c.first_obs_at,
-            c.last_obs_at,
-            c.observed_span_hours,
-            c.independent_days AS active_days,
-            c.center_lon,
-            c.center_lat,
+            COALESCE(g.first_obs_at, c.first_obs_at) AS first_obs_at,
+            COALESCE(g.last_obs_at, c.last_obs_at) AS last_obs_at,
+            COALESCE(g.observed_span_hours, c.observed_span_hours) AS observed_span_hours,
+            COALESCE(g.active_days, 0) AS active_days,
+            g.center_lon,
+            g.center_lat,
             r.p50_radius_m,
             r.p90_radius_m,
             c.rsrp_avg,
             c.rsrq_avg,
             c.sinr_avg,
-            c.gps_valid_count,
+            COALESCE(g.gps_valid_count, 0) AS gps_valid_count,
             c.gps_original_count,
             c.signal_original_count,
             COALESCE(c.gps_original_count::double precision / NULLIF(c.record_count, 0), 0) AS gps_original_ratio,
-            COALESCE(c.gps_valid_count::double precision / NULLIF(c.independent_obs, 0), 0) AS gps_valid_ratio,
+            COALESCE(COALESCE(g.gps_valid_count, 0)::double precision / NULLIF(c.independent_obs, 0), 0) AS gps_valid_ratio,
             COALESCE(c.signal_original_count::double precision / NULLIF(c.record_count, 0), 0) AS signal_original_ratio
-        FROM rebuild5._profile_centroid c
+        FROM rebuild5._profile_counts c
         JOIN rebuild5._profile_devs d
           ON d.run_id = c.run_id
          AND d.dataset_key = c.dataset_key
@@ -1144,6 +1351,13 @@ def build_profile_base(run_id: str) -> None:
          AND d.lac = c.lac
          AND d.cell_id = c.cell_id
          AND d.tech_norm = c.tech_norm
+        LEFT JOIN rebuild5._profile_core_gps g
+          ON g.run_id = c.run_id
+         AND g.dataset_key = c.dataset_key
+         AND g.operator_code = c.operator_code
+         AND g.lac = c.lac
+         AND g.cell_id = c.cell_id
+         AND g.tech_norm = c.tech_norm
         LEFT JOIN rebuild5._profile_radius r
           ON r.run_id = c.run_id
          AND r.dataset_key = c.dataset_key

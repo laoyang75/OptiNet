@@ -3,7 +3,7 @@ from rebuild5.backend.app.profile.logic import classify_cell_state, classify_dif
 
 def _params() -> dict[str, float]:
     return {
-        'waiting_min_obs': 1,
+        'waiting_min_obs': 3,
         'qualified_min_obs': 10,
         'excellent_min_obs': 30,
     }
@@ -15,6 +15,17 @@ def test_classify_cell_state_waiting_when_no_observation() -> None:
         distinct_dev_id=0,
         p90_radius_m=None,
         observed_span_hours=None,
+        is_collision_id=False,
+        params=_params(),
+    ) == 'waiting'
+
+
+def test_classify_cell_state_waiting_when_observation_still_too_low() -> None:
+    assert classify_cell_state(
+        independent_obs=2,
+        distinct_dev_id=9,
+        p90_radius_m=50.0,
+        observed_span_hours=1.0,
         is_collision_id=False,
         params=_params(),
     ) == 'waiting'

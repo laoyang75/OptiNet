@@ -160,23 +160,23 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
             p.operator_code, p.operator_cn, p.lac, p.bs_id, p.cell_id, p.tech_norm,
             p.gps_valid, p.lon_raw, p.lat_raw,
 
-            -- GPS: Step1 filled → donor center (from path_a_records) → NULL
+            -- GPS: Step1 filled → any matched published donor center → NULL
             COALESCE(
                 p.lon_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_center_lon END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_center_lon END
             ),
             COALESCE(
                 p.lat_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_center_lat END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_center_lat END
             ),
             CASE WHEN p.lon_filled IS NOT NULL OR p.lat_filled IS NOT NULL
                      THEN COALESCE(p.gps_fill_source, 'none')
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE)
+                 WHEN p.donor_batch_id IS NOT NULL
                       AND p.donor_center_lon IS NOT NULL AND p.donor_center_lat IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
             CASE WHEN p.lon_filled IS NOT NULL OR p.lat_filled IS NOT NULL THEN NULL
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE)
+                 WHEN p.donor_batch_id IS NOT NULL
                       AND p.donor_center_lon IS NOT NULL AND p.donor_center_lat IS NOT NULL
                      THEN p.donor_position_grade
                  ELSE NULL END,
@@ -184,71 +184,71 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
             -- RSRP
             COALESCE(
                 p.rsrp_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_rsrp_avg END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_rsrp_avg END
             ),
             CASE WHEN p.rsrp_filled IS NOT NULL THEN COALESCE(p.rsrp_fill_source, 'none')
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_rsrp_avg IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_rsrp_avg IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
             -- RSRQ
             COALESCE(
                 p.rsrq_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_rsrq_avg END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_rsrq_avg END
             ),
             CASE WHEN p.rsrq_filled IS NOT NULL THEN 'original'
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_rsrq_avg IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_rsrq_avg IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
             -- SINR
             COALESCE(
                 p.sinr_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_sinr_avg END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_sinr_avg END
             ),
             CASE WHEN p.sinr_filled IS NOT NULL THEN 'original'
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_sinr_avg IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_sinr_avg IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
             -- 气压
             CASE WHEN p.pressure ~ E'^-?[0-9]+\\.?[0-9]*$' THEN p.pressure::double precision
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_pressure_avg
+                 WHEN p.donor_batch_id IS NOT NULL THEN p.donor_pressure_avg
                  ELSE NULL END,
             CASE WHEN p.pressure ~ E'^-?[0-9]+\\.?[0-9]*$' THEN 'original'
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_pressure_avg IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_pressure_avg IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
             -- 运营商
             COALESCE(
                 p.operator_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_operator_code END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_operator_code END
             ),
             CASE WHEN p.operator_filled IS NOT NULL
                      THEN COALESCE(p.operator_fill_source, 'none')
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_operator_code IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_operator_code IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
             -- LAC
             COALESCE(
                 p.lac_filled,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_lac END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_lac END
             ),
             CASE WHEN p.lac_filled IS NOT NULL
                      THEN COALESCE(p.lac_fill_source, 'none')
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_lac IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_lac IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
             -- 制式
             COALESCE(
                 p.tech_norm,
-                CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_tech_norm END
+                CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_tech_norm END
             ),
             CASE WHEN p.tech_norm IS NOT NULL THEN 'original'
-                 WHEN COALESCE(p.donor_anchor_eligible, FALSE) AND p.donor_tech_norm IS NOT NULL
+                 WHEN p.donor_batch_id IS NOT NULL AND p.donor_tech_norm IS NOT NULL
                      THEN 'trusted_cell'
                  ELSE 'none' END,
 
@@ -326,7 +326,7 @@ def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_bat
         WHERE e.batch_id = %s
           AND COALESCE(e.gps_valid, FALSE)
           AND e.lon_raw IS NOT NULL AND e.lat_raw IS NOT NULL
-          AND COALESCE(e.donor_anchor_eligible, FALSE)
+          AND e.donor_batch_id IS NOT NULL
           AND e.donor_center_lon IS NOT NULL AND e.donor_center_lat IS NOT NULL
           AND COALESCE(e.donor_position_grade, '') <> ''
           AND COALESCE(e.donor_operator_code, e.operator_final, e.operator_code) IS NOT NULL
@@ -353,7 +353,6 @@ def _collect_step4_stats(
             COUNT(*)                                                          AS total_path_a,
             COUNT(*) FILTER (
                 WHERE donor_batch_id IS NOT NULL
-                  AND COALESCE(donor_anchor_eligible, FALSE)
             )                                                                 AS donor_matched_count,
             COUNT(*) FILTER (WHERE gps_fill_source_final = 'trusted_cell')    AS gps_filled,
             COUNT(*) FILTER (WHERE rsrp_fill_source_final = 'trusted_cell')   AS rsrp_filled,
@@ -364,11 +363,11 @@ def _collect_step4_stats(
             COUNT(*) FILTER (WHERE tech_fill_source_final = 'trusted_cell')   AS tech_filled,
             COUNT(*) FILTER (
                 WHERE donor_lifecycle_state = 'excellent'
-                  AND COALESCE(donor_anchor_eligible, FALSE)
+                  AND donor_batch_id IS NOT NULL
             )                                                                 AS donor_excellent_count,
             COUNT(*) FILTER (
                 WHERE donor_lifecycle_state = 'qualified'
-                  AND COALESCE(donor_anchor_eligible, FALSE)
+                  AND donor_batch_id IS NOT NULL
             )                                                                 AS donor_qualified_count,
             COUNT(*) FILTER (WHERE lon_final IS NULL)                          AS remaining_none_gps,
             COUNT(*) FILTER (WHERE rsrp_final IS NULL
@@ -392,7 +391,7 @@ def _collect_step4_stats(
         WHERE batch_id = %s
           AND COALESCE(gps_valid, FALSE)
           AND lon_raw IS NOT NULL AND lat_raw IS NOT NULL
-          AND COALESCE(donor_anchor_eligible, FALSE)
+          AND donor_batch_id IS NOT NULL
           AND donor_center_lon IS NOT NULL AND donor_center_lat IS NOT NULL
           AND COALESCE(path_a_is_collision, FALSE)
         """,

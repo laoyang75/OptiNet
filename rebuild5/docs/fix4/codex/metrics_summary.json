@@ -1,0 +1,225 @@
+{
+  "scope": "current_stage_batch1_3",
+  "shared_input": {
+    "raw_table": "rebuild5_fix4.raw_gps_shared_sample",
+    "etl_table": "rebuild5_fix4.etl_cleaned_shared_sample",
+    "focus_table": "rebuild5_fix4.focus_cells_shared"
+  },
+  "work_tables": {
+    "raw": "rebuild5_fix4_work.raw_gps_shared_sample_local",
+    "etl": "rebuild5_fix4_work.etl_cleaned_shared_sample_local",
+    "focus": "rebuild5_fix4_work.focus_cells_shared_local"
+  },
+  "before_baseline": {
+    "label": "before_engineering_and_postgis_split",
+    "step5_done_seconds": {
+      "1": 5,
+      "2": 5,
+      "3": 6
+    },
+    "step4_donor_matched_count": {
+      "1": 0,
+      "2": 0,
+      "3": 23127
+    },
+    "step5_multi_centroid_count": {
+      "1": 0,
+      "2": 0,
+      "3": 1
+    },
+    "postgis_publish_cell_centroid_detail_seconds_batch3": 369.925,
+    "postgis_valid_clusters_seconds_batch3": 362.312
+  },
+  "current_validation": {
+    "label": "after_donor_fix_plus_postgis_split_plus_multicentroid_alignment",
+    "step2_batches": [
+      {
+        "batch_id": 1,
+        "path_a_record_count": 0,
+        "path_b_record_count": 292872,
+        "path_b_cell_count": 13490,
+        "path_c_drop_count": 334
+      },
+      {
+        "batch_id": 2,
+        "path_a_record_count": 235711,
+        "path_b_record_count": 57905,
+        "path_b_cell_count": 7672,
+        "path_c_drop_count": 184
+      },
+      {
+        "batch_id": 3,
+        "path_a_record_count": 247441,
+        "path_b_record_count": 23953,
+        "path_b_cell_count": 4748,
+        "path_c_drop_count": 210
+      }
+    ],
+    "step3_batches": [
+      {
+        "batch_id": 1,
+        "waiting_cell_count": 0,
+        "qualified_cell_count": 3807,
+        "excellent_cell_count": 1939,
+        "anchor_eligible_cell_count": 0
+      },
+      {
+        "batch_id": 2,
+        "waiting_cell_count": 0,
+        "qualified_cell_count": 6337,
+        "excellent_cell_count": 2084,
+        "anchor_eligible_cell_count": 1976
+      },
+      {
+        "batch_id": 3,
+        "waiting_cell_count": 0,
+        "qualified_cell_count": 7674,
+        "excellent_cell_count": 2120,
+        "anchor_eligible_cell_count": 2886
+      }
+    ],
+    "step4_batches": [
+      {
+        "batch_id": 1,
+        "total_path_a": 0,
+        "donor_matched_count": 0,
+        "gps_filled": 0,
+        "gps_anomaly_count": 0,
+        "donor_excellent_count": 0,
+        "donor_qualified_count": 0
+      },
+      {
+        "batch_id": 2,
+        "total_path_a": 235711,
+        "donor_matched_count": 235711,
+        "gps_filled": 14362,
+        "gps_anomaly_count": 6450,
+        "donor_excellent_count": 137528,
+        "donor_qualified_count": 98183
+      },
+      {
+        "batch_id": 3,
+        "total_path_a": 247441,
+        "donor_matched_count": 247441,
+        "gps_filled": 15161,
+        "gps_anomaly_count": 7108,
+        "donor_excellent_count": 130736,
+        "donor_qualified_count": 116705
+      }
+    ],
+    "step5_batches": [
+      {
+        "batch_id": 1,
+        "published_cell_count": 5746,
+        "published_bs_count": 3124,
+        "published_lac_count": 18,
+        "collision_cell_count": 0,
+        "multi_centroid_cell_count": 0,
+        "dynamic_cell_count": 0,
+        "anomaly_bs_count": 13
+      },
+      {
+        "batch_id": 2,
+        "published_cell_count": 8421,
+        "published_bs_count": 4115,
+        "published_lac_count": 21,
+        "collision_cell_count": 0,
+        "multi_centroid_cell_count": 0,
+        "dynamic_cell_count": 0,
+        "anomaly_bs_count": 20
+      },
+      {
+        "batch_id": 3,
+        "published_cell_count": 9794,
+        "published_bs_count": 4563,
+        "published_lac_count": 21,
+        "collision_cell_count": 0,
+        "multi_centroid_cell_count": 113,
+        "dynamic_cell_count": 0,
+        "anomaly_bs_count": 12
+      }
+    ],
+    "step5_done_seconds": {
+      "1": 8,
+      "2": 10,
+      "3": 13
+    },
+    "postgis_publish_cell_centroid_detail_seconds_batch3": 12.743,
+    "postgis_stage_breakdown_batch3": {
+      "candidates": 0.081,
+      "points": 0.252,
+      "grid_points": 0.235,
+      "clustered_grid": 0.184,
+      "labelled_points": 0.171,
+      "cell_totals": 0.299,
+      "cluster_base": 0.347,
+      "cluster_centers": 0.064,
+      "cluster_radius": 0.361,
+      "cluster_stats": 0.304,
+      "filtered_clusters": 0.055,
+      "ranked_clusters": 0.054,
+      "valid_clusters": 0.043
+    },
+    "centroid_pattern_batch3": [
+      {
+        "centroid_pattern": "<null>",
+        "cnt": 9681
+      },
+      {
+        "centroid_pattern": "dual_cluster",
+        "cnt": 106
+      },
+      {
+        "centroid_pattern": "multi_cluster",
+        "cnt": 7
+      }
+    ],
+    "focus_bucket_metrics_batch3": [
+      {
+        "source_bucket": "high_obs",
+        "cell_count": 10,
+        "avg_cell_p90_m": 129.5,
+        "avg_cell_area_km2": 0.078,
+        "multi_centroid_cells": 0,
+        "patterned_cells": 0,
+        "avg_bs_p90_m": 386.9,
+        "avg_bs_area_km2": 2.2433
+      },
+      {
+        "source_bucket": "high_p90",
+        "cell_count": 10,
+        "avg_cell_p90_m": 128.6,
+        "avg_cell_area_km2": 0.1164,
+        "multi_centroid_cells": 0,
+        "patterned_cells": 0,
+        "avg_bs_p90_m": 897.3,
+        "avg_bs_area_km2": 21.3504
+      },
+      {
+        "source_bucket": "moving",
+        "cell_count": 10,
+        "avg_cell_p90_m": 818.4,
+        "avg_cell_area_km2": 2.8759,
+        "multi_centroid_cells": 6,
+        "patterned_cells": 6,
+        "avg_bs_p90_m": 517.1,
+        "avg_bs_area_km2": 1.8688
+      },
+      {
+        "source_bucket": "multi_cluster",
+        "cell_count": 10,
+        "avg_cell_p90_m": 799.2,
+        "avg_cell_area_km2": 2.3908,
+        "multi_centroid_cells": 6,
+        "patterned_cells": 6,
+        "avg_bs_p90_m": 420.7,
+        "avg_bs_area_km2": 0.7604
+      }
+    ]
+  },
+  "notes": [
+    "当前交付只覆盖 batch1-3",
+    "7天完整样例验证尚未在当前整合版上完成",
+    "工程闭环与 Step5 PostGIS 性能已验证，质心/多质心边界仍属研究中"
+  ]
+}

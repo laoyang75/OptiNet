@@ -27,6 +27,13 @@ DROP TABLE IF EXISTS rebuild5.profile_obs;
 DROP TABLE IF EXISTS rebuild5._profile_centroid;
 DROP TABLE IF EXISTS rebuild5._profile_devs;
 DROP TABLE IF EXISTS rebuild5._profile_radius;
+DROP TABLE IF EXISTS rebuild5._profile_seed_grid;
+DROP TABLE IF EXISTS rebuild5._profile_primary_seed;
+DROP TABLE IF EXISTS rebuild5._profile_seed_distance;
+DROP TABLE IF EXISTS rebuild5._profile_core_cutoff;
+DROP TABLE IF EXISTS rebuild5._profile_core_points;
+DROP TABLE IF EXISTS rebuild5._profile_core_gps;
+DROP TABLE IF EXISTS rebuild5._profile_counts;
 DROP TABLE IF EXISTS rebuild5.profile_base;
 
 DROP TABLE IF EXISTS rebuild5.enriched_records;
@@ -42,6 +49,12 @@ TRUNCATE TABLE rebuild5.bs_centroid_detail;
 DROP TABLE IF EXISTS rebuild5.cell_daily_centroid;
 DROP TABLE IF EXISTS rebuild5.cell_metrics_window;
 DROP TABLE IF EXISTS rebuild5.cell_anomaly_summary;
+DROP TABLE IF EXISTS rebuild5.cell_core_seed_grid;
+DROP TABLE IF EXISTS rebuild5.cell_core_primary_seed;
+DROP TABLE IF EXISTS rebuild5.cell_core_seed_distance;
+DROP TABLE IF EXISTS rebuild5.cell_core_cutoff;
+DROP TABLE IF EXISTS rebuild5.cell_core_points;
+DROP TABLE IF EXISTS rebuild5.cell_core_gps_stats;
 TRUNCATE TABLE rebuild5.cell_sliding_window;
 
 DELETE FROM rebuild5_meta.step2_run_stats;

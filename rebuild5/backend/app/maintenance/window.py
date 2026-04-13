@@ -25,6 +25,7 @@ from typing import Any
 
 from ..core.database import execute, fetchall
 from ..core.parallel import NUM_WORKERS_INSERT, parallel_execute
+from ..profile.logic import load_antitoxin_params, load_core_position_filter_params
 from ..profile.pipeline import relation_exists
 
 
@@ -193,34 +194,306 @@ def build_cell_metrics_base(*, batch_id: int) -> None:
     execute('ANALYZE rebuild5.cell_metrics_base')
 
 
+def build_cell_core_gps_stats(*, batch_id: int) -> None:
+    """Materialize a dominant-hotspot GPS core for robust center/radius stats."""
+    core_filter = load_core_position_filter_params(load_antitoxin_params())
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_seed_grid')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5.cell_core_seed_grid AS
+        SELECT
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            ST_SnapToGrid(
+                ST_Transform(ST_SetSRID(ST_MakePoint(lon_final, lat_final), 4326), 3857),
+                {core_filter['snap_grid_m']}
+            ) AS snap_geom_3857,
+            COUNT(*) AS obs_count
+        FROM rebuild5.cell_sliding_window
+        WHERE lon_final IS NOT NULL
+          AND lat_final IS NOT NULL
+          AND gps_valid
+        GROUP BY operator_code, lac, bs_id, cell_id, tech_norm, snap_geom_3857
+        """
+    )
+    execute("ALTER TABLE rebuild5.cell_core_seed_grid SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX idx_cell_core_seed_grid_key
+        ON rebuild5.cell_core_seed_grid (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5.cell_core_seed_grid')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_primary_seed')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5.cell_core_primary_seed AS
+        SELECT
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            snap_geom_3857
+        FROM (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                snap_geom_3857,
+                obs_count,
+                ROW_NUMBER() OVER (
+                    PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm
+                    ORDER BY obs_count DESC, ST_X(snap_geom_3857), ST_Y(snap_geom_3857)
+                ) AS seed_rank
+            FROM rebuild5.cell_core_seed_grid
+        ) ranked
+        WHERE seed_rank = 1
+        """
+    )
+    execute("ALTER TABLE rebuild5.cell_core_primary_seed SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX idx_cell_core_primary_seed_key
+        ON rebuild5.cell_core_primary_seed (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5.cell_core_primary_seed')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_seed_distance')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5.cell_core_seed_distance AS
+        SELECT
+            w.operator_code,
+            w.lac,
+            w.bs_id,
+            w.cell_id,
+            w.tech_norm,
+            w.event_time_std,
+            w.lon_final,
+            w.lat_final,
+            ST_Distance(
+                ST_Transform(ST_SetSRID(ST_MakePoint(w.lon_final, w.lat_final), 4326), 3857),
+                s.snap_geom_3857
+            ) AS dist_to_seed_m
+        FROM rebuild5.cell_sliding_window w
+        JOIN rebuild5.cell_core_primary_seed s
+          ON s.operator_code = w.operator_code
+         AND s.lac = w.lac
+         AND s.bs_id IS NOT DISTINCT FROM w.bs_id
+         AND s.cell_id = w.cell_id
+         AND s.tech_norm IS NOT DISTINCT FROM w.tech_norm
+        WHERE w.lon_final IS NOT NULL
+          AND w.lat_final IS NOT NULL
+          AND w.gps_valid
+        """
+    )
+    execute("ALTER TABLE rebuild5.cell_core_seed_distance SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX idx_cell_core_seed_distance_key
+        ON rebuild5.cell_core_seed_distance (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5.cell_core_seed_distance')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_cutoff')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5.cell_core_cutoff AS
+        SELECT
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            GREATEST(
+                {core_filter['keep_min_radius_m']},
+                LEAST(
+                    COALESCE(
+                        percentile_cont({core_filter['keep_quantile']})
+                            WITHIN GROUP (ORDER BY dist_to_seed_m),
+                        {core_filter['keep_min_radius_m']}
+                    ),
+                    {core_filter['keep_max_radius_m']}
+                )
+            ) AS keep_radius_m
+        FROM rebuild5.cell_core_seed_distance
+        GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        """
+    )
+    execute("ALTER TABLE rebuild5.cell_core_cutoff SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX idx_cell_core_cutoff_key
+        ON rebuild5.cell_core_cutoff (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5.cell_core_cutoff')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_points')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5.cell_core_points AS
+        SELECT
+            d.operator_code,
+            d.lac,
+            d.bs_id,
+            d.cell_id,
+            d.tech_norm,
+            d.event_time_std,
+            d.lon_final,
+            d.lat_final,
+            c.keep_radius_m
+        FROM rebuild5.cell_core_seed_distance d
+        JOIN rebuild5.cell_core_cutoff c
+          ON c.operator_code = d.operator_code
+         AND c.lac = d.lac
+         AND c.bs_id IS NOT DISTINCT FROM d.bs_id
+         AND c.cell_id = d.cell_id
+         AND c.tech_norm IS NOT DISTINCT FROM d.tech_norm
+        WHERE d.dist_to_seed_m <= c.keep_radius_m
+        """
+    )
+    execute("ALTER TABLE rebuild5.cell_core_points SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX idx_cell_core_points_key
+        ON rebuild5.cell_core_points (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5.cell_core_points')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_gps_stats')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rebuild5.cell_core_gps_stats AS
+        SELECT
+            {batch_id}::int AS batch_id,
+            operator_code,
+            lac,
+            bs_id,
+            cell_id,
+            tech_norm,
+            COUNT(*) AS core_gps_valid_count,
+            COUNT(DISTINCT DATE(event_time_std)) AS core_active_days,
+            (EXTRACT(EPOCH FROM MAX(event_time_std) - MIN(event_time_std)) / 3600.0)::double precision
+                AS core_observed_span_hours,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon_final) AS center_lon,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat_final) AS center_lat,
+            MAX(keep_radius_m) AS keep_radius_m
+        FROM rebuild5.cell_core_points
+        GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        """
+    )
+    execute("ALTER TABLE rebuild5.cell_core_gps_stats SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX idx_cell_core_gps_stats_key
+        ON rebuild5.cell_core_gps_stats (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5.cell_core_gps_stats')
+
+
 def build_cell_radius_stats() -> None:
     """Materialize per-cell radius percentiles off the already-computed base centroid."""
     execute('DROP TABLE IF EXISTS rebuild5.cell_radius_stats')
     execute(
         """
         CREATE UNLOGGED TABLE rebuild5.cell_radius_stats AS
+        WITH raw_distances AS (
+            SELECT
+                w.operator_code,
+                w.lac,
+                w.bs_id,
+                w.cell_id,
+                w.tech_norm,
+                SQRT(POWER((w.lon_final - c.center_lon) * 85300, 2)
+                   + POWER((w.lat_final - c.center_lat) * 111000, 2)) AS dist_m
+            FROM rebuild5.cell_sliding_window w
+            JOIN rebuild5.cell_core_gps_stats c
+              ON c.operator_code = w.operator_code
+             AND c.lac = w.lac
+             AND c.bs_id IS NOT DISTINCT FROM w.bs_id
+             AND c.cell_id = w.cell_id
+             AND c.tech_norm IS NOT DISTINCT FROM w.tech_norm
+            WHERE w.lon_final IS NOT NULL
+              AND w.lat_final IS NOT NULL
+              AND w.gps_valid
+              AND c.center_lon IS NOT NULL
+              AND c.center_lat IS NOT NULL
+        ),
+        raw_radius AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                COUNT(*) AS raw_gps_valid_count,
+                PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY dist_m) AS raw_p90_radius_m
+            FROM raw_distances
+            GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        ),
+        core_distances AS (
+            SELECT
+                p.operator_code,
+                p.lac,
+                p.bs_id,
+                p.cell_id,
+                p.tech_norm,
+                SQRT(POWER((p.lon_final - c.center_lon) * 85300, 2)
+                   + POWER((p.lat_final - c.center_lat) * 111000, 2)) AS dist_m
+            FROM rebuild5.cell_core_points p
+            JOIN rebuild5.cell_core_gps_stats c
+              ON c.operator_code = p.operator_code
+             AND c.lac = p.lac
+             AND c.bs_id IS NOT DISTINCT FROM p.bs_id
+             AND c.cell_id = p.cell_id
+             AND c.tech_norm IS NOT DISTINCT FROM p.tech_norm
+            WHERE c.center_lon IS NOT NULL
+              AND c.center_lat IS NOT NULL
+        ),
+        core_radius AS (
+            SELECT
+                operator_code,
+                lac,
+                bs_id,
+                cell_id,
+                tech_norm,
+                COUNT(*) AS core_gps_valid_count,
+                percentile_cont(ARRAY[0.5, 0.9]) WITHIN GROUP (ORDER BY dist_m) AS radius_percentiles
+            FROM core_distances
+            GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
+        )
         SELECT
-            w.operator_code, w.lac, w.bs_id, w.cell_id, w.tech_norm,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY
-                SQRT(POWER((w.lon_final - m.center_lon) * 85300, 2)
-                   + POWER((w.lat_final - m.center_lat) * 111000, 2))
-            ) AS p50_radius_m,
-            PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY
-                SQRT(POWER((w.lon_final - m.center_lon) * 85300, 2)
-                   + POWER((w.lat_final - m.center_lat) * 111000, 2))
-            ) AS p90_radius_m
-        FROM rebuild5.cell_sliding_window w
-        JOIN rebuild5.cell_metrics_base m
-          ON m.operator_code = w.operator_code
-         AND m.lac = w.lac
-         AND m.bs_id = w.bs_id
-         AND m.cell_id = w.cell_id
-         AND m.tech_norm IS NOT DISTINCT FROM w.tech_norm
-        WHERE w.lon_final IS NOT NULL
-          AND w.gps_valid
-          AND m.center_lon IS NOT NULL
-          AND m.center_lat IS NOT NULL
-        GROUP BY w.operator_code, w.lac, w.bs_id, w.cell_id, w.tech_norm
+            r.operator_code,
+            r.lac,
+            r.bs_id,
+            r.cell_id,
+            r.tech_norm,
+            c.radius_percentiles[1] AS p50_radius_m,
+            c.radius_percentiles[2] AS p90_radius_m,
+            r.raw_p90_radius_m,
+            COALESCE(c.core_gps_valid_count, 0) AS core_gps_valid_count,
+            r.raw_gps_valid_count,
+            CASE
+                WHEN COALESCE(r.raw_gps_valid_count, 0) <= 0 THEN 0::double precision
+                ELSE GREATEST(
+                    0::double precision,
+                    1::double precision - COALESCE(c.core_gps_valid_count, 0)::double precision / r.raw_gps_valid_count
+                )
+            END AS core_outlier_ratio
+        FROM raw_radius r
+        LEFT JOIN core_radius c
+          ON c.operator_code = r.operator_code
+         AND c.lac = r.lac
+         AND c.bs_id IS NOT DISTINCT FROM r.bs_id
+         AND c.cell_id = r.cell_id
+         AND c.tech_norm IS NOT DISTINCT FROM r.tech_norm
         """
     )
     execute("ALTER TABLE rebuild5.cell_radius_stats SET (autovacuum_enabled = false)")
@@ -260,10 +533,15 @@ def build_cell_metrics_window(*, batch_id: int) -> None:
         CREATE UNLOGGED TABLE rebuild5.cell_metrics_window AS
         SELECT
             m.batch_id, m.operator_code, m.lac, m.bs_id, m.cell_id, m.tech_norm,
-            m.center_lon, m.center_lat,
+            COALESCE(cg.center_lon, m.center_lon) AS center_lon,
+            COALESCE(cg.center_lat, m.center_lat) AS center_lat,
             r.p50_radius_m, r.p90_radius_m,
-            m.independent_obs, m.distinct_dev_id, m.gps_valid_count, m.active_days,
-            m.observed_span_hours,
+            r.raw_p90_radius_m,
+            COALESCE(r.core_outlier_ratio, 0)::double precision AS core_outlier_ratio,
+            m.independent_obs, m.distinct_dev_id,
+            COALESCE(cg.core_gps_valid_count, m.gps_valid_count) AS gps_valid_count,
+            COALESCE(cg.core_active_days, m.active_days) AS active_days,
+            COALESCE(cg.core_observed_span_hours, m.observed_span_hours) AS observed_span_hours,
             m.rsrp_avg, m.rsrq_avg, m.sinr_avg, m.pressure_avg,
             m.max_event_time, m.window_obs_count,
             COALESCE(a.active_days_30d, 0)::integer AS active_days_30d,
@@ -278,6 +556,13 @@ def build_cell_metrics_window(*, batch_id: int) -> None:
          AND r.bs_id = m.bs_id
          AND r.cell_id = m.cell_id
          AND r.tech_norm IS NOT DISTINCT FROM m.tech_norm
+        LEFT JOIN rebuild5.cell_core_gps_stats cg
+          ON cg.batch_id = m.batch_id
+         AND cg.operator_code = m.operator_code
+         AND cg.lac = m.lac
+         AND cg.bs_id IS NOT DISTINCT FROM m.bs_id
+         AND cg.cell_id = m.cell_id
+         AND cg.tech_norm IS NOT DISTINCT FROM m.tech_norm
         LEFT JOIN rebuild5.cell_activity_stats a
           ON a.operator_code = m.operator_code
          AND a.lac = m.lac
@@ -300,6 +585,7 @@ def build_cell_metrics_window(*, batch_id: int) -> None:
 def recalculate_cell_metrics(*, batch_id: int) -> None:
     """Backward-compatible wrapper for callers that still expect one entrypoint."""
     build_cell_metrics_base(batch_id=batch_id)
+    build_cell_core_gps_stats(batch_id=batch_id)
     build_cell_radius_stats()
     build_cell_activity_stats()
     build_cell_metrics_window(batch_id=batch_id)

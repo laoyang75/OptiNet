@@ -176,6 +176,13 @@ def materialize_step2_scope(*, day: date, input_relation: str) -> int:
 def _cleanup_after_step4() -> None:
     for rel in (
         'rebuild5.path_a_records',
+        'rebuild5._profile_seed_grid',
+        'rebuild5._profile_primary_seed',
+        'rebuild5._profile_seed_distance',
+        'rebuild5._profile_core_cutoff',
+        'rebuild5._profile_core_points',
+        'rebuild5._profile_core_gps',
+        'rebuild5._profile_counts',
         'rebuild5.profile_obs',
         'rebuild5.profile_base',
     ):
@@ -191,6 +198,12 @@ def _cleanup_after_step5() -> None:
         'rebuild5.cell_daily_centroid',
         'rebuild5.cell_metrics_window',
         'rebuild5.cell_anomaly_summary',
+        'rebuild5.cell_core_seed_grid',
+        'rebuild5.cell_core_primary_seed',
+        'rebuild5.cell_core_seed_distance',
+        'rebuild5.cell_core_cutoff',
+        'rebuild5.cell_core_points',
+        'rebuild5.cell_core_gps_stats',
     ):
         execute(f'DROP TABLE IF EXISTS {rel}')
 

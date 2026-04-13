@@ -113,6 +113,7 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
                 'candidate_min_active_days': 3,
                 'candidate_min_p90_m': 900.0,
                 'candidate_min_max_spread_m': 2300.0,
+                'candidate_min_outlier_ratio': 0.2,
                 'candidate_drift_patterns': ['migration', 'collision'],
                 'snap_grid_m': 40.0,
                 'cluster_eps_m': 260.0,
@@ -122,6 +123,7 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
                 'stable_min_days': 4,
                 'stable_min_devs': 3,
                 'stable_single_device_max_total_devs': 1,
+                'classification_min_secondary_share': 0.15,
                 'dual_cluster_min_distance_m': 350.0,
                 'migration_min_distance_m': 600.0,
                 'migration_max_overlap_days': 2,
@@ -178,6 +180,16 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
         for item in exec_calls
         if 'CREATE UNLOGGED TABLE rebuild5._cell_centroid_valid_clusters AS' in item[0]
     )
+    cluster_radius_sql, _ = next(
+        item
+        for item in exec_calls
+        if 'CREATE UNLOGGED TABLE rebuild5._cell_centroid_cluster_radius AS' in item[0]
+    )
+    cluster_stats_sql, _ = next(
+        item
+        for item in exec_calls
+        if 'CREATE UNLOGGED TABLE rebuild5._cell_centroid_cluster_stats AS' in item[0]
+    )
     candidates_sql = next(
         item[0]
         for item in exec_calls
@@ -185,8 +197,11 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
     )
     assert points_params is None
     assert detail_insert_params == (7, 'v7')
+    assert 'LEFT JOIN rebuild5.cell_metrics_window m' in candidates_sql
     assert 'COALESCE(t.window_obs_count, 0) >= 6' in candidates_sql
     assert 'COALESCE(t.active_days, 0) >= 3' in candidates_sql
+    assert 'COALESCE(m.raw_p90_radius_m, 0) >= 900.0' in candidates_sql
+    assert 'COALESCE(m.core_outlier_ratio, 0) >= 0.2' in candidates_sql
     assert "t.drift_pattern IN ('migration', 'collision')" in candidates_sql
     assert 't.gps_anomaly_type IS NOT NULL' in candidates_sql
     assert 'JOIN rebuild5.cell_sliding_window w' in points_sql
@@ -195,16 +210,22 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
     assert '40.0' in points_sql
     assert 'eps => 260.0' in insert_sql
     assert 'minpoints => 5' in insert_sql
-    assert 'radius_m' in valid_clusters_sql
+    assert 'MAX(' in cluster_radius_sql
+    assert 'radius_m' in cluster_radius_sql
+    assert 'share_ratio' in cluster_stats_sql
+    assert 'FROM rebuild5._cell_centroid_ranked_clusters' in valid_clusters_sql
     assert 'WHERE valid_cluster_count > 1' in detail_insert_sql
     assert center_update_params == (7,)
     assert 'UPDATE rebuild5.trusted_cell_library AS t' in center_update_sql
     assert 'AND d.bs_id IS NOT DISTINCT FROM t.bs_id' in center_update_sql
     assert classify_update_params == (7,)
+    assert 'secondary_share_ratio' in classification_stage_sql
+    assert '>= 0.15' in classification_stage_sql
     assert "THEN 'multi_cluster'" in classification_stage_sql
     assert "THEN 'moving'" in classification_stage_sql
     assert "THEN 'migration'" in classification_stage_sql
     assert "THEN 'dual_cluster'" in classification_stage_sql
+    assert "is_multi_centroid = COALESCE(c.centroid_pattern IS NOT NULL, FALSE)" in classify_update_sql
     assert "is_dynamic = COALESCE(c.centroid_pattern = 'moving', FALSE)" in classify_update_sql
     assert "centroid_pattern = c.centroid_pattern" in classify_update_sql
 

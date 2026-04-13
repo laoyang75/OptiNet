@@ -29,6 +29,7 @@ from .publish_cell import publish_cell_library
 from .schema import ensure_maintenance_schema
 from .window import (
     build_cell_activity_stats,
+    build_cell_core_gps_stats,
     build_cell_metrics_base,
     build_cell_radius_stats,
     build_daily_centroids,
@@ -74,6 +75,12 @@ def run_maintenance_pipeline() -> dict[str, Any]:
     execute('DROP TABLE IF EXISTS rebuild5.cell_drift_stats')
     execute('DROP TABLE IF EXISTS rebuild5.cell_metrics_window')
     execute('DROP TABLE IF EXISTS rebuild5.cell_anomaly_summary')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_seed_grid')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_primary_seed')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_seed_distance')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_cutoff')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_points')
+    execute('DROP TABLE IF EXISTS rebuild5.cell_core_gps_stats')
     ensure_maintenance_schema()
 
     step3 = _latest_step3()
@@ -122,6 +129,8 @@ def run_maintenance_pipeline() -> dict[str, Any]:
     )
     _tick('metrics_base')
     build_cell_metrics_base(batch_id=batch_id)
+    _tick('core_gps')
+    build_cell_core_gps_stats(batch_id=batch_id)
     _tick('metrics_radius')
     build_cell_radius_stats()
     _tick('metrics_activity')

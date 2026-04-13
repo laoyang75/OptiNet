@@ -1,0 +1,216 @@
+{
+  "audit_date": "2026-04-13",
+  "scope": "fix4_final_integration_audit",
+  "full_run_ready": false,
+  "shared_sample": {
+    "raw_gps_shared_sample": 1232037,
+    "etl_cleaned_shared_sample": 1937395,
+    "focus_cells_shared": 40
+  },
+  "codex": {
+    "database": "ip_loc2_fix4_codex",
+    "sample_tables_verified": true,
+    "batch1_3_step2": [
+      {
+        "batch_id": 1,
+        "path_a_record_count": 0,
+        "path_b_record_count": 292872,
+        "path_b_cell_count": 13490,
+        "path_c_drop_count": 334
+      },
+      {
+        "batch_id": 2,
+        "path_a_record_count": 235711,
+        "path_b_record_count": 57905,
+        "path_b_cell_count": 7672,
+        "path_c_drop_count": 184
+      },
+      {
+        "batch_id": 3,
+        "path_a_record_count": 247441,
+        "path_b_record_count": 23953,
+        "path_b_cell_count": 4748,
+        "path_c_drop_count": 210
+      }
+    ],
+    "batch1_3_step3_snapshot": [
+      {
+        "batch_id": 1,
+        "total_cells": 13490,
+        "observing": 7744,
+        "qualified": 3807,
+        "excellent": 1939,
+        "anchor_eligible": 0
+      },
+      {
+        "batch_id": 2,
+        "total_cells": 15159,
+        "observing": 6738,
+        "qualified": 6337,
+        "excellent": 2084,
+        "anchor_eligible": 1976
+      },
+      {
+        "batch_id": 3,
+        "total_cells": 15929,
+        "observing": 6135,
+        "qualified": 7674,
+        "excellent": 2120,
+        "anchor_eligible": 2886
+      }
+    ],
+    "batch1_3_step4": [
+      {
+        "batch_id": 1,
+        "total_path_a": 0,
+        "donor_matched_count": 0,
+        "gps_filled": 0,
+        "gps_anomaly_count": 0
+      },
+      {
+        "batch_id": 2,
+        "total_path_a": 235711,
+        "donor_matched_count": 235711,
+        "gps_filled": 14362,
+        "gps_anomaly_count": 6450
+      },
+      {
+        "batch_id": 3,
+        "total_path_a": 247441,
+        "donor_matched_count": 247441,
+        "gps_filled": 15161,
+        "gps_anomaly_count": 7108
+      }
+    ],
+    "batch1_3_step5": [
+      {
+        "batch_id": 1,
+        "published_cell_count": 5746,
+        "published_bs_count": 3124,
+        "published_lac_count": 18,
+        "collision_cell_count": 0,
+        "multi_centroid_cell_count": 0,
+        "dynamic_cell_count": 0,
+        "anomaly_bs_count": 13
+      },
+      {
+        "batch_id": 2,
+        "published_cell_count": 8421,
+        "published_bs_count": 4115,
+        "published_lac_count": 21,
+        "collision_cell_count": 0,
+        "multi_centroid_cell_count": 0,
+        "dynamic_cell_count": 0,
+        "anomaly_bs_count": 20
+      },
+      {
+        "batch_id": 3,
+        "published_cell_count": 9794,
+        "published_bs_count": 4563,
+        "published_lac_count": 21,
+        "collision_cell_count": 0,
+        "multi_centroid_cell_count": 113,
+        "dynamic_cell_count": 0,
+        "anomaly_bs_count": 12
+      }
+    ],
+    "batch3_centroid_pattern": {
+      "<null>": 9681,
+      "dual_cluster": 106,
+      "multi_cluster": 7
+    },
+    "batch3_focus_bucket_metrics": {
+      "high_obs": {
+        "avg_cell_p90_m": 129.5,
+        "avg_cell_area_km2": 0.078,
+        "avg_bs_p90_m": 386.9,
+        "avg_bs_area_km2": 2.2433
+      },
+      "high_p90": {
+        "avg_cell_p90_m": 128.6,
+        "avg_cell_area_km2": 0.1164,
+        "avg_bs_p90_m": 897.3,
+        "avg_bs_area_km2": 21.3504
+      },
+      "moving": {
+        "avg_cell_p90_m": 818.4,
+        "avg_cell_area_km2": 2.8759,
+        "avg_bs_p90_m": 517.1,
+        "avg_bs_area_km2": 1.8688
+      },
+      "multi_cluster": {
+        "avg_cell_p90_m": 799.2,
+        "avg_cell_area_km2": 2.3908,
+        "avg_bs_p90_m": 420.7,
+        "avg_bs_area_km2": 0.7604
+      }
+    }
+  },
+  "claude": {
+    "database": "ip_loc2",
+    "schema": "rebuild5_fix4",
+    "actual_tables": [
+      "c_window",
+      "c_cell_lib",
+      "raw_gps_shared_sample",
+      "etl_cleaned_shared_sample",
+      "focus_cells_shared"
+    ],
+    "missing_executed_tables": [
+      "claude_cell_library",
+      "claude_cell_centroid_detail",
+      "claude_bs_library",
+      "claude_batch_stats"
+    ],
+    "batch1_3_c_cell_lib": [
+      {
+        "batch_id": 1,
+        "total_cells": 13306,
+        "observing": 9306,
+        "qualified": 3218,
+        "excellent": 782,
+        "anchor_proxy": 0
+      },
+      {
+        "batch_id": 2,
+        "total_cells": 15234,
+        "observing": 8518,
+        "qualified": 4277,
+        "excellent": 2439,
+        "anchor_proxy": 8439
+      },
+      {
+        "batch_id": 3,
+        "total_cells": 16135,
+        "observing": 7923,
+        "qualified": 4383,
+        "excellent": 3829,
+        "anchor_proxy": 9835
+      }
+    ],
+    "batch3_focus_bucket_p90_m": {
+      "high_obs": 150.3,
+      "high_p90": 129.0,
+      "moving": 779.3,
+      "multi_cluster": 678.1
+    },
+    "step2_path_split_verified": false,
+    "step4_donor_verified": false,
+    "step5_publish_verified": false,
+    "executed_dbscan_verified": false,
+    "bs_lac_publish_verified": false
+  },
+  "verdict": {
+    "selected_base": "codex_integrated_mainline",
+    "claude_role": "research_reference_only",
+    "must_keep": [
+      "step2 core position filter",
+      "step5 core position filter",
+      "geographic collision detection",
+      "step4 donor gate fix",
+      "postgis staged materialization",
+      "expanded multicentroid candidate gate"
+    ],
+    "main_risk_before_full_run": "dual_cluster remains dominant and needs batch4-7 sample validation"
+  }
+}

@@ -140,7 +140,7 @@ def test_build_current_cell_snapshot_uses_previous_batch_collision_flags(monkeyp
     )
 
     thresholds = {
-        'waiting_min_obs': 1,
+        'waiting_min_obs': 3,
         'excellent_min_obs': 30,
         'qualified_min_obs': 10,
         'anchorable_min_gps_valid_count': 10,
@@ -408,9 +408,54 @@ def test_build_cell_metrics_window_joins_materialized_stage_tables(monkeypatch) 
     )
     assert 'FROM rebuild5.cell_metrics_base m' in create_sql
     assert 'LEFT JOIN rebuild5.cell_radius_stats r' in create_sql
+    assert 'LEFT JOIN rebuild5.cell_core_gps_stats cg' in create_sql
     assert 'LEFT JOIN rebuild5.cell_activity_stats a' in create_sql
     assert 'LEFT JOIN rebuild5.cell_drift_stats d' in create_sql
     assert 'WHERE m.batch_id = 9' in create_sql
+
+
+def test_build_profile_base_uses_core_position_filter_stages(monkeypatch) -> None:
+    execute_calls = []
+
+    monkeypatch.setattr(
+        profile_pipeline,
+        'execute',
+        lambda sql, params=None: execute_calls.append((sql, params)),
+    )
+    monkeypatch.setattr(profile_pipeline, '_disable_autovacuum', lambda _name: None)
+    monkeypatch.setattr(
+        profile_pipeline,
+        'load_core_position_filter_params',
+        lambda: {
+            'snap_grid_m': 180.0,
+            'keep_quantile': 0.75,
+            'keep_min_radius_m': 700.0,
+            'keep_max_radius_m': 2500.0,
+        },
+    )
+
+    profile_pipeline.build_profile_base('run_fix4')
+
+    seed_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5._profile_seed_grid AS' in sql
+    )
+    core_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5._profile_core_cutoff AS' in sql
+    )
+    base_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.profile_base AS' in sql
+    )
+
+    assert 'ST_SnapToGrid(' in seed_sql
+    assert '180.0' in seed_sql
+    assert 'percentile_cont(0.75)' in core_sql
+    assert '700.0' in core_sql
+    assert '2500.0' in core_sql
+    assert 'LEFT JOIN rebuild5._profile_core_gps g' in base_sql
+    assert 'FROM rebuild5._profile_counts c' in base_sql
 
 
 def test_build_cell_drift_stats_materializes_single_ctas(monkeypatch) -> None:
@@ -463,7 +508,7 @@ def test_enrichment_insert_retries_with_lower_parallelism_on_enospc(monkeypatch)
     ) in execute_calls
 
 
-def test_enrichment_only_uses_anchor_eligible_donors_for_fill(monkeypatch) -> None:
+def test_enrichment_uses_any_matched_published_donor_for_fill(monkeypatch) -> None:
     sql_calls = []
 
     monkeypatch.setattr(
@@ -476,12 +521,12 @@ def test_enrichment_only_uses_anchor_eligible_donors_for_fill(monkeypatch) -> No
 
     sql, kwargs = sql_calls[0]
     assert kwargs['num_workers'] == enrichment_pipeline.NUM_WORKERS_INSERT
-    assert 'COALESCE(p.donor_anchor_eligible, FALSE)' in sql
-    assert 'CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_center_lon END' in sql
-    assert 'CASE WHEN COALESCE(p.donor_anchor_eligible, FALSE) THEN p.donor_rsrp_avg END' in sql
+    assert 'p.donor_batch_id IS NOT NULL' in sql
+    assert 'CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_center_lon END' in sql
+    assert 'CASE WHEN p.donor_batch_id IS NOT NULL THEN p.donor_rsrp_avg END' in sql
 
 
-def test_gps_anomaly_log_skips_non_anchor_eligible_donors(monkeypatch) -> None:
+def test_gps_anomaly_log_uses_any_matched_donor_with_center(monkeypatch) -> None:
     execute_calls = []
 
     monkeypatch.setattr(
@@ -499,7 +544,7 @@ def test_gps_anomaly_log_skips_non_anchor_eligible_donors(monkeypatch) -> None:
 
     sql, params = execute_calls[0]
     assert params == (2200.0, 5, 2200.0)
-    assert 'COALESCE(e.donor_anchor_eligible, FALSE)' in sql
+    assert 'e.donor_batch_id IS NOT NULL' in sql
     assert 'COALESCE(e.gps_valid, FALSE)' in sql
     assert 'AND NOT COALESCE(e.path_a_is_collision, FALSE)' in sql
     assert 'tech_norm' in sql

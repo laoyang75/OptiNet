@@ -36,6 +36,17 @@ def load_antitoxin_params(path: Path | None = None) -> dict[str, Any]:
         return yaml.safe_load(handle) or {}
 
 
+def load_core_position_filter_params(params: dict[str, Any] | None = None) -> dict[str, float]:
+    payload = params or load_antitoxin_params()
+    cfg = payload.get('core_position_filter', {})
+    return {
+        'snap_grid_m': float(cfg.get('snap_grid_m', 200)),
+        'keep_quantile': float(cfg.get('keep_quantile', 0.8)),
+        'keep_min_radius_m': float(cfg.get('keep_min_radius_m', 800)),
+        'keep_max_radius_m': float(cfg.get('keep_max_radius_m', 3000)),
+    }
+
+
 def load_retention_params(path: Path | None = None) -> dict[str, Any]:
     target = path or settings.retention_params_path
     if not target.exists():
@@ -54,7 +65,7 @@ def flatten_profile_thresholds(params: dict[str, Any] | None = None) -> dict[str
     bs = payload.get('bs', {})
     lac = payload.get('lac', {})
     return {
-        'waiting_min_obs': float(waiting.get('min_independent_obs', 1)),
+        'waiting_min_obs': float(waiting.get('min_independent_obs', 3)),
         'qualified_min_obs': float(qualified.get('min_independent_obs', 10)),
         'excellent_min_obs': float(excellent.get('min_independent_obs', 30)),
         'anchorable_min_gps_valid_count': float(anchorable.get('min_gps_valid_count', 10)),

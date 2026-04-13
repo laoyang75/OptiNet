@@ -40,13 +40,20 @@ exit:
   retired_after_dormant_days: 30
 multi_centroid:
   trigger_min_p90_m: 800
+core_position_filter:
+  snap_grid_m: 200
+  keep_quantile: 0.8
+  keep_min_radius_m: 800
+  keep_max_radius_m: 3000
 postgis_centroid:
   lookback_batches: 4
   candidate_min_window_obs: 5
   candidate_min_active_days: 2
   candidate_min_p90_m: 800
   candidate_min_max_spread_m: 2200
+  candidate_min_outlier_ratio: 0.15
   candidate_drift_patterns:
+    - large_coverage
     - migration
     - collision
     - moderate_drift
@@ -58,6 +65,7 @@ postgis_centroid:
   stable_min_days: 2
   stable_min_devs: 2
   stable_single_device_max_total_devs: 2
+  classification_min_secondary_share: 0.15
   dual_cluster_min_distance_m: 300
   migration_min_distance_m: 500
   migration_max_overlap_days: 1
