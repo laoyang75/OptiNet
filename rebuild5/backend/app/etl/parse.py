@@ -274,7 +274,13 @@ def _parse_ss1(source_table: str, source_tag: str, target_table: str) -> None:
             c.ts_block AS cell_ts_raw,
             c.gps_ts_raw,
             c.gps_info_type,
-            CASE WHEN c.gps_block != '0' AND c.gps_block ~ '^\\d+\\.\\d+,\\d+\\.\\d+' THEN true ELSE false END AS gps_valid,
+            CASE
+                WHEN c.gps_info_type IN ('gps', '1')
+                 AND c.gps_block != '0'
+                 AND c.gps_block ~ '^\\d+\\.\\d+,\\d+\\.\\d+'
+                THEN true
+                ELSE false
+            END AS gps_valid,
             CASE WHEN c.gps_block ~ '^\\d+\\.\\d+,' THEN split_part(c.gps_block, ',', 1)::float8 END AS lon_raw,
             CASE WHEN c.gps_block ~ '^\\d+\\.\\d+,\\d+\\.\\d+' THEN split_part(c.gps_block, ',', 2)::float8 END AS lat_raw,
             CASE WHEN c.gps_block != '0' AND c.gps_block ~ '^\\d+\\.\\d+,' THEN 'ss1_own' ELSE 'none' END AS gps_filled_from,

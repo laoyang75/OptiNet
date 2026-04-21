@@ -70,8 +70,8 @@ def _rule_payload() -> dict[str, Any]:
     antitoxin_thresholds = flatten_antitoxin_thresholds(load_antitoxin_params())
     return {
         'collision_match_gps_threshold_m': antitoxin_thresholds['collision_min_spread_m'],
-        'obs_dedup_window_minutes': 1,
-        'centroid_algorithm': 'median',
+        'obs_dedup_window_minutes': 1440,
+        'centroid_algorithm': 'adaptive_mad_median',
         'cell': profile_thresholds,
         'profile': rules.get('profile', {}),
         'retention': rules.get('retention', {}),

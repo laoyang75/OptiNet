@@ -119,6 +119,12 @@ def ensure_enrichment_schema() -> None:
     execute("ALTER TABLE rebuild5.enriched_records ADD COLUMN IF NOT EXISTS path_a_is_collision BOOLEAN")
     execute(
         """
+        CREATE INDEX IF NOT EXISTS idx_enriched_batch_record_cell
+        ON rebuild5.enriched_records (batch_id, record_id, cell_id, lac, tech_norm)
+        """
+    )
+    execute(
+        """
         CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.gps_anomaly_log (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
@@ -151,6 +157,37 @@ def ensure_enrichment_schema() -> None:
     )
     execute("ALTER TABLE rebuild5.gps_anomaly_log SET (autovacuum_enabled = false)")
     execute("ALTER TABLE rebuild5.gps_anomaly_log ADD COLUMN IF NOT EXISTS tech_norm TEXT")
+    execute(
+        """
+        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.snapshot_seed_records (
+            batch_id INTEGER NOT NULL,
+            run_id TEXT NOT NULL,
+            dataset_key TEXT NOT NULL,
+            source_row_uid TEXT NOT NULL,
+            record_id TEXT NOT NULL,
+            source_table TEXT,
+            event_time_std TIMESTAMPTZ,
+            dev_id TEXT,
+            operator_code TEXT,
+            operator_cn TEXT,
+            lac BIGINT,
+            bs_id BIGINT,
+            cell_id BIGINT,
+            tech_norm TEXT,
+            gps_valid BOOLEAN,
+            lon_final DOUBLE PRECISION,
+            lat_final DOUBLE PRECISION,
+            gps_fill_source_final TEXT,
+            rsrp_final DOUBLE PRECISION,
+            rsrq_final DOUBLE PRECISION,
+            sinr_final DOUBLE PRECISION,
+            pressure_final DOUBLE PRECISION,
+            seed_source TEXT,
+            PRIMARY KEY (batch_id, source_row_uid)
+        )
+        """
+    )
+    execute("ALTER TABLE rebuild5.snapshot_seed_records SET (autovacuum_enabled = false)")
 
 
 # ---------------------------------------------------------------------------

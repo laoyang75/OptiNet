@@ -14,7 +14,7 @@ import {
 } from '../../api/evaluation'
 import { STATE_LABELS, type LifecycleState } from '../../types'
 
-const distribution = ref({ excellent: 0, qualified: 0, observing: 0, waiting: 0, dormant: 0, retired: 0 })
+const distribution = ref({ excellent: 0, qualified: 0, observing: 0, waiting: 0, active: 0, dormant: 0, retired: 0 })
 const items = ref<LACEvaluationItem[]>([])
 const page = ref(1)
 const pageSize = ref(50)

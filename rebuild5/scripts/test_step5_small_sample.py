@@ -118,11 +118,11 @@ def _load_runtime(scratch_dsn: str) -> dict[str, Any]:
         compute_gps_anomaly_summary,
     )
     from rebuild5.backend.app.maintenance.collision import detect_collisions
+    from rebuild5.backend.app.maintenance.label_engine import run_label_engine
     from rebuild5.backend.app.maintenance.pipeline import run_maintenance_pipeline
     from rebuild5.backend.app.maintenance.publish_bs_lac import (
         publish_bs_centroid_detail,
         publish_bs_library,
-        publish_cell_centroid_detail,
         publish_lac_library,
     )
     from rebuild5.backend.app.maintenance.publish_cell import publish_cell_library
@@ -145,10 +145,10 @@ def _load_runtime(scratch_dsn: str) -> dict[str, Any]:
         'compute_drift_metrics': compute_drift_metrics,
         'compute_gps_anomaly_summary': compute_gps_anomaly_summary,
         'detect_collisions': detect_collisions,
+        'run_label_engine': run_label_engine,
         'run_maintenance_pipeline': run_maintenance_pipeline,
         'publish_bs_centroid_detail': publish_bs_centroid_detail,
         'publish_bs_library': publish_bs_library,
-        'publish_cell_centroid_detail': publish_cell_centroid_detail,
         'publish_lac_library': publish_lac_library,
         'publish_cell_library': publish_cell_library,
         'ensure_maintenance_schema': ensure_maintenance_schema,
@@ -164,6 +164,7 @@ def _load_runtime(scratch_dsn: str) -> dict[str, Any]:
 
 
 def _bootstrap_schemas(runtime: dict[str, Any]) -> None:
+    runtime['execute']('CREATE EXTENSION IF NOT EXISTS postgis')
     runtime['bootstrap_metadata_tables']()
     runtime['ensure_profile_schema']()
     runtime['ensure_enrichment_schema']()
@@ -282,17 +283,21 @@ def _sample_enriched_rows() -> list[tuple[Any, ...]]:
     ts0 = datetime(2026, 4, 1, 8, 0, tzinfo=timezone.utc)
     source_index = 0
     for day in range(3):
-        for obs_idx in range(4):
+        for obs_idx in range(8):
             minute = day * 24 * 60 + obs_idx * 7
             event_time = ts0 + timedelta(minutes=minute)
             for operator_code, lac, bs_id, cell_id in anchors:
                 base_lon, base_lat = anchors[(operator_code, lac, bs_id, cell_id)]
                 if cell_id == 102 and lac == 1001:
-                    lon = base_lon + (day * 0.020) + (obs_idx - 1.5) * 0.0010
-                    lat = base_lat + (day * 0.015) + (obs_idx - 1.5) * 0.0008
+                    if obs_idx < 4:
+                        lon = base_lon + (obs_idx - 1.5) * 0.00012
+                        lat = base_lat + (obs_idx - 1.5) * 0.00010
+                    else:
+                        lon = base_lon + 0.020 + (obs_idx - 5.5) * 0.00012
+                        lat = base_lat + 0.015 + (obs_idx - 5.5) * 0.00010
                 else:
-                    lon = base_lon + (obs_idx - 1.5) * 0.00008
-                    lat = base_lat + (obs_idx - 1.5) * 0.00006
+                    lon = base_lon + (obs_idx - 3.5) * 0.00008
+                    lat = base_lat + (obs_idx - 3.5) * 0.00006
                 operator_cn = '中国移动' if operator_code == 'CMCC' else '中国联通'
                 source_index += 1
                 rows.append(
@@ -316,7 +321,7 @@ def _sample_enriched_rows() -> list[tuple[Any, ...]]:
                         lat,
                         lon,
                         lat,
-                        'original',
+                        'raw_gps',
                         'high',
                         -90.0 + obs_idx,
                         'original',
@@ -478,6 +483,7 @@ def _truncate_step5_outputs(runtime: dict[str, Any]) -> None:
     execute('TRUNCATE rebuild5.trusted_cell_library')
     execute('TRUNCATE rebuild5.trusted_bs_library')
     execute('TRUNCATE rebuild5.trusted_lac_library')
+    execute('TRUNCATE rebuild5.label_results')
     execute('TRUNCATE rebuild5.collision_id_list')
     execute('TRUNCATE rebuild5.cell_centroid_detail')
     execute('TRUNCATE rebuild5.bs_centroid_detail')
@@ -501,6 +507,7 @@ def _collect_counts(runtime: dict[str, Any]) -> dict[str, int]:
         'collision_id_list': 'rebuild5.collision_id_list',
         'trusted_bs_library': 'rebuild5.trusted_bs_library',
         'trusted_lac_library': 'rebuild5.trusted_lac_library',
+        'label_results': 'rebuild5.label_results',
         'cell_centroid_detail': 'rebuild5.cell_centroid_detail',
         'bs_centroid_detail': 'rebuild5.bs_centroid_detail',
     }
@@ -537,11 +544,12 @@ def _collect_counts(runtime: dict[str, Any]) -> dict[str, int]:
 
 def _assert_phase_outputs(counts: dict[str, int]) -> None:
     expected = {
-        'enriched_records': 48,
+        'enriched_records': 96,
         'trusted_snapshot_cell': 4,
-        'cell_sliding_window': 48,
+        'cell_sliding_window': 96,
         'cell_metrics_window': 4,
         'trusted_cell_library': 4,
+        'label_results': 4,
         'collision_id_list': 1,
         'trusted_bs_library': 3,
         'trusted_lac_library': 1,
@@ -626,21 +634,21 @@ def _run_phases(runtime: dict[str, Any]) -> dict[str, Any]:
     execute('CREATE INDEX IF NOT EXISTS idx_tcl_bs ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, bs_id)')
     report.append(
         _time_phase(
-            'detect_collisions',
-            lambda: runtime['detect_collisions'](
+            'run_label_engine',
+            lambda: runtime['run_label_engine'](
                 batch_id=BATCH_ID,
                 snapshot_version=SNAPSHOT_VERSION,
-                absolute_min_distance_m=antitoxin['absolute_collision_min_distance_m'],
             ),
             lambda: _collect_counts(runtime),
         )
     )
     report.append(
         _time_phase(
-            'publish_cell_centroid_detail',
-            lambda: runtime['publish_cell_centroid_detail'](
+            'detect_collisions',
+            lambda: runtime['detect_collisions'](
                 batch_id=BATCH_ID,
                 snapshot_version=SNAPSHOT_VERSION,
+                absolute_min_distance_m=antitoxin['absolute_collision_min_distance_m'],
             ),
             lambda: _collect_counts(runtime),
         )

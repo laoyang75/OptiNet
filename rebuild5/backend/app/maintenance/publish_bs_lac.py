@@ -36,6 +36,7 @@ def _postgis_centroid_config() -> dict[str, Any]:
         'candidate_min_window_obs': int(cfg.get('candidate_min_window_obs', 5)),
         'candidate_min_active_days': int(cfg.get('candidate_min_active_days', 2)),
         'candidate_min_p90_m': float(cfg.get('candidate_min_p90_m', 800)),
+        'candidate_min_raw_p90_m': float(cfg.get('candidate_min_raw_p90_m', cfg.get('candidate_min_p90_m', 800))),
         'candidate_min_max_spread_m': float(cfg.get('candidate_min_max_spread_m', 2200)),
         'candidate_min_outlier_ratio': float(cfg.get('candidate_min_outlier_ratio', 0.15)),
         'candidate_drift_patterns': tuple(cfg.get('candidate_drift_patterns', ['large_coverage', 'migration', 'collision', 'moderate_drift'])),
@@ -86,6 +87,7 @@ def publish_cell_centroid_detail(
     candidate_window_obs = centroid_cfg['candidate_min_window_obs']
     candidate_active_days = centroid_cfg['candidate_min_active_days']
     candidate_min_p90_m = centroid_cfg['candidate_min_p90_m']
+    candidate_min_raw_p90_m = centroid_cfg['candidate_min_raw_p90_m']
     candidate_min_max_spread_m = centroid_cfg['candidate_min_max_spread_m']
     candidate_min_outlier_ratio = centroid_cfg['candidate_min_outlier_ratio']
     lookback_batches = centroid_cfg['lookback_batches']
@@ -165,7 +167,7 @@ def publish_cell_centroid_detail(
                   AND COALESCE(t.active_days, 0) >= {candidate_active_days}
               )
               OR COALESCE(t.p90_radius_m, 0) >= {candidate_min_p90_m}
-              OR COALESCE(m.raw_p90_radius_m, 0) >= {candidate_min_p90_m}
+              OR COALESCE(m.raw_p90_radius_m, 0) >= {candidate_min_raw_p90_m}
               OR COALESCE(t.max_spread_m, 0) >= {candidate_min_max_spread_m}
               OR COALESCE(m.core_outlier_ratio, 0) >= {candidate_min_outlier_ratio}
               OR t.gps_anomaly_type IS NOT NULL
@@ -178,7 +180,7 @@ def publish_cell_centroid_detail(
               OR t.centroid_pattern IS NOT NULL
               OR t.drift_pattern IN ({drift_patterns_sql})
               OR COALESCE(t.p90_radius_m, 0) >= {candidate_min_p90_m}
-              OR COALESCE(m.raw_p90_radius_m, 0) >= {candidate_min_p90_m}
+              OR COALESCE(m.raw_p90_radius_m, 0) >= {candidate_min_raw_p90_m}
               OR COALESCE(t.max_spread_m, 0) >= {candidate_min_max_spread_m}
               OR COALESCE(m.core_outlier_ratio, 0) >= {candidate_min_outlier_ratio}
           )
@@ -910,6 +912,22 @@ def publish_bs_library(
     snapshot_version_prev: str,
     antitoxin: dict[str, float],
 ) -> None:
+    """
+    BS 聚合逻辑（方案 BS-LAC-v1）：
+
+    cell 三分类：
+      - 正常 cell = drift_pattern IN ('stable','large_coverage','oversize_single')
+      - 异常 cell = drift_pattern IN ('collision','dynamic','dual_cluster','migration','uncertain')
+      - insufficient cell = drift_pattern = 'insufficient'
+
+    BS 派生规则：
+      - 质心/覆盖半径 只用"正常 cell"计算；全异常时退化用异常 cell 的 median（占位，实际极少）
+      - classification:
+         * normal_cells > 0 → 'normal'（有任何正常 cell 即正常 BS）
+         * 全 insufficient → 'insufficient'
+         * 全异常同类 → 'collision_bs' / 'dynamic_bs' / 'dual_cluster_bs' / 'migration_bs' / 'uncertain_bs'
+         * 全异常多类 → 'anomaly'
+    """
     thresholds = flatten_profile_thresholds(load_profile_params())
     execute('DELETE FROM rebuild5.trusted_bs_library WHERE batch_id = %s', (batch_id,))
     _execute_with_session_settings(
@@ -920,6 +938,7 @@ def publish_bs_library(
             operator_code, operator_cn, lac, bs_id, lifecycle_state,
             anchor_eligible, baseline_eligible,
             total_cells, qualified_cells, excellent_cells,
+            normal_cells, anomaly_cells, insufficient_cells,
             center_lon, center_lat, gps_p50_dist_m, gps_p90_dist_m,
             classification, position_grade, anomaly_cell_ratio,
             is_multi_centroid, window_active_cell_count
@@ -933,11 +952,18 @@ def publish_bs_library(
                 COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_cells,
                 COUNT(*) FILTER (WHERE lifecycle_state = 'retired') AS retired_cells,
                 COUNT(*) FILTER (WHERE lifecycle_state IN ('dormant', 'retired')) AS inactive_cells,
-                COUNT(*) FILTER (WHERE is_collision) AS collision_cells,
-                COUNT(*) FILTER (WHERE is_dynamic) AS dynamic_cells,
+                -- 三分类：正常 / 异常 / 数据不足
+                COUNT(*) FILTER (WHERE drift_pattern IN ('stable','large_coverage','oversize_single')) AS normal_cells,
+                COUNT(*) FILTER (WHERE drift_pattern IN ('collision','dynamic','dual_cluster','migration','uncertain')) AS anomaly_cells,
+                COUNT(*) FILTER (WHERE drift_pattern = 'insufficient') AS insufficient_cells,
+                -- 异常子类（用于 classification 判定"全异常同类"）
+                COUNT(*) FILTER (WHERE drift_pattern = 'collision') AS collision_cells,
+                COUNT(*) FILTER (WHERE drift_pattern = 'dynamic') AS dynamic_cells,
+                COUNT(*) FILTER (WHERE drift_pattern = 'dual_cluster') AS dual_cluster_cells,
+                COUNT(*) FILTER (WHERE drift_pattern = 'migration') AS migration_cells,
+                COUNT(*) FILTER (WHERE drift_pattern = 'uncertain') AS uncertain_cells,
+                -- 多质心统计（保留向后兼容）
                 COUNT(*) FILTER (WHERE is_multi_centroid) AS multi_centroid_cells,
-                COUNT(*) FILTER (WHERE is_collision OR is_dynamic OR is_multi_centroid
-                    OR drift_pattern IN ('migration', 'large_coverage', 'moderate_drift')) AS anomaly_cells,
                 BOOL_OR(anchor_eligible) AS anchor_eligible,
                 BOOL_OR(baseline_eligible) AS baseline_eligible,
                 COUNT(*) FILTER (WHERE window_obs_count > 0) AS active_cell_count
@@ -948,32 +974,44 @@ def publish_bs_library(
         bs_center AS (
             SELECT
                 operator_code, lac, bs_id,
+                -- 首选：正常 cell 的中位数
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon)
-                    FILTER (WHERE NOT is_collision AND NOT is_dynamic) AS center_lon,
+                    FILTER (WHERE drift_pattern IN ('stable','large_coverage','oversize_single'))
+                    AS center_lon_normal,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat)
-                    FILTER (WHERE NOT is_collision AND NOT is_dynamic) AS center_lat
+                    FILTER (WHERE drift_pattern IN ('stable','large_coverage','oversize_single'))
+                    AS center_lat_normal,
+                -- 备选：所有非 insufficient cell（全异常 BS 时使用）
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon)
+                    FILTER (WHERE drift_pattern IS NOT NULL AND drift_pattern != 'insufficient')
+                    AS center_lon_any,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat)
+                    FILTER (WHERE drift_pattern IS NOT NULL AND drift_pattern != 'insufficient')
+                    AS center_lat_any
             FROM rebuild5.trusted_cell_library
             WHERE batch_id = %s
               AND center_lon IS NOT NULL AND center_lat IS NOT NULL
             GROUP BY operator_code, lac, bs_id
         ),
         bs_dist AS (
+            -- 只用正常 cell 到 BS 质心的距离；若 BS 无正常 cell 则距离为 NULL
             SELECT
                 t.operator_code, t.lac, t.bs_id,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY
-                    SQRT(POWER((t.center_lon - b.center_lon) * 85300, 2)
-                       + POWER((t.center_lat - b.center_lat) * 111000, 2))
+                    SQRT(POWER((t.center_lon - COALESCE(b.center_lon_normal, b.center_lon_any)) * 85300, 2)
+                       + POWER((t.center_lat - COALESCE(b.center_lat_normal, b.center_lat_any)) * 111000, 2))
                 ) AS gps_p50_dist_m,
                 PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY
-                    SQRT(POWER((t.center_lon - b.center_lon) * 85300, 2)
-                       + POWER((t.center_lat - b.center_lat) * 111000, 2))
+                    SQRT(POWER((t.center_lon - COALESCE(b.center_lon_normal, b.center_lon_any)) * 85300, 2)
+                       + POWER((t.center_lat - COALESCE(b.center_lat_normal, b.center_lat_any)) * 111000, 2))
                 ) AS gps_p90_dist_m
             FROM rebuild5.trusted_cell_library t
             JOIN bs_center b
               ON b.operator_code = t.operator_code AND b.lac = t.lac AND b.bs_id = t.bs_id
             WHERE t.batch_id = %s
               AND t.center_lon IS NOT NULL AND t.center_lat IS NOT NULL
-              AND b.center_lon IS NOT NULL AND b.center_lat IS NOT NULL
+              AND t.drift_pattern IN ('stable','large_coverage','oversize_single')
+              AND COALESCE(b.center_lon_normal, b.center_lon_any) IS NOT NULL
             GROUP BY t.operator_code, t.lac, t.bs_id
         )
         SELECT
@@ -991,30 +1029,36 @@ def publish_bs_library(
             c.total_cells,
             c.qualified_cells,
             c.excellent_cells,
-            bc.center_lon,
-            bc.center_lat,
+            c.normal_cells,
+            c.anomaly_cells,
+            c.insufficient_cells,
+            -- BS 质心：正常 cell 优先，全异常时退化
+            COALESCE(bc.center_lon_normal, bc.center_lon_any),
+            COALESCE(bc.center_lat_normal, bc.center_lat_any),
+            -- 覆盖半径：只基于正常 cell；全异常 BS 的 dist 为 NULL
             bd.gps_p50_dist_m,
             bd.gps_p90_dist_m,
-            -- classification: 5 types
+            -- classification（BS-LAC-v1 新规则）：
             CASE
-                WHEN COALESCE(bd.gps_p90_dist_m, 0) >= %s
-                    THEN 'large_spread'
-                WHEN COALESCE(c.collision_cells, 0) > 0
-                    THEN 'collision_bs'
-                WHEN COALESCE(c.multi_centroid_cells, 0) > 0
-                    THEN 'multi_centroid'
-                WHEN COALESCE(c.dynamic_cells, 0) > 0
-                    THEN 'dynamic_bs'
-                ELSE 'normal_spread'
+                WHEN c.normal_cells > 0 THEN 'normal'
+                WHEN c.anomaly_cells = 0 THEN 'insufficient'
+                -- 全异常 BS，判断是否同一异常类型
+                WHEN c.collision_cells = c.anomaly_cells THEN 'collision_bs'
+                WHEN c.dynamic_cells = c.anomaly_cells THEN 'dynamic_bs'
+                WHEN c.dual_cluster_cells = c.anomaly_cells THEN 'dual_cluster_bs'
+                WHEN c.migration_cells = c.anomaly_cells THEN 'migration_bs'
+                WHEN c.uncertain_cells = c.anomaly_cells THEN 'uncertain_bs'
+                ELSE 'anomaly'
             END,
+            -- position_grade：BS 不再独立评级，按 lifecycle 映射（向后兼容保留字段）
             CASE
                 WHEN c.excellent_cells >= {thresholds['bs_excellent_min_excellent_cells']} THEN 'excellent'
                 WHEN c.qualified_cells >= {thresholds['bs_qualified_min_qualified_cells']} THEN 'good'
                 ELSE 'qualified'
             END,
-            COALESCE(c.anomaly_cells, 0)::double precision
-                / NULLIF(COALESCE(c.total_cells, 0), 0),
-            -- is_multi_centroid (BS level)
+            -- anomaly_cell_ratio：异常 cell 占比（观察字段）
+            COALESCE(c.anomaly_cells, 0)::double precision / NULLIF(c.total_cells, 0),
+            -- is_multi_centroid (BS level)：任一 cell is_multi_centroid 即 true（向后兼容）
             (COALESCE(c.multi_centroid_cells, 0) > 0),
             COALESCE(c.active_cell_count, 0)
         FROM cell_agg c
@@ -1026,7 +1070,6 @@ def publish_bs_library(
         params=(
             batch_id, batch_id, batch_id,
             batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id,
-            antitoxin['bs_max_cell_to_bs_distance_m'],
         ),
     )
 
@@ -1174,6 +1217,17 @@ def publish_lac_library(
     snapshot_version: str,
     snapshot_version_prev: str,
 ) -> None:
+    """
+    LAC 聚合逻辑（方案 BS-LAC-v1）：
+
+    原则：LAC 是纯观察层，没有品质分级。
+      - 质心 / 面积 只基于"正常 BS"（classification='normal'）
+      - 正常 BS 超过 1000 → 随机取 1000 个参与质心/面积计算（偏差无所谓，减算力）
+      - lifecycle_state 简化为 active / dormant / retired
+
+    保留旧字段（qualified_bs / excellent_bs / qualified_bs_ratio / boundary_stability_score / trend）
+    向后兼容：仍计算并填入，但不再参与 lifecycle 判定。
+    """
     thresholds = flatten_profile_thresholds(load_profile_params())
     execute('DELETE FROM rebuild5.trusted_lac_library WHERE batch_id = %s', (batch_id,))
     execute(
@@ -1183,6 +1237,8 @@ def publish_lac_library(
             operator_code, operator_cn, lac, lifecycle_state,
             anchor_eligible, baseline_eligible,
             total_bs, qualified_bs, excellent_bs, qualified_bs_ratio,
+            normal_bs, anomaly_bs, insufficient_bs,
+            center_lon, center_lat,
             area_km2, anomaly_bs_ratio,
             boundary_stability_score, active_bs_count, retired_bs_count,
             trend
@@ -1194,28 +1250,42 @@ def publish_lac_library(
                 COUNT(*) AS total_bs,
                 COUNT(*) FILTER (WHERE lifecycle_state IN ('qualified', 'excellent')) AS qualified_bs,
                 COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_bs,
-                COUNT(*) FILTER (WHERE lifecycle_state = 'dormant' OR lifecycle_state = 'retired')
-                    AS retired_bs,
+                COUNT(*) FILTER (WHERE lifecycle_state = 'dormant' OR lifecycle_state = 'retired') AS retired_bs,
+                -- 三分类 BS
+                COUNT(*) FILTER (WHERE classification = 'normal') AS normal_bs,
+                COUNT(*) FILTER (WHERE classification IN ('collision_bs','dynamic_bs','dual_cluster_bs','migration_bs','uncertain_bs','anomaly')) AS anomaly_bs,
+                COUNT(*) FILTER (WHERE classification = 'insufficient') AS insufficient_bs,
                 BOOL_OR(anchor_eligible) AS anchor_eligible,
                 BOOL_OR(baseline_eligible) AS baseline_eligible,
-                COALESCE(AVG(CASE WHEN classification IN
-                    ('large_spread', 'dynamic_bs', 'collision_bs', 'multi_centroid')
-                    THEN 1 ELSE 0 END), 0) AS anomaly_bs_ratio,
                 COUNT(*) FILTER (WHERE window_active_cell_count > 0) AS active_bs
             FROM rebuild5.trusted_bs_library
             WHERE batch_id = %s
             GROUP BY operator_code, lac
         ),
-        lac_area AS (
+        -- 正常 BS 采样（每 LAC 上限 1000，超出随机取）
+        normal_bs_sample AS (
+            SELECT operator_code, lac, bs_id, center_lon, center_lat
+            FROM (
+                SELECT operator_code, lac, bs_id, center_lon, center_lat,
+                       ROW_NUMBER() OVER (PARTITION BY operator_code, lac ORDER BY random()) AS rn
+                FROM rebuild5.trusted_bs_library
+                WHERE batch_id = %s
+                  AND classification = 'normal'
+                  AND center_lon IS NOT NULL AND center_lat IS NOT NULL
+            ) s
+            WHERE rn <= 1000
+        ),
+        lac_geo AS (
+            -- 质心与面积：只基于正常 BS（采样后）
             SELECT
                 operator_code, lac,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon) AS center_lon,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat) AS center_lat,
                 CASE WHEN COUNT(*) < 2 THEN NULL
                      ELSE ((MAX(center_lon) - MIN(center_lon)) * 85.3)
                         * ((MAX(center_lat) - MIN(center_lat)) * 111.0)
                 END AS area_km2
-            FROM rebuild5.trusted_bs_library
-            WHERE batch_id = %s
-              AND center_lon IS NOT NULL AND center_lat IS NOT NULL
+            FROM normal_bs_sample
             GROUP BY operator_code, lac
         ),
         prev_lac AS (
@@ -1228,12 +1298,11 @@ def publish_lac_library(
         SELECT
             %s::int, %s::text, %s::text, %s::text, %s::text, NOW(),
             ba.operator_code, ba.operator_cn, ba.lac,
+            -- lifecycle_state 简化：active / dormant / retired（LAC 没有品质分级）
             CASE
-                WHEN ba.excellent_bs >= {thresholds['lac_excellent_min_excellent_bs']} THEN 'excellent'
-                WHEN ba.excellent_bs >= {thresholds['lac_qualified_min_excellent_bs']} THEN 'qualified'
                 WHEN ba.total_bs > 0 AND ba.total_bs = COALESCE(ba.retired_bs, 0) THEN 'retired'
                 WHEN COALESCE(ba.active_bs, 0) = 0 THEN 'dormant'
-                ELSE 'observing'
+                ELSE 'active'
             END,
             ba.anchor_eligible,
             ba.baseline_eligible,
@@ -1241,18 +1310,24 @@ def publish_lac_library(
             ba.qualified_bs,
             ba.excellent_bs,
             COALESCE(ba.qualified_bs::double precision / NULLIF(ba.total_bs, 0), 0),
-            COALESCE(la.area_km2, 0),
-            COALESCE(ba.anomaly_bs_ratio, 0),
-            -- boundary_stability_score: 1.0 if area stable, decreases with area change
+            ba.normal_bs,
+            ba.anomaly_bs,
+            ba.insufficient_bs,
+            lg.center_lon,
+            lg.center_lat,
+            COALESCE(lg.area_km2, 0),
+            -- anomaly_bs_ratio: 异常 BS 占比（基于 total_bs）
+            COALESCE(ba.anomaly_bs::double precision / NULLIF(ba.total_bs, 0), 0),
+            -- boundary_stability_score（保留向后兼容）
             CASE
                 WHEN p.prev_area_km2 IS NULL OR p.prev_area_km2 = 0 THEN 1.0
-                WHEN la.area_km2 IS NULL THEN 1.0
-                ELSE GREATEST(0, 1.0 - ABS(la.area_km2 - p.prev_area_km2)
+                WHEN lg.area_km2 IS NULL THEN 1.0
+                ELSE GREATEST(0, 1.0 - ABS(lg.area_km2 - p.prev_area_km2)
                      / GREATEST(p.prev_area_km2, 0.01))
             END,
             COALESCE(ba.active_bs, 0),
             COALESCE(ba.retired_bs, 0),
-            -- trend
+            -- trend（保留向后兼容）
             CASE
                 WHEN p.qualified_bs_ratio IS NULL THEN 'stable'
                 WHEN COALESCE(ba.qualified_bs::double precision / NULLIF(ba.total_bs, 0), 0)
@@ -1263,7 +1338,7 @@ def publish_lac_library(
                 ELSE 'stable'
             END
         FROM bs_agg ba
-        LEFT JOIN lac_area la ON la.operator_code = ba.operator_code AND la.lac = ba.lac
+        LEFT JOIN lac_geo lg ON lg.operator_code = ba.operator_code AND lg.lac = ba.lac
         LEFT JOIN prev_lac p ON p.operator_code = ba.operator_code AND p.lac = ba.lac
         """,
         (batch_id, batch_id, batch_id,

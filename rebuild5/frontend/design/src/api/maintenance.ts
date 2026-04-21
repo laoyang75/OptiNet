@@ -72,13 +72,19 @@ export interface MaintenanceBSItem {
   total_cells: number
   qualified_cells: number
   excellent_cells: number
+  // BS-LAC-v1 三分类
+  normal_cells: number
+  anomaly_cells: number
+  insufficient_cells: number
   center_lon: number | null
   center_lat: number | null
   gps_p50_dist_m: number | null
   gps_p90_dist_m: number | null
+  // BS-LAC-v1 classification 8 类: normal / insufficient / collision_bs / dynamic_bs / dual_cluster_bs / migration_bs / uncertain_bs / anomaly
   classification: string | null
   anomaly_cell_ratio: number | null
-  large_spread: boolean
+  // 后端 queries.py 计算的辅助布尔（替代旧 large_spread）
+  is_anomaly_bs?: boolean
   is_multi_centroid: boolean
   window_active_cell_count: number
   position_grade: string | null
@@ -93,12 +99,22 @@ export interface MaintenanceLACItem {
   operator_code: string
   operator_cn: string | null
   lac: number
+  // BS-LAC-v1: lifecycle_state 简化为 'active' | 'dormant' | 'retired'
   lifecycle_state: string
   anchor_eligible: boolean
   baseline_eligible: boolean
   total_bs: number
+  // BS-LAC-v1 三分类
+  normal_bs: number
+  anomaly_bs: number
+  insufficient_bs: number
+  // 历史字段（向后兼容，BS-LAC-v1 不参与决策但仍计算）
   qualified_bs: number
+  excellent_bs?: number
   qualified_bs_ratio: number
+  // BS-LAC-v1 LAC 质心（基于正常 BS 中位数）
+  center_lon: number | null
+  center_lat: number | null
   area_km2: number | null
   anomaly_bs_ratio: number | null
   trend: string | null

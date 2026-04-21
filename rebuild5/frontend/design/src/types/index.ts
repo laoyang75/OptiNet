@@ -1,12 +1,15 @@
 // rebuild5 核心类型定义
 
 // 生命周期状态
-export type LifecycleState = 'waiting' | 'observing' | 'qualified' | 'excellent' | 'dormant' | 'retired'
+// cell/BS: waiting/observing/qualified/excellent/dormant/retired
+// LAC: active/dormant/retired（BS-LAC-v1：LAC 无品质分级）
+export type LifecycleState = 'waiting' | 'observing' | 'qualified' | 'excellent' | 'active' | 'dormant' | 'retired'
 
 // 状态颜色映射（冻结，不可更改）
 export const STATE_COLORS: Record<LifecycleState, string> = {
   excellent: '#22c55e',  // 绿
   qualified: '#3b82f6',  // 蓝
+  active: '#22c55e',     // 绿（LAC 活跃）
   observing: '#eab308',  // 黄
   waiting: '#9ca3af',    // 灰
   dormant: '#f97316',    // 橙
@@ -16,6 +19,7 @@ export const STATE_COLORS: Record<LifecycleState, string> = {
 export const STATE_LABELS: Record<LifecycleState, string> = {
   excellent: '优秀',
   qualified: '合格',
+  active: '活跃',
   observing: '观察',
   waiting: '等待',
   dormant: '休眠',
@@ -25,15 +29,29 @@ export const STATE_LABELS: Record<LifecycleState, string> = {
 // 位置质量
 export type PositionGrade = 'excellent' | 'good' | 'qualified' | 'unqualified'
 
-// 漂移分类
-export type DriftPattern = 'insufficient' | 'stable' | 'collision' | 'migration' | 'large_coverage' | 'moderate_drift'
+// Cell 分类（新标签体系 — 详见 docs/gps研究/08_标签定义总览.md）
+export type DriftPattern =
+  | 'insufficient'       // 证据不足
+  | 'stable'             // 正常（单质心紧凑）
+  | 'large_coverage'     // 覆盖大（单质心 1200m-10km）
+  | 'oversize_single'    // 单簇超大（p90>10km，待人工复查）
+  | 'dual_cluster'       // 双质心
+  | 'migration'          // 迁移
+  | 'collision'          // 碰撞（本阶段搁置，>100km 双点）
+  | 'dynamic'            // 动态（高铁/车载）
+  | 'uncertain'          // 多质心（未识别为动态的 k≥3 cell）
+  | 'moderate_drift'     // 兼容旧值，不再产生新数据
 
 export const DRIFT_LABELS: Record<DriftPattern, string> = {
   insufficient: '证据不足',
-  stable: '稳定',
-  collision: '碰撞',
+  stable: '正常',
+  large_coverage: '覆盖大',
+  oversize_single: '单簇超大',
+  dual_cluster: '双质心',
   migration: '迁移',
-  large_coverage: '大覆盖',
+  collision: '碰撞',
+  dynamic: '动态',
+  uncertain: '多质心',
   moderate_drift: '中度漂移',
 }
 

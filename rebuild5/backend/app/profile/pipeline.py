@@ -8,10 +8,11 @@ from typing import Any
 from ..core.database import execute, fetchone
 from ..etl.source_prep import DATASET_KEY
 from .logic import (
+    build_core_mad_k_sql,
     flatten_antitoxin_thresholds,
     flatten_profile_thresholds,
-    load_core_position_filter_params,
     load_antitoxin_params,
+    load_core_mad_filter_params,
     load_profile_params,
 )
 
@@ -283,6 +284,48 @@ def ensure_profile_schema() -> None:
     execute('ALTER TABLE rebuild5.trusted_snapshot_lac ADD COLUMN IF NOT EXISTS excellent_bs_count BIGINT NOT NULL DEFAULT 0')
     execute(
         """
+        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.candidate_seed_history (
+            batch_id INTEGER NOT NULL,
+            run_id TEXT NOT NULL,
+            dataset_key TEXT NOT NULL,
+            source_row_uid TEXT NOT NULL,
+            record_id TEXT NOT NULL,
+            source_table TEXT,
+            event_time_std TIMESTAMPTZ,
+            dev_id TEXT,
+            operator_code TEXT,
+            operator_cn TEXT,
+            lac BIGINT,
+            bs_id BIGINT,
+            cell_id BIGINT,
+            tech_norm TEXT,
+            gps_valid BOOLEAN,
+            lon_filled DOUBLE PRECISION,
+            lat_filled DOUBLE PRECISION,
+            gps_fill_source TEXT,
+            rsrp_filled DOUBLE PRECISION,
+            rsrq_filled DOUBLE PRECISION,
+            sinr_filled DOUBLE PRECISION,
+            pressure DOUBLE PRECISION,
+            PRIMARY KEY (batch_id, source_row_uid)
+        )
+        """
+    )
+    execute("ALTER TABLE rebuild5.candidate_seed_history SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_candidate_seed_history_cell
+        ON rebuild5.candidate_seed_history (operator_code, lac, bs_id, cell_id, tech_norm, batch_id)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_candidate_seed_history_event_time
+        ON rebuild5.candidate_seed_history (batch_id, event_time_std)
+        """
+    )
+    execute(
+        """
         CREATE TABLE IF NOT EXISTS rebuild5.snapshot_diff_cell (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
@@ -551,6 +594,7 @@ def run_step2_pipeline(
     build_path_b_cells(run_id, tech_whitelist=tech_whitelist)
     build_profile_obs(run_id)
     build_profile_base(run_id)
+    persist_candidate_seed_history(batch_id=batch_id, run_id=run_id)
     stats = write_step2_run_stats(run_id=run_id, batch_id=batch_id, previous_snapshot_version=previous_snapshot_version)
     cleanup_step2_temp_tables()
     return stats
@@ -751,6 +795,12 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
         """
     )
     _disable_autovacuum('rebuild5._path_a_layer2')
+    execute(
+        """
+        CREATE INDEX idx_path_a_layer2_source_tid
+        ON rebuild5._path_a_layer2 (source_tid)
+        """
+    )
 
     execute('DROP TABLE IF EXISTS rebuild5._path_a_layer3_all')
     execute(
@@ -953,6 +1003,13 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
         (run_id, DATASET_KEY),
     )
     _disable_autovacuum('rebuild5._profile_path_b_cells')
+    execute(
+        """
+        CREATE INDEX idx_profile_path_b_cells_key
+        ON rebuild5._profile_path_b_cells (operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('ANALYZE rebuild5._profile_path_b_cells')
     execute('DROP TABLE IF EXISTS rebuild5._profile_path_b_records')
     execute(
         f"""
@@ -966,6 +1023,7 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
             c.bs_id,
             c.cell_id,
             c.tech_norm,
+            e.record_id,
             e.dev_id,
             e.event_time_std,
             e.lon_raw,
@@ -990,6 +1048,9 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
 
 
 def build_profile_obs(run_id: str) -> None:
+    # 设计原则（docs/03_流式质量评估.md §GPS 有效性）：
+    # 每个 profile_obs 记录必须 GPS 有效。无 GPS 的分钟级观测不应参与
+    # independent_obs 计数。否则仅含信号记录的 cell 会凭虚高的观测数晋级。
     execute('DROP TABLE IF EXISTS rebuild5.profile_obs')
     execute(
         """
@@ -1004,15 +1065,16 @@ def build_profile_obs(run_id: str) -> None:
             tech_norm,
             date_trunc('minute', event_time_std) AS obs_minute,
             DATE(event_time_std) AS obs_date,
-            AVG(lon_raw) FILTER (WHERE lon_raw IS NOT NULL AND lat_raw IS NOT NULL AND gps_valid) AS lon,
-            AVG(lat_raw) FILTER (WHERE lon_raw IS NOT NULL AND lat_raw IS NOT NULL AND gps_valid) AS lat,
+            AVG(lon_raw) AS lon,
+            AVG(lat_raw) AS lat,
             AVG(rsrp) FILTER (WHERE rsrp BETWEEN -156 AND -1) AS rsrp,
             AVG(rsrq) FILTER (WHERE rsrq BETWEEN -34 AND 10) AS rsrq,
             AVG(sinr) FILTER (WHERE sinr BETWEEN -23 AND 40) AS sinr,
             COUNT(*) AS raw_records,
-            COUNT(*) FILTER (WHERE lon_raw IS NOT NULL AND lat_raw IS NOT NULL AND gps_valid) AS gps_original_records,
+            COUNT(*) AS gps_original_records,
             COUNT(*) FILTER (WHERE rsrp IS NOT NULL) AS signal_original_records
         FROM rebuild5._profile_path_b_records
+        WHERE lon_raw IS NOT NULL AND lat_raw IS NOT NULL AND gps_valid
         GROUP BY operator_code, operator_cn, lac, cell_id, tech_norm, date_trunc('minute', event_time_std), DATE(event_time_std)
         """,
         (run_id, DATASET_KEY),
@@ -1021,49 +1083,126 @@ def build_profile_obs(run_id: str) -> None:
 
 
 def build_profile_base(run_id: str) -> None:
-    core_filter = load_core_position_filter_params()
-    execute('DROP TABLE IF EXISTS rebuild5._profile_seed_grid')
+    mad_filter = load_core_mad_filter_params(load_antitoxin_params())
+    effective_k_sql = build_core_mad_k_sql('m.total_pts', mad_filter)
+    execute('DROP TABLE IF EXISTS rebuild5._profile_gps_day_dedup')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_gps_day_dedup AS
+        SELECT DISTINCT ON (
+            run_id,
+            dataset_key,
+            operator_code,
+            lac,
+            cell_id,
+            tech_norm,
+            COALESCE(NULLIF(dev_id, ''), record_id),
+            DATE(event_time_std)
+        )
+            run_id,
+            dataset_key,
+            operator_code,
+            operator_cn,
+            lac,
+            cell_id,
+            tech_norm,
+            COALESCE(NULLIF(dev_id, ''), record_id) AS dedup_dev_id,
+            DATE(event_time_std) AS obs_date,
+            date_trunc('minute', event_time_std) AS obs_minute,
+            event_time_std,
+            lon_raw AS lon,
+            lat_raw AS lat
+        FROM rebuild5._profile_path_b_records
+        WHERE lon_raw IS NOT NULL
+          AND lat_raw IS NOT NULL
+          AND gps_valid
+          AND event_time_std IS NOT NULL
+        ORDER BY
+            run_id,
+            dataset_key,
+            operator_code,
+            lac,
+            cell_id,
+            tech_norm,
+            COALESCE(NULLIF(dev_id, ''), record_id),
+            DATE(event_time_std),
+            event_time_std,
+            record_id
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_gps_day_dedup')
+    execute(
+        """
+        CREATE INDEX idx_profile_gps_day_dedup_key
+        ON rebuild5._profile_gps_day_dedup (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_core_initial_center')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_core_initial_center AS
+        SELECT
+            run_id,
+            dataset_key,
+            operator_code,
+            lac,
+            cell_id,
+            tech_norm,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon) AS center_lon0,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat) AS center_lat0
+        FROM rebuild5._profile_gps_day_dedup
+        GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_core_initial_center')
+    execute(
+        """
+        CREATE INDEX idx_profile_core_initial_center_key
+        ON rebuild5._profile_core_initial_center (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_core_point_distance')
+    execute(
+        """
+        CREATE UNLOGGED TABLE rebuild5._profile_core_point_distance AS
+        SELECT
+            p.run_id,
+            p.dataset_key,
+            p.operator_code,
+            p.operator_cn,
+            p.lac,
+            p.cell_id,
+            p.tech_norm,
+            p.dedup_dev_id,
+            p.obs_minute,
+            p.obs_date,
+            p.event_time_std,
+            p.lon,
+            p.lat,
+            SQRT(POWER((p.lon - c.center_lon0) * 85300, 2)
+               + POWER((p.lat - c.center_lat0) * 111000, 2)) AS dist_to_center0_m
+        FROM rebuild5._profile_gps_day_dedup p
+        JOIN rebuild5._profile_core_initial_center c
+          ON c.run_id = p.run_id
+         AND c.dataset_key = p.dataset_key
+         AND c.operator_code = p.operator_code
+         AND c.lac = p.lac
+         AND c.cell_id = p.cell_id
+         AND c.tech_norm = p.tech_norm
+        """
+    )
+    _disable_autovacuum('rebuild5._profile_core_point_distance')
+    execute(
+        """
+        CREATE INDEX idx_profile_core_point_distance_key
+        ON rebuild5._profile_core_point_distance (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        """
+    )
+    execute('DROP TABLE IF EXISTS rebuild5._profile_core_mad_stats')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._profile_seed_grid AS
-        SELECT
-            run_id,
-            dataset_key,
-            operator_code,
-            lac,
-            cell_id,
-            tech_norm,
-            ST_SnapToGrid(
-                ST_Transform(ST_SetSRID(ST_MakePoint(lon, lat), 4326), 3857),
-                {core_filter['snap_grid_m']}
-            ) AS snap_geom_3857,
-            COUNT(*) AS obs_count
-        FROM rebuild5.profile_obs
-        WHERE lon IS NOT NULL
-          AND lat IS NOT NULL
-        GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm, snap_geom_3857
-        """
-    )
-    _disable_autovacuum('rebuild5._profile_seed_grid')
-    execute(
-        """
-        CREATE INDEX idx_profile_seed_grid_key
-        ON rebuild5._profile_seed_grid (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
-        """
-    )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_primary_seed')
-    execute(
-        """
-        CREATE UNLOGGED TABLE rebuild5._profile_primary_seed AS
-        SELECT
-            run_id,
-            dataset_key,
-            operator_code,
-            lac,
-            cell_id,
-            tech_norm,
-            snap_geom_3857
-        FROM (
+        CREATE UNLOGGED TABLE rebuild5._profile_core_mad_stats AS
+        WITH med AS (
             SELECT
                 run_id,
                 dataset_key,
@@ -1071,94 +1210,54 @@ def build_profile_base(run_id: str) -> None:
                 lac,
                 cell_id,
                 tech_norm,
-                snap_geom_3857,
-                obs_count,
-                ROW_NUMBER() OVER (
-                    PARTITION BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
-                    ORDER BY obs_count DESC, ST_X(snap_geom_3857), ST_Y(snap_geom_3857)
-                ) AS seed_rank
-            FROM rebuild5._profile_seed_grid
-        ) ranked
-        WHERE seed_rank = 1
-        """
-    )
-    _disable_autovacuum('rebuild5._profile_primary_seed')
-    execute(
-        """
-        CREATE INDEX idx_profile_primary_seed_key
-        ON rebuild5._profile_primary_seed (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
-        """
-    )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_seed_distance')
-    execute(
-        """
-        CREATE UNLOGGED TABLE rebuild5._profile_seed_distance AS
+                COUNT(*) AS total_pts,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY dist_to_center0_m) AS med_dist_m
+            FROM rebuild5._profile_core_point_distance
+            GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
+        )
         SELECT
-            o.run_id,
-            o.dataset_key,
-            o.operator_code,
-            o.operator_cn,
-            o.lac,
-            o.cell_id,
-            o.tech_norm,
-            o.obs_minute,
-            o.obs_date,
-            o.lon,
-            o.lat,
-            ST_Distance(
-                ST_Transform(ST_SetSRID(ST_MakePoint(o.lon, o.lat), 4326), 3857),
-                s.snap_geom_3857
-            ) AS dist_to_seed_m
-        FROM rebuild5.profile_obs o
-        JOIN rebuild5._profile_primary_seed s
-          ON s.run_id = o.run_id
-         AND s.dataset_key = o.dataset_key
-         AND s.operator_code = o.operator_code
-         AND s.lac = o.lac
-         AND s.cell_id = o.cell_id
-         AND s.tech_norm = o.tech_norm
-        WHERE o.lon IS NOT NULL
-          AND o.lat IS NOT NULL
+            d.run_id,
+            d.dataset_key,
+            d.operator_code,
+            d.lac,
+            d.cell_id,
+            d.tech_norm,
+            m.total_pts,
+            m.med_dist_m,
+            COALESCE(
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ABS(d.dist_to_center0_m - m.med_dist_m)),
+                0
+            ) AS mad_dist_m,
+            {effective_k_sql} AS effective_k_mad,
+            (m.med_dist_m + ({effective_k_sql}) * COALESCE(
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ABS(d.dist_to_center0_m - m.med_dist_m)),
+                0
+            )) AS keep_threshold_m,
+            {int(mad_filter['min_pts'])} AS min_pts
+        FROM rebuild5._profile_core_point_distance d
+        JOIN med m
+          ON m.run_id = d.run_id
+         AND m.dataset_key = d.dataset_key
+         AND m.operator_code = d.operator_code
+         AND m.lac = d.lac
+         AND m.cell_id = d.cell_id
+         AND m.tech_norm = d.tech_norm
+        GROUP BY
+            d.run_id,
+            d.dataset_key,
+            d.operator_code,
+            d.lac,
+            d.cell_id,
+            d.tech_norm,
+            m.total_pts,
+            m.med_dist_m
         """
     )
-    _disable_autovacuum('rebuild5._profile_seed_distance')
+    _disable_autovacuum('rebuild5._profile_core_mad_stats')
     execute(
         """
-        CREATE INDEX idx_profile_seed_distance_key
-        ON rebuild5._profile_seed_distance (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
-        """
-    )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_core_cutoff')
-    execute(
-        f"""
-        CREATE UNLOGGED TABLE rebuild5._profile_core_cutoff AS
-        SELECT
-            run_id,
-            dataset_key,
-            operator_code,
-            lac,
-            cell_id,
-            tech_norm,
-            GREATEST(
-                {core_filter['keep_min_radius_m']},
-                LEAST(
-                    COALESCE(
-                        percentile_cont({core_filter['keep_quantile']})
-                            WITHIN GROUP (ORDER BY dist_to_seed_m),
-                        {core_filter['keep_min_radius_m']}
-                    ),
-                    {core_filter['keep_max_radius_m']}
-                )
-            ) AS keep_radius_m
-        FROM rebuild5._profile_seed_distance
-        GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
-        """
-    )
-    _disable_autovacuum('rebuild5._profile_core_cutoff')
-    execute(
-        """
-        CREATE INDEX idx_profile_core_cutoff_key
-        ON rebuild5._profile_core_cutoff (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        CREATE INDEX idx_profile_core_mad_stats_key
+        ON rebuild5._profile_core_mad_stats (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
     execute('DROP TABLE IF EXISTS rebuild5._profile_core_points')
@@ -1173,20 +1272,29 @@ def build_profile_base(run_id: str) -> None:
             d.lac,
             d.cell_id,
             d.tech_norm,
+            d.dedup_dev_id,
             d.obs_minute,
             d.obs_date,
+            d.event_time_std,
             d.lon,
             d.lat,
-            c.keep_radius_m
-        FROM rebuild5._profile_seed_distance d
-        JOIN rebuild5._profile_core_cutoff c
-          ON c.run_id = d.run_id
-         AND c.dataset_key = d.dataset_key
-         AND c.operator_code = d.operator_code
-         AND c.lac = d.lac
-         AND c.cell_id = d.cell_id
-         AND c.tech_norm = d.tech_norm
-        WHERE d.dist_to_seed_m <= c.keep_radius_m
+            s.total_pts,
+            s.med_dist_m,
+            s.mad_dist_m,
+            s.effective_k_mad,
+            s.keep_threshold_m,
+            CASE
+                WHEN s.total_pts < s.min_pts THEN TRUE
+                ELSE d.dist_to_center0_m <= s.keep_threshold_m
+            END AS is_core
+        FROM rebuild5._profile_core_point_distance d
+        JOIN rebuild5._profile_core_mad_stats s
+          ON s.run_id = d.run_id
+         AND s.dataset_key = d.dataset_key
+         AND s.operator_code = d.operator_code
+         AND s.lac = d.lac
+         AND s.cell_id = d.cell_id
+         AND s.tech_norm = d.tech_norm
         """
     )
     _disable_autovacuum('rebuild5._profile_core_points')
@@ -1208,13 +1316,14 @@ def build_profile_base(run_id: str) -> None:
             lac,
             cell_id,
             tech_norm,
-            COUNT(*) AS gps_valid_count,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon) AS center_lon,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat) AS center_lat,
-            MIN(obs_minute) AS first_obs_at,
-            MAX(obs_minute) AS last_obs_at,
-            EXTRACT(EPOCH FROM MAX(obs_minute) - MIN(obs_minute)) / 3600.0 AS observed_span_hours,
-            COUNT(DISTINCT obs_date) AS active_days
+            COUNT(*) FILTER (WHERE is_core) AS gps_valid_count,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon) FILTER (WHERE is_core) AS center_lon,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat) FILTER (WHERE is_core) AS center_lat,
+            MIN(obs_minute) FILTER (WHERE is_core) AS first_obs_at,
+            MAX(obs_minute) FILTER (WHERE is_core) AS last_obs_at,
+            EXTRACT(EPOCH FROM MAX(obs_minute) FILTER (WHERE is_core)
+                - MIN(obs_minute) FILTER (WHERE is_core)) / 3600.0 AS observed_span_hours,
+            COUNT(DISTINCT obs_date) FILTER (WHERE is_core) AS active_days
         FROM rebuild5._profile_core_points
         GROUP BY run_id, dataset_key, operator_code, operator_cn, lac, cell_id, tech_norm
         """
@@ -1291,10 +1400,10 @@ def build_profile_base(run_id: str) -> None:
             p.tech_norm,
             PERCENTILE_CONT(0.5) WITHIN GROUP (
                 ORDER BY SQRT(POWER((p.lon - c.center_lon) * 85300, 2) + POWER((p.lat - c.center_lat) * 111000, 2))
-            ) AS p50_radius_m,
+            ) FILTER (WHERE p.is_core) AS p50_radius_m,
             PERCENTILE_CONT(0.9) WITHIN GROUP (
                 ORDER BY SQRT(POWER((p.lon - c.center_lon) * 85300, 2) + POWER((p.lat - c.center_lat) * 111000, 2))
-            ) AS p90_radius_m
+            ) FILTER (WHERE p.is_core) AS p90_radius_m
         FROM rebuild5._profile_core_points p
         JOIN rebuild5._profile_core_gps c
           ON c.run_id = p.run_id
@@ -1373,6 +1482,75 @@ def build_profile_base(run_id: str) -> None:
         """
     )
     _disable_autovacuum('rebuild5.profile_base')
+
+
+def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
+    input_relation = get_step2_input_relation()
+    execute('DELETE FROM rebuild5.candidate_seed_history WHERE batch_id = %s', (batch_id,))
+    execute(
+        f"""
+        INSERT INTO rebuild5.candidate_seed_history (
+            batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
+            event_time_std, dev_id,
+            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
+            gps_valid,
+            lon_filled, lat_filled, gps_fill_source,
+            rsrp_filled, rsrq_filled, sinr_filled, pressure
+        )
+        SELECT
+            %s::int,
+            %s::text,
+            %s::text,
+            md5(
+                concat_ws(
+                    '|',
+                    %s::text,
+                    e.ctid::text,
+                    e.record_id,
+                    COALESCE(e.operator_filled, ''),
+                    COALESCE(e.lac_filled::text, ''),
+                    COALESCE(c.bs_id::text, ''),
+                    COALESCE(e.cell_id::text, ''),
+                    COALESCE(e.tech_norm, ''),
+                    COALESCE(e.dev_id, ''),
+                    COALESCE(e.event_time_std::text, '')
+                )
+            ) AS source_row_uid,
+            e.record_id,
+            e.source_table,
+            e.event_time_std,
+            e.dev_id,
+            e.operator_filled,
+            c.operator_cn,
+            e.lac_filled,
+            c.bs_id,
+            e.cell_id,
+            e.tech_norm,
+            COALESCE(e.gps_valid, FALSE),
+            e.lon_filled,
+            e.lat_filled,
+            e.gps_fill_source,
+            e.rsrp_filled,
+            e.rsrq_filled,
+            e.sinr_filled,
+            CASE
+                WHEN e.pressure ~ E'^-?[0-9]+\\.?[0-9]*$' THEN e.pressure::double precision
+                ELSE NULL::double precision
+            END
+        FROM {input_relation} e
+        LEFT JOIN rebuild5.path_a_records a
+          ON a.source_tid = e.ctid
+        JOIN rebuild5._profile_path_b_cells c
+          ON c.operator_code = e.operator_filled
+         AND c.lac = e.lac_filled
+         AND c.cell_id = e.cell_id
+         AND c.tech_norm = e.tech_norm
+        WHERE c.has_raw_gps
+          AND a.source_tid IS NULL
+        """,
+        (batch_id, run_id, DATASET_KEY, run_id),
+    )
+    execute('ANALYZE rebuild5.candidate_seed_history')
 
 
 def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_version: str) -> dict[str, Any]:
@@ -1550,7 +1728,13 @@ def cleanup_step2_temp_tables() -> None:
         'rebuild5._profile_path_a_candidates',
         'rebuild5._profile_path_b_cells',
         'rebuild5._profile_path_b_records',
-        'rebuild5._profile_centroid',
+        'rebuild5._profile_gps_day_dedup',
+        'rebuild5._profile_core_initial_center',
+        'rebuild5._profile_core_point_distance',
+        'rebuild5._profile_core_mad_stats',
+        'rebuild5._profile_core_points',
+        'rebuild5._profile_core_gps',
+        'rebuild5._profile_counts',
         'rebuild5._profile_devs',
         'rebuild5._profile_radius',
         'rebuild5._path_a_latest_library',
@@ -1560,5 +1744,10 @@ def cleanup_step2_temp_tables() -> None:
         'rebuild5._path_a_layer2',
         'rebuild5._path_a_layer3_all',
         'rebuild5._path_a_layer3',
+        'rebuild5._profile_seed_grid',
+        'rebuild5._profile_primary_seed',
+        'rebuild5._profile_seed_distance',
+        'rebuild5._profile_core_cutoff',
+        'rebuild5._profile_centroid',
     ):
         execute(f'DROP TABLE IF EXISTS {table_name}')

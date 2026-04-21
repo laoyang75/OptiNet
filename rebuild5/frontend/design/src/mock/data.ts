@@ -65,6 +65,7 @@ export const mockCellStateDistribution: Record<LifecycleState, number> = {
   qualified: 2_890,
   observing: 1_560,
   waiting: 980,
+  active: 0,
   dormant: 120,
   retired: 45,
 }
@@ -75,16 +76,18 @@ export const mockBSStateDistribution: Record<LifecycleState, number> = {
   qualified: 780,
   observing: 450,
   waiting: 280,
+  active: 0,
   dormant: 35,
   retired: 12,
 }
 
-// LAC 分布
+// LAC 分布（BS-LAC-v1：LAC 用 active/dormant/retired）
 export const mockLACStateDistribution: Record<LifecycleState, number> = {
-  excellent: 2,
-  qualified: 3,
-  observing: 1,
+  excellent: 0,
+  qualified: 0,
+  observing: 0,
   waiting: 0,
+  active: 6,
   dormant: 0,
   retired: 0,
 }

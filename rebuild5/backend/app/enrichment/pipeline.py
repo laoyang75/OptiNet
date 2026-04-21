@@ -76,18 +76,29 @@ def run_enrichment_pipeline() -> dict[str, Any]:
 
     execute('DELETE FROM rebuild5.enriched_records WHERE batch_id = %s', (batch_id,))
     execute('DELETE FROM rebuild5.gps_anomaly_log WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rebuild5.snapshot_seed_records WHERE batch_id = %s', (batch_id,))
     execute('DELETE FROM rebuild5.step4_fill_coverage WHERE batch_id = %s', (batch_id,))
 
     has_library = relation_exists('rebuild5.trusted_cell_library') and donor_batch_id > 0
-    if not step2 or not has_library or not relation_exists('rebuild5.path_a_records'):
+    if not step2 or not relation_exists('rebuild5.path_a_records'):
         stats = _empty_stats(run_id, batch_id, snapshot_version, donor_snapshot_version)
         write_step4_stats(stats)
         write_run_log(run_id=run_id, batch_id=batch_id, snapshot_version=snapshot_version,
                       status='completed', result_summary=stats)
         return stats
 
-    _insert_enriched_records(batch_id, run_id)
-    _insert_gps_anomaly_log(batch_id, anomaly_threshold_m, donor_batch_id)
+    if has_library:
+        _insert_enriched_records(batch_id, run_id)
+        _insert_gps_anomaly_log(batch_id, anomaly_threshold_m, donor_batch_id)
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_csh_join_batch
+        ON rebuild5.candidate_seed_history (operator_code, lac, cell_id, tech_norm, batch_id)
+        """
+    )
+    execute('ANALYZE rebuild5.enriched_records')
+    execute('ANALYZE rebuild5.candidate_seed_history')
+    _insert_snapshot_seed_records(batch_id=batch_id, run_id=run_id)
     execute('CREATE INDEX IF NOT EXISTS idx_enriched_batch ON rebuild5.enriched_records (batch_id)')
     execute(
         """
@@ -101,8 +112,16 @@ def run_enrichment_pipeline() -> dict[str, Any]:
         ON rebuild5.gps_anomaly_log (batch_id, operator_code, lac, cell_id)
         """
     )
+    execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch ON rebuild5.snapshot_seed_records (batch_id)')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch_cell
+        ON rebuild5.snapshot_seed_records (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
     execute('ANALYZE rebuild5.enriched_records')
     execute('ANALYZE rebuild5.gps_anomaly_log')
+    execute('ANALYZE rebuild5.snapshot_seed_records')
 
     stats = _collect_step4_stats(
         run_id=run_id, batch_id=batch_id,
@@ -336,6 +355,111 @@ def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_bat
           AND NOT COALESCE(e.path_a_is_collision, FALSE)
         """,
         (anomaly_threshold_m, batch_id, anomaly_threshold_m),
+    )
+
+
+def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
+    """Bridge newly published current-batch cells into Step 5 facts.
+
+    Newly qualified/excellent cells have current-batch evidence in Step 2/3 but
+    no Path-A donor yet, so they would otherwise enter Step 5 without their
+    cumulative candidate evidence.  We materialize that history here for
+    Step 5-only consumption.
+    """
+    if not relation_exists('rebuild5.candidate_seed_history'):
+        return
+
+    execute(
+        f"""
+        INSERT INTO rebuild5.snapshot_seed_records (
+            batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
+            event_time_std, dev_id,
+            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
+            gps_valid,
+            lon_final, lat_final, gps_fill_source_final,
+            rsrp_final, rsrq_final, sinr_final, pressure_final,
+            seed_source
+        )
+        WITH prev_published AS (
+            SELECT operator_code, lac, cell_id, tech_norm
+            FROM rebuild5.trusted_cell_library
+            WHERE batch_id = (
+                SELECT COALESCE(MAX(batch_id), 0)
+                FROM rebuild5.trusted_cell_library
+                WHERE batch_id < {batch_id}
+            )
+        ),
+        new_snapshot_cells AS MATERIALIZED (
+            SELECT
+                s.operator_code,
+                s.operator_cn,
+                s.lac,
+                s.bs_id,
+                s.cell_id,
+                s.tech_norm,
+                s.center_lon,
+                s.center_lat,
+                s.rsrp_avg,
+                s.rsrq_avg,
+                s.sinr_avg
+            FROM rebuild5.trusted_snapshot_cell s
+            LEFT JOIN prev_published p
+              ON p.operator_code = s.operator_code
+             AND p.lac = s.lac
+             AND p.cell_id = s.cell_id
+             AND p.tech_norm IS NOT DISTINCT FROM s.tech_norm
+            WHERE s.batch_id = {batch_id}
+              AND s.lifecycle_state IN ('qualified', 'excellent')
+              AND p.cell_id IS NULL
+        )
+        SELECT
+            {batch_id}::int,
+            %s::text,
+            %s::text,
+            e.source_row_uid,
+            e.record_id,
+            COALESCE(e.source_table, 'trusted_snapshot_seed')::text,
+            e.event_time_std,
+            e.dev_id,
+            e.operator_code,
+            s.operator_cn,
+            e.lac,
+            COALESCE(e.bs_id, s.bs_id),
+            e.cell_id,
+            e.tech_norm,
+            COALESCE(e.gps_valid, FALSE),
+            COALESCE(e.lon_filled, s.center_lon),
+            COALESCE(e.lat_filled, s.center_lat),
+            CASE
+                WHEN e.lon_filled IS NOT NULL OR e.lat_filled IS NOT NULL
+                    THEN COALESCE(e.gps_fill_source, 'none')
+                WHEN s.center_lon IS NOT NULL AND s.center_lat IS NOT NULL
+                    THEN 'trusted_snapshot'
+                ELSE 'none'
+            END,
+            COALESCE(e.rsrp_filled, s.rsrp_avg),
+            COALESCE(e.rsrq_filled, s.rsrq_avg),
+            COALESCE(e.sinr_filled, s.sinr_avg),
+            e.pressure,
+            'trusted_snapshot_seed'::text
+        FROM rebuild5.candidate_seed_history e
+        JOIN new_snapshot_cells s
+          ON s.operator_code = e.operator_code
+         AND s.lac = e.lac
+         AND s.cell_id = e.cell_id
+         AND s.tech_norm IS NOT DISTINCT FROM e.tech_norm
+        WHERE e.batch_id <= {batch_id}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM rebuild5.enriched_records er
+              WHERE er.batch_id = {batch_id}
+                AND er.record_id = e.record_id
+                AND er.cell_id IS NOT DISTINCT FROM e.cell_id
+                AND er.lac IS NOT DISTINCT FROM e.lac
+                AND er.tech_norm IS NOT DISTINCT FROM e.tech_norm
+          )
+        """,
+        (run_id, DATASET_KEY),
     )
 
 

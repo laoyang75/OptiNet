@@ -1,8 +1,8 @@
 # Rebuild5 Runbook V5
 
-时间：2026-04-13  
+时间：2026-04-14  
 适用范围：Fix4 最终整合版样例验证通过后的执行基线  
-当前状态：共享样例 `batch1-3` 已按当前有效逻辑重验证；`batch4-7` 为历史整合结果，后续如需严格口径一致，应在当前代码上重新补跑
+当前状态：共享样例 `batch1-7` 已于 2026-04-14 按当前优化基线完成完整重跑；`batch1-3` 与阶段一严格回归验证结果一致
 
 > **阅读前置**：本文件是操作手册，建议先阅读 [README.md](./README.md)（项目交接说明）了解状态机全貌，再进行操作。
 
@@ -19,6 +19,9 @@
    - Step5 地理碰撞替代旧绝对碰撞
    - Step5 PostGIS 分阶段物化
    - 多质心候选扩大到 `raw_p90 / max_spread / core_outlier_ratio / gps_anomaly`
+   - `metrics_activity` 已合并入 `metrics_base`
+   - `cell_sliding_window` 已设置 `parallel_workers=16`
+   - Step2 / Step5 中间表索引已补齐（`_path_a_layer2`、`_profile_path_b_cells`、`cell_metrics_base`、`cell_radius_stats`）
 
 ## 2. 环境
 
@@ -99,7 +102,7 @@ python3 rebuild5/scripts/run_daily_increment_batch_loop.py \
 
 ## 5. 样例验证结果
 
-以下结果为 2026-04-13 在 `ip_loc2_fix4_codex` 的真实落表结果。
+以下结果为 2026-04-14 在 `ip_loc2_fix4_codex` 的真实落表结果；其中 `batch1-3` 已按当前优化基线独立重验证，`batch4-7` 已完成同一基线下的完整重跑。
 
 ### 5.1 Step2
 
@@ -120,14 +123,10 @@ python3 rebuild5/scripts/run_daily_increment_batch_loop.py \
 | 1 | 3,275 | 3,807 | 1,939 | 0 |
 | 2 | 2,816 | 6,337 | 2,084 | 1,976 |
 | 3 | 2,536 | 7,674 | 2,120 | 2,886 |
-| 4 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
-| 5 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
-| 6 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
-| 7 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 | 历史结果待重验 |
-
-> **历史结果待重验说明：** batch4-7 由旧版代码跑出，不代表当前逻辑结果。
-> - 如果云端团队需要全量口径一致，应先执行第 3 节全量重置，再对 batch1-7 全量重跑第 4 节命令。
-> - 如果只需验证主链闭环，batch1-3 已足够，暂不需要重跑 batch4-7。
+| 4 | 2,368 | 8,573 | 2,137 | 3,474 |
+| 5 | 2,226 | 9,204 | 2,152 | 3,853 |
+| 6 | 2,133 | 9,732 | 2,165 | 4,180 |
+| 7 | 2,065 | 10,190 | 2,174 | 4,442 |
 
 ### 5.3 Step4
 
@@ -231,7 +230,7 @@ pytest rebuild5/tests/test_profile_logic.py rebuild5/tests/test_publish_cell.py 
 
 本次实际结果：
 
-- `33 passed`
+- `34 passed`
 - `0 failed`
 
 ### 7.3 如果测试失败
@@ -252,7 +251,7 @@ pytest rebuild5/tests/test_profile_logic.py rebuild5/tests/test_publish_cell.py 
 
 当前不再阻塞放行的原因：
 
-- 共享样例 `batch1-3` 已在当前有效逻辑下重新跑通
+- 共享样例 `batch1-7` 已在当前优化基线上完整重跑通过，且 `batch1-3` 与严格回归基线一致
 - Step2/3/4/5 主链闭环已验证
 - donor 闭环稳定
 - 面积收敛稳定

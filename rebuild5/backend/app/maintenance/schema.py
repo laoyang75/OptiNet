@@ -9,6 +9,7 @@ def ensure_maintenance_schema() -> None:
     _create_trusted_cell_library()
     _create_trusted_bs_library()
     _create_trusted_lac_library()
+    _create_label_results()
     _create_collision_id_list()
     _create_cell_centroid_detail()
     _create_bs_centroid_detail()
@@ -33,6 +34,7 @@ def _apply_maintenance_table_policies() -> None:
         'rebuild5.trusted_cell_library',
         'rebuild5.trusted_bs_library',
         'rebuild5.trusted_lac_library',
+        'rebuild5.label_results',
         'rebuild5.collision_id_list',
         'rebuild5.cell_centroid_detail',
         'rebuild5.bs_centroid_detail',
@@ -141,6 +143,9 @@ def _create_trusted_bs_library() -> None:
             total_cells BIGINT NOT NULL,
             qualified_cells BIGINT NOT NULL,
             excellent_cells BIGINT NOT NULL,
+            normal_cells BIGINT NOT NULL DEFAULT 0,
+            anomaly_cells BIGINT NOT NULL DEFAULT 0,
+            insufficient_cells BIGINT NOT NULL DEFAULT 0,
             center_lon DOUBLE PRECISION,
             center_lat DOUBLE PRECISION,
             gps_p50_dist_m DOUBLE PRECISION,
@@ -154,6 +159,10 @@ def _create_trusted_bs_library() -> None:
         )
         """
     )
+    # 向后兼容：确保新字段在旧库上也存在
+    execute('ALTER TABLE rebuild5.trusted_bs_library ADD COLUMN IF NOT EXISTS normal_cells BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rebuild5.trusted_bs_library ADD COLUMN IF NOT EXISTS anomaly_cells BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rebuild5.trusted_bs_library ADD COLUMN IF NOT EXISTS insufficient_cells BIGINT NOT NULL DEFAULT 0')
 
 
 def _create_trusted_lac_library() -> None:
@@ -176,6 +185,11 @@ def _create_trusted_lac_library() -> None:
             qualified_bs BIGINT NOT NULL,
             excellent_bs BIGINT NOT NULL DEFAULT 0,
             qualified_bs_ratio DOUBLE PRECISION NOT NULL,
+            normal_bs BIGINT NOT NULL DEFAULT 0,
+            anomaly_bs BIGINT NOT NULL DEFAULT 0,
+            insufficient_bs BIGINT NOT NULL DEFAULT 0,
+            center_lon DOUBLE PRECISION,
+            center_lat DOUBLE PRECISION,
             area_km2 DOUBLE PRECISION,
             anomaly_bs_ratio DOUBLE PRECISION,
             boundary_stability_score DOUBLE PRECISION,
@@ -187,6 +201,13 @@ def _create_trusted_lac_library() -> None:
         """
     )
     execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS excellent_bs BIGINT NOT NULL DEFAULT 0')
+    # LAC 层三分类（正常/异常/数据不足 BS）— 观察字段
+    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS normal_bs BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS anomaly_bs BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS insufficient_bs BIGINT NOT NULL DEFAULT 0')
+    # LAC 质心（基于正常 BS）
+    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lon DOUBLE PRECISION')
+    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lat DOUBLE PRECISION')
 
 
 def _create_collision_id_list() -> None:
@@ -202,6 +223,38 @@ def _create_collision_id_list() -> None:
             combo_keys_json JSONB,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             PRIMARY KEY (batch_id, cell_id)
+        )
+        """
+    )
+
+
+def _create_label_results() -> None:
+    execute(
+        """
+        CREATE TABLE IF NOT EXISTS rebuild5.label_results (
+            batch_id INTEGER NOT NULL,
+            snapshot_version TEXT NOT NULL,
+            operator_code TEXT NOT NULL,
+            lac BIGINT,
+            bs_id BIGINT,
+            cell_id BIGINT NOT NULL,
+            tech_norm TEXT,
+            candidate_hit BOOLEAN NOT NULL DEFAULT FALSE,
+            k_raw INTEGER NOT NULL DEFAULT 0,
+            k_eff INTEGER NOT NULL DEFAULT 0,
+            total_valid_pts BIGINT NOT NULL DEFAULT 0,
+            p90_radius_m DOUBLE PRECISION,
+            pair_dist_m DOUBLE PRECISION,
+            pair_overlap_ratio DOUBLE PRECISION,
+            pair_no_comeback BOOLEAN,
+            max_span_m DOUBLE PRECISION,
+            total_path_m DOUBLE PRECISION,
+            line_ratio DOUBLE PRECISION,
+            distance_cv DOUBLE PRECISION,
+            avg_dwell_days DOUBLE PRECISION,
+            label TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
         )
         """
     )

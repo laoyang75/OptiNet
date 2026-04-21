@@ -323,6 +323,118 @@ def test_run_enrichment_pipeline_keeps_step4_run_stats_history(monkeypatch) -> N
     )
 
 
+def test_insert_snapshot_seed_records_bridges_new_snapshot_cells(monkeypatch) -> None:
+    calls = []
+
+    monkeypatch.setattr(
+        enrichment_pipeline,
+        'execute',
+        lambda sql, params=None: calls.append((sql, params)),
+    )
+    monkeypatch.setattr(
+        enrichment_pipeline,
+        'relation_exists',
+        lambda name: name == 'rebuild5.candidate_seed_history',
+    )
+
+    enrichment_pipeline._insert_snapshot_seed_records(batch_id=7, run_id='enrich_001')
+
+    sql, params = calls[0]
+    assert 'INSERT INTO rebuild5.snapshot_seed_records' in sql
+    assert 'FROM rebuild5.trusted_snapshot_cell s' in sql
+    assert 'FROM rebuild5.trusted_cell_library' in sql
+    assert 'FROM rebuild5.candidate_seed_history e' in sql
+    assert 'new_snapshot_cells AS MATERIALIZED (' in sql
+    assert 'e.batch_id <= 7' in sql
+    assert "s.lifecycle_state IN ('qualified', 'excellent')" in sql
+    assert 'p.cell_id IS NULL' in sql
+    assert 'NOT EXISTS (' in sql and 'FROM rebuild5.enriched_records er' in sql
+    assert params == ('enrich_001', enrichment_pipeline.DATASET_KEY)
+
+
+def test_run_enrichment_pipeline_prepares_snapshot_seed_indexes_before_insert(monkeypatch) -> None:
+    calls = []
+
+    monkeypatch.setattr(enrichment_pipeline, 'ensure_enrichment_schema', lambda: None)
+    monkeypatch.setattr(
+        enrichment_pipeline,
+        '_latest_step2',
+        lambda: {'batch_id': 7, 'trusted_snapshot_version': 'v6'},
+    )
+    monkeypatch.setattr(
+        enrichment_pipeline,
+        'relation_exists',
+        lambda name: name in {
+            'rebuild5.path_a_records',
+            'rebuild5.trusted_cell_library',
+            'rebuild5.candidate_seed_history',
+        },
+    )
+    monkeypatch.setattr(enrichment_pipeline, 'load_antitoxin_params', lambda: {})
+    monkeypatch.setattr(
+        enrichment_pipeline,
+        'flatten_antitoxin_thresholds',
+        lambda _params: {'collision_min_spread_m': 2200.0},
+    )
+    monkeypatch.setattr(
+        enrichment_pipeline,
+        'execute',
+        lambda sql, params=None: calls.append((sql, params)),
+    )
+    monkeypatch.setattr(enrichment_pipeline, '_insert_enriched_records', lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(enrichment_pipeline, '_insert_gps_anomaly_log', lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(enrichment_pipeline, '_insert_snapshot_seed_records', lambda **_kwargs: calls.append(('SNAPSHOT_SEED_INSERT', None)))
+    monkeypatch.setattr(enrichment_pipeline, '_collect_step4_stats', lambda **_kwargs: {'run_id': 'enrich_001', 'batch_id': 7, 'dataset_key': 'beijing_7d', 'snapshot_version': 'v7', 'snapshot_version_prev': 'v6', 'status': 'completed'})
+    monkeypatch.setattr(enrichment_pipeline, 'write_step4_coverage', lambda **_kwargs: None)
+    monkeypatch.setattr(enrichment_pipeline, 'write_step4_stats', lambda _stats: None)
+    monkeypatch.setattr(enrichment_pipeline, 'write_run_log', lambda **_kwargs: None)
+
+    enrichment_pipeline.run_enrichment_pipeline()
+
+    sqls = [sql for sql, _ in calls]
+    idx_pos = next(i for i, sql in enumerate(sqls) if 'idx_csh_join_batch' in sql)
+    analyze_enriched_pos = next(i for i, sql in enumerate(sqls) if sql == 'ANALYZE rebuild5.enriched_records')
+    analyze_csh_pos = next(i for i, sql in enumerate(sqls) if sql == 'ANALYZE rebuild5.candidate_seed_history')
+    insert_pos = sqls.index('SNAPSHOT_SEED_INSERT')
+
+    assert idx_pos < insert_pos
+    assert analyze_enriched_pos < insert_pos
+    assert analyze_csh_pos < insert_pos
+
+
+def test_persist_candidate_seed_history_writes_path_b_records(monkeypatch) -> None:
+    calls = []
+
+    monkeypatch.setattr(
+        profile_pipeline,
+        'execute',
+        lambda sql, params=None: calls.append((sql, params)),
+    )
+    monkeypatch.setattr(
+        profile_pipeline,
+        'get_step2_input_relation',
+        lambda: profile_pipeline.STEP2_INPUT_SCOPE_RELATION,
+    )
+
+    profile_pipeline.persist_candidate_seed_history(batch_id=5, run_id='profile_001')
+
+    delete_sql, delete_params = calls[0]
+    insert_sql, insert_params = calls[1]
+    analyze_sql, analyze_params = calls[2]
+
+    assert delete_sql == 'DELETE FROM rebuild5.candidate_seed_history WHERE batch_id = %s'
+    assert delete_params == (5,)
+    assert 'INSERT INTO rebuild5.candidate_seed_history' in insert_sql
+    assert f'FROM {profile_pipeline.STEP2_INPUT_SCOPE_RELATION} e' in insert_sql
+    assert 'JOIN rebuild5._profile_path_b_cells c' in insert_sql
+    assert 'LEFT JOIN rebuild5.path_a_records a' in insert_sql
+    assert 'WHERE c.has_raw_gps' in insert_sql
+    assert 'a.source_tid IS NULL' in insert_sql
+    assert insert_params == (5, 'profile_001', profile_pipeline.DATASET_KEY, 'profile_001')
+    assert analyze_sql == 'ANALYZE rebuild5.candidate_seed_history'
+    assert analyze_params is None
+
+
 def test_run_maintenance_pipeline_keeps_step5_run_stats_history(monkeypatch) -> None:
     calls = []
 
@@ -340,6 +452,76 @@ def test_run_maintenance_pipeline_keeps_step5_run_stats_history(monkeypatch) -> 
         'DROP TABLE IF EXISTS rebuild5_meta.step5_run_stats' not in sql
         for sql, _ in calls
     )
+
+
+def test_run_maintenance_pipeline_runs_label_engine_before_collision(monkeypatch) -> None:
+    order = []
+
+    monkeypatch.setattr(maintenance_pipeline, 'ensure_maintenance_schema', lambda: None)
+    monkeypatch.setattr(
+        maintenance_pipeline,
+        '_latest_step3',
+        lambda: {'batch_id': 9, 'snapshot_version': 'v9'},
+    )
+    monkeypatch.setattr(
+        maintenance_pipeline,
+        '_latest_published_snapshot_version',
+        lambda **_kwargs: 'v8',
+    )
+    monkeypatch.setattr(maintenance_pipeline, 'load_antitoxin_params', lambda: {})
+    monkeypatch.setattr(
+        maintenance_pipeline,
+        'flatten_antitoxin_thresholds',
+        lambda _params: {
+            'absolute_collision_min_distance_m': 20000.0,
+            'bs_max_cell_to_bs_distance_m': 2500.0,
+        },
+    )
+    monkeypatch.setattr(
+        maintenance_pipeline,
+        'execute',
+        lambda sql, params=None: None,
+    )
+    monkeypatch.setattr(maintenance_pipeline, 'relation_exists', lambda _name: False)
+    monkeypatch.setattr(maintenance_pipeline, 'refresh_sliding_window', lambda **_kwargs: order.append('refresh'))
+    monkeypatch.setattr(maintenance_pipeline, 'build_daily_centroids', lambda **_kwargs: order.append('daily'))
+    monkeypatch.setattr(maintenance_pipeline, 'build_cell_metrics_base', lambda **_kwargs: order.append('base'))
+    monkeypatch.setattr(maintenance_pipeline, 'build_cell_core_gps_stats', lambda **_kwargs: order.append('core'))
+    monkeypatch.setattr(maintenance_pipeline, 'build_cell_radius_stats', lambda: order.append('radius'))
+    monkeypatch.setattr(maintenance_pipeline, 'compute_drift_metrics', lambda **_kwargs: order.append('drift'))
+    monkeypatch.setattr(maintenance_pipeline, 'compute_gps_anomaly_summary', lambda **_kwargs: order.append('anomaly'))
+    monkeypatch.setattr(maintenance_pipeline, 'publish_cell_library', lambda **_kwargs: order.append('publish_cell'))
+    monkeypatch.setattr(maintenance_pipeline, 'run_label_engine', lambda **_kwargs: order.append('label_engine'))
+    monkeypatch.setattr(maintenance_pipeline, 'detect_collisions', lambda **_kwargs: order.append('collision'))
+    monkeypatch.setattr(maintenance_pipeline, 'publish_bs_library', lambda **_kwargs: order.append('publish_bs'))
+    monkeypatch.setattr(maintenance_pipeline, 'publish_bs_centroid_detail', lambda **_kwargs: order.append('publish_bs_detail'))
+    monkeypatch.setattr(maintenance_pipeline, 'publish_lac_library', lambda **_kwargs: order.append('publish_lac'))
+    monkeypatch.setattr(
+        maintenance_pipeline,
+        'collect_step5_stats',
+        lambda **_kwargs: {
+            'run_id': 'maint_001',
+            'batch_id': 9,
+            'dataset_key': 'beijing_7d',
+            'snapshot_version': 'v9',
+            'snapshot_version_prev': 'v8',
+            'status': 'completed',
+            'published_cell_count': 1,
+            'published_bs_count': 1,
+            'published_lac_count': 1,
+            'collision_cell_count': 0,
+            'multi_centroid_cell_count': 0,
+            'dynamic_cell_count': 0,
+            'anomaly_bs_count': 0,
+        },
+    )
+    monkeypatch.setattr(maintenance_pipeline, 'write_step5_stats', lambda _stats: None)
+    monkeypatch.setattr(maintenance_pipeline, 'write_run_log', lambda **_kwargs: None)
+
+    maintenance_pipeline.run_maintenance_pipeline()
+
+    assert order.index('label_engine') < order.index('collision')
+    assert order.index('collision') < order.index('publish_bs')
 
 
 def test_step5_previous_snapshot_version_excludes_current_batch(monkeypatch) -> None:
@@ -364,7 +546,11 @@ def test_refresh_sliding_window_uses_dedicated_worker_count(monkeypatch) -> None
     execute_calls = []
     parallel_calls = []
 
-    monkeypatch.setattr(maintenance_window, 'relation_exists', lambda _name: True)
+    monkeypatch.setattr(
+        maintenance_window,
+        'relation_exists',
+        lambda name: name in {'rebuild5.enriched_records', 'rebuild5.snapshot_seed_records'},
+    )
     monkeypatch.setattr(
         maintenance_window,
         'execute',
@@ -379,9 +565,11 @@ def test_refresh_sliding_window_uses_dedicated_worker_count(monkeypatch) -> None
     maintenance_window.refresh_sliding_window(batch_id=4)
 
     assert execute_calls[0][0] == 'DELETE FROM rebuild5.cell_sliding_window WHERE batch_id = %s'
-    assert parallel_calls
+    assert len(parallel_calls) == 2
     assert parallel_calls[0][1]['num_workers'] == maintenance_window.SLIDING_WINDOW_INSERT_WORKERS
     assert 'tech_norm' in parallel_calls[0][0]
+    assert 'FROM rebuild5.snapshot_seed_records' in parallel_calls[1][0]
+    assert "'snapshot_seed'" in parallel_calls[1][0]
     assert f"INTERVAL '{maintenance_window.WINDOW_RETENTION_DAYS} days'" in execute_calls[1][0]
     assert f'obs_rank <= {maintenance_window.WINDOW_MIN_OBS}' in execute_calls[1][0]
 
@@ -409,12 +597,116 @@ def test_build_cell_metrics_window_joins_materialized_stage_tables(monkeypatch) 
     assert 'FROM rebuild5.cell_metrics_base m' in create_sql
     assert 'LEFT JOIN rebuild5.cell_radius_stats r' in create_sql
     assert 'LEFT JOIN rebuild5.cell_core_gps_stats cg' in create_sql
-    assert 'LEFT JOIN rebuild5.cell_activity_stats a' in create_sql
     assert 'LEFT JOIN rebuild5.cell_drift_stats d' in create_sql
     assert 'WHERE m.batch_id = 9' in create_sql
 
 
-def test_build_profile_base_uses_core_position_filter_stages(monkeypatch) -> None:
+def test_build_cell_core_gps_stats_uses_mad_filter_stages(monkeypatch) -> None:
+    execute_calls = []
+
+    monkeypatch.setattr(
+        maintenance_window,
+        'execute',
+        lambda sql, params=None: execute_calls.append((sql, params)),
+    )
+    monkeypatch.setattr(
+        maintenance_window,
+        'load_antitoxin_params',
+        lambda: {
+            'core_mad_filter': {
+                'k_mad': 3.0,
+                'k_mad_small': 2.5,
+                'k_mad_medium': 1.5,
+                'k_mad_large': 2.5,
+                'small_upper': 50,
+                'large_lower': 200,
+                'min_pts': 10,
+            }
+        },
+    )
+    monkeypatch.setattr(
+        maintenance_window,
+        'load_core_mad_filter_params',
+        lambda _params: {
+            'k_mad': 3.0,
+            'k_mad_small': 2.5,
+            'k_mad_medium': 1.5,
+            'k_mad_large': 2.5,
+            'small_upper': 50,
+            'large_lower': 200,
+            'min_pts': 10,
+        },
+    )
+
+    maintenance_window.build_cell_core_gps_stats(batch_id=9)
+
+    dedup_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_core_gps_day_dedup AS' in sql
+    )
+    initial_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_core_initial_center AS' in sql
+    )
+    dist_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_core_point_distance AS' in sql
+    )
+    mad_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_core_mad_stats AS' in sql
+    )
+    points_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_core_points AS' in sql
+    )
+    final_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_core_gps_stats AS' in sql
+    )
+
+    assert 'SELECT DISTINCT ON (' in dedup_sql
+    assert "COALESCE(NULLIF(w.dev_id, ''), w.record_id)" in dedup_sql
+    assert 'DATE(w.event_time_std)' in dedup_sql
+    assert 'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon_final) AS center_lon0' in initial_sql
+    assert 'dist_to_center0_m' in dist_sql
+    assert 'mad_dist_m' in mad_sql
+    assert 'effective_k_mad' in mad_sql
+    assert 'keep_threshold_m' in mad_sql
+    assert 'WHEN m.total_pts < 50 THEN 2.5' in mad_sql
+    assert 'WHEN m.total_pts < 200 THEN 1.5' in mad_sql
+    assert 'CASE' in points_sql and 's.total_pts < s.min_pts THEN TRUE' in points_sql
+    assert 'COUNT(*) FILTER (WHERE is_core) AS core_gps_valid_count' in final_sql
+    assert 'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon_final) FILTER (WHERE is_core)' in final_sql
+
+
+def test_build_cell_radius_stats_aggregates_core_and_raw_metrics_in_single_pass(monkeypatch) -> None:
+    execute_calls = []
+
+    monkeypatch.setattr(
+        maintenance_window,
+        'execute',
+        lambda sql, params=None: execute_calls.append((sql, params)),
+    )
+
+    maintenance_window.build_cell_radius_stats()
+
+    final_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5.cell_radius_stats AS' in sql
+    )
+
+    assert 'WITH with_dist AS (' in final_sql
+    assert 'FROM rebuild5.cell_core_points p' in final_sql
+    assert 'FILTER (WHERE is_core) AS p50_radius_m' in final_sql
+    assert 'FILTER (WHERE is_core) AS p90_radius_m' in final_sql
+    assert 'AS raw_p90_radius_m' in final_sql
+    assert 'COUNT(*) FILTER (WHERE is_core) AS core_gps_valid_count' in final_sql
+    assert 'COUNT(*) AS raw_gps_valid_count' in final_sql
+    assert 'COUNT(*) FILTER (WHERE is_core)::double precision / COUNT(*)' in final_sql
+
+
+def test_build_profile_base_uses_device_day_dedup_and_adaptive_mad(monkeypatch) -> None:
     execute_calls = []
 
     monkeypatch.setattr(
@@ -425,35 +717,59 @@ def test_build_profile_base_uses_core_position_filter_stages(monkeypatch) -> Non
     monkeypatch.setattr(profile_pipeline, '_disable_autovacuum', lambda _name: None)
     monkeypatch.setattr(
         profile_pipeline,
-        'load_core_position_filter_params',
+        'load_antitoxin_params',
         lambda: {
-            'snap_grid_m': 180.0,
-            'keep_quantile': 0.75,
-            'keep_min_radius_m': 700.0,
-            'keep_max_radius_m': 2500.0,
+            'core_mad_filter': {
+                'k_mad': 3.0,
+                'k_mad_small': 2.5,
+                'k_mad_medium': 1.5,
+                'k_mad_large': 2.5,
+                'small_upper': 50,
+                'large_lower': 200,
+                'min_pts': 10,
+            }
+        },
+    )
+    monkeypatch.setattr(
+        profile_pipeline,
+        'load_core_mad_filter_params',
+        lambda _params: {
+            'k_mad': 3.0,
+            'k_mad_small': 2.5,
+            'k_mad_medium': 1.5,
+            'k_mad_large': 2.5,
+            'small_upper': 50,
+            'large_lower': 200,
+            'min_pts': 10,
         },
     )
 
     profile_pipeline.build_profile_base('run_fix4')
 
-    seed_sql = next(
+    dedup_sql = next(
         sql for sql, _ in execute_calls
-        if 'CREATE UNLOGGED TABLE rebuild5._profile_seed_grid AS' in sql
+        if 'CREATE UNLOGGED TABLE rebuild5._profile_gps_day_dedup AS' in sql
     )
-    core_sql = next(
+    mad_sql = next(
         sql for sql, _ in execute_calls
-        if 'CREATE UNLOGGED TABLE rebuild5._profile_core_cutoff AS' in sql
+        if 'CREATE UNLOGGED TABLE rebuild5._profile_core_mad_stats AS' in sql
+    )
+    radius_sql = next(
+        sql for sql, _ in execute_calls
+        if 'CREATE UNLOGGED TABLE rebuild5._profile_radius AS' in sql
     )
     base_sql = next(
         sql for sql, _ in execute_calls
         if 'CREATE UNLOGGED TABLE rebuild5.profile_base AS' in sql
     )
 
-    assert 'ST_SnapToGrid(' in seed_sql
-    assert '180.0' in seed_sql
-    assert 'percentile_cont(0.75)' in core_sql
-    assert '700.0' in core_sql
-    assert '2500.0' in core_sql
+    assert 'SELECT DISTINCT ON (' in dedup_sql
+    assert "COALESCE(NULLIF(dev_id, ''), record_id)" in dedup_sql
+    assert 'DATE(event_time_std)' in dedup_sql
+    assert 'effective_k_mad' in mad_sql
+    assert 'WHEN m.total_pts < 50 THEN 2.5' in mad_sql
+    assert 'WHEN m.total_pts < 200 THEN 1.5' in mad_sql
+    assert 'FILTER (WHERE p.is_core) AS p90_radius_m' in radius_sql
     assert 'LEFT JOIN rebuild5._profile_core_gps g' in base_sql
     assert 'FROM rebuild5._profile_counts c' in base_sql
 

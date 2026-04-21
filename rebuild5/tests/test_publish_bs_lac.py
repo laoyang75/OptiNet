@@ -77,9 +77,13 @@ def test_publish_lac_library_uses_bs_library_agg_with_matching_params(monkeypatc
     assert 'MAX(operator_cn) AS operator_cn' in sql
     assert 'FROM bs_agg ba' in sql
     assert 'WHEN ba.total_bs > 0 AND ba.total_bs = COALESCE(ba.retired_bs, 0) THEN \'retired\'' in sql
-    assert "WHEN ba.excellent_bs >= 30 THEN 'excellent'" in sql
-    assert "WHEN ba.excellent_bs >= 10 THEN 'qualified'" in sql
+    assert "WHEN COALESCE(ba.active_bs, 0) = 0 THEN 'dormant'" in sql
+    assert "ELSE 'active'" in sql
     assert 'excellent_bs' in sql
+    assert 'normal_bs' in sql
+    assert 'anomaly_bs' in sql
+    assert 'insufficient_bs' in sql
+    assert 'normal_bs_sample AS (' in sql
 
 
 def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monkeypatch) -> None:
@@ -112,6 +116,7 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
                 'candidate_min_window_obs': 6,
                 'candidate_min_active_days': 3,
                 'candidate_min_p90_m': 900.0,
+                'candidate_min_raw_p90_m': 950.0,
                 'candidate_min_max_spread_m': 2300.0,
                 'candidate_min_outlier_ratio': 0.2,
                 'candidate_drift_patterns': ['migration', 'collision'],
@@ -200,7 +205,8 @@ def test_publish_cell_centroid_detail_uses_configured_postgis_cluster_rules(monk
     assert 'LEFT JOIN rebuild5.cell_metrics_window m' in candidates_sql
     assert 'COALESCE(t.window_obs_count, 0) >= 6' in candidates_sql
     assert 'COALESCE(t.active_days, 0) >= 3' in candidates_sql
-    assert 'COALESCE(m.raw_p90_radius_m, 0) >= 900.0' in candidates_sql
+    assert 'COALESCE(t.p90_radius_m, 0) >= 900.0' in candidates_sql
+    assert 'COALESCE(m.raw_p90_radius_m, 0) >= 950.0' in candidates_sql
     assert 'COALESCE(m.core_outlier_ratio, 0) >= 0.2' in candidates_sql
     assert "t.drift_pattern IN ('migration', 'collision')" in candidates_sql
     assert 't.gps_anomaly_type IS NOT NULL' in candidates_sql

@@ -1,7 +1,10 @@
 collision:
   min_spread_m: 2200
   # 绝对碰撞距离阈值：同一 (operator, tech, lac, cell_id) 在不同物理位置的最小距离
-  absolute_collision_min_distance_m: 20000
+  # 2026-04-19 调整：20000 → 100000，与 label_rules.collision_min_dist_m 对齐（新标签规则 k=2+>100km 才判碰撞）
+  # 该值仅用于 detect_collisions 的"副作用设置"（is_collision / antitoxin_hit / baseline_eligible）
+  # 真正的 collision 标签判定在 label_engine.py 里，基于 label_rules.collision_min_dist_m
+  absolute_collision_min_distance_m: 100000
 migration:
   min_spread_m: 2200
 bs:
@@ -45,11 +48,61 @@ core_position_filter:
   keep_quantile: 0.8
   keep_min_radius_m: 800
   keep_max_radius_m: 3000
+core_mad_filter:
+  k_mad: 3.0
+  k_mad_small: 2.5
+  k_mad_medium: 1.5
+  k_mad_large: 2.5
+  small_upper: 50
+  large_lower: 200
+  # 统计学下限：PERCENTILE_CONT 算 MAD 至少需要 4 个点才有意义。
+  # 注意：这不是 Step 3 的"晋升资格"门槛 —— Step 5 收到的都是已晋升 cell，
+  # 不应再用 Step 3 口径反向兜底。低于此值才跳过 MAD（直接全保留）。
+  min_pts: 4
+gps_anomaly_filter:
+  # 复用 Step 4 写入 gps_anomaly_log 的判定，在 Step 5 的 cell_core dedup 阶段做闭环。
+  # 设计：异常点占比小 = 偶发飞跃 → 直接排除；占比大 = 稳定副簇（多质心/碰撞）→ 保留交给 MAD/DBSCAN。
+  max_anomaly_ratio: 0.10        # 异常占比 < 此值且 异常点数 ≤ max_anomaly_count 才排除
+  max_anomaly_count: 2           # 绝对数兜底：临界占比下，绝对数太少也按"偶发"处理
+label_rules:
+  stable_max_p90_m: 1200
+  large_coverage_max_p90_m: 10000
+  dual_cluster_max_dist_m: 5000
+  dual_cluster_min_overlap_ratio: 0.5
+  migration_max_overlap_ratio: 0.0
+  migration_min_post_days: 2
+  # 碰撞：双质心的特例，距离 > 100km 认为是同 cell_id 跨城误配
+  # 判定优先级高于 dual_cluster / migration（距离是硬信号）
+  collision_min_dist_m: 100000
+  dynamic_min_span_m: 5000
+  dynamic_min_line_ratio: 0.3
+  dynamic_max_distance_cv: 0.5
+  dynamic_max_avg_dwell_days: 2
+multi_centroid_v2:
+  dbscan_eps_m: 250
+  dbscan_min_points: 4
+  # 2026-04-19 方案 7.4：10 → 4，与 dbscan_min_points 对齐
+  # 依据：3000 样本评估，原值 10 把 71.6% 有数据的 cell 误判 insufficient
+  min_cluster_dev_day_pts: 4
+  # 方案 7.4：p90 < 此门槛直接判 stable（整体紧凑无需多质心）
+  multi_centroid_entry_p90_m: 1300
+  # 方案 7.4：多质心层的稀疏保护（比单簇要求更严）
+  min_total_dedup_pts: 8
+  min_total_devs: 3
+  min_total_active_days: 3
+  coord_scale_lon: 85300
+  coord_scale_lat: 111000
+  only_raw_gps: true
+  dedup_by:
+    - cell
+    - dev
+    - date
 postgis_centroid:
   lookback_batches: 4
   candidate_min_window_obs: 5
   candidate_min_active_days: 2
   candidate_min_p90_m: 800
+  candidate_min_raw_p90_m: 800
   candidate_min_max_spread_m: 2200
   candidate_min_outlier_ratio: 0.15
   candidate_drift_patterns:

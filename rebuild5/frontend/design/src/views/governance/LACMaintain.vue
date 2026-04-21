@@ -5,7 +5,6 @@ import PageHeader from '../../components/common/PageHeader.vue'
 import Pagination from '../../components/common/Pagination.vue'
 import SummaryCard from '../../components/common/SummaryCard.vue'
 import StatusTag from '../../components/common/StatusTag.vue'
-import PercentBar from '../../components/common/PercentBar.vue'
 import { getMaintenanceLAC, getMaintenanceStats, type MaintenanceLACItem, type MaintenanceStatsPayload } from '../../api/maintenance'
 import { fmt, pct } from '../../composables/useFormat'
 
@@ -24,20 +23,11 @@ const pageSize = ref(20)
 const totalCount = ref(0)
 const totalPages = ref(0)
 
-const qualifiedLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'qualified').length)
-const observingLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'observing').length)
-const waitingLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'waiting').length)
-const hasAnomalyLac = computed(() => lacItems.value.filter(i => (i.anomaly_bs_ratio ?? 0) > 0).length)
-
-const trendCfg: Record<string, { label: string; style: string }> = {
-  improving: { label: '改善', style: 'background:#dcfce7;color:#166534' },
-  degrading: { label: '恶化', style: 'background:#fee2e2;color:#991b1b' },
-  stable: { label: '稳定', style: 'background:#f3f4f6;color:#6b7280' },
-}
-
-function trendTag(t: string | null) {
-  return trendCfg[t || 'stable'] || trendCfg.stable
-}
+// BS-LAC-v1: LAC 只有 active / dormant / retired
+const activeLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'active').length)
+const dormantLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'dormant').length)
+const retiredLac = computed(() => lacItems.value.filter(i => i.lifecycle_state === 'retired').length)
+const hasAnomalyLac = computed(() => lacItems.value.filter(i => (i.anomaly_bs ?? 0) > 0).length)
 
 function toggle(idx: number) { expandedIdx.value = expandedIdx.value === idx ? null : idx }
 
@@ -71,10 +61,10 @@ onMounted(loadData)
   <!-- Summary cards -->
   <div class="grid grid-5 mb-lg">
     <SummaryCard title="总数" :value="fmt(stats.summary.published_lac_count)" />
-    <SummaryCard title="合格" :value="fmt(qualifiedLac)" color="var(--c-success)" />
-    <SummaryCard title="观察" :value="fmt(observingLac)" color="var(--c-dormant)" />
-    <SummaryCard title="等待" :value="fmt(waitingLac)" />
-    <SummaryCard title="有异常BS" :value="fmt(hasAnomalyLac)" color="var(--c-danger)" />
+    <SummaryCard title="活跃" :value="fmt(activeLac)" color="var(--c-success)" />
+    <SummaryCard title="休眠" :value="fmt(dormantLac)" color="var(--c-dormant)" />
+    <SummaryCard title="退出" :value="fmt(retiredLac)" color="var(--c-danger)" />
+    <SummaryCard title="含异常BS" :value="fmt(hasAnomalyLac)" color="#d97706" />
   </div>
 
   <!-- Table -->
@@ -88,7 +78,8 @@ onMounted(loadData)
         <tr>
           <th style="width:20px"></th>
           <th>运营商</th><th>LAC</th><th>状态</th>
-          <th>BS数</th><th>活跃/退出</th><th>面积km2</th><th>边界稳定性</th><th>异常BS率</th><th>趋势</th>
+          <th>总BS</th><th>正常</th><th>异常</th><th>证据不足</th>
+          <th>质心</th><th>面积km²</th><th>异常BS率</th>
         </tr>
       </thead>
       <tbody>
@@ -99,40 +90,41 @@ onMounted(loadData)
             <td class="font-mono font-semibold">{{ item.lac }}</td>
             <td><StatusTag :state="item.lifecycle_state as any" size="sm" /></td>
             <td class="font-mono">{{ fmt(item.total_bs) }}</td>
-            <td class="font-mono text-xs">{{ item.active_bs_count ?? '-' }} / <span class="text-muted">{{ item.retired_bs_count ?? 0 }}</span></td>
+            <td class="font-mono" :style="(item.normal_bs ?? 0) > 0 ? 'color:var(--c-success)' : ''">{{ fmt(item.normal_bs ?? 0) }}</td>
+            <td class="font-mono" :style="(item.anomaly_bs ?? 0) > 0 ? 'color:var(--c-danger)' : ''">{{ fmt(item.anomaly_bs ?? 0) }}</td>
+            <td class="font-mono" :style="(item.insufficient_bs ?? 0) > 0 ? 'color:var(--c-text-muted)' : ''">{{ fmt(item.insufficient_bs ?? 0) }}</td>
+            <td class="text-xs loc-td">{{ item.center_lon ? `${Number(item.center_lon).toFixed(3)}, ${Number(item.center_lat).toFixed(3)}` : '-' }}</td>
             <td class="font-mono">{{ item.area_km2 != null ? Number(item.area_km2).toFixed(1) : '-' }}</td>
-            <td style="min-width:100px"><PercentBar v-if="item.boundary_stability_score != null" :value="item.boundary_stability_score" :color="item.boundary_stability_score >= 0.8 ? 'var(--c-success)' : item.boundary_stability_score >= 0.5 ? 'var(--c-warning)' : 'var(--c-danger)'" /></td>
             <td class="font-mono" :style="(item.anomaly_bs_ratio ?? 0) > 0.2 ? 'color:var(--c-danger)' : ''">{{ item.anomaly_bs_ratio != null ? pct(item.anomaly_bs_ratio) : '-' }}</td>
-            <td><span class="tag" :style="trendTag(item.trend).style">{{ trendTag(item.trend).label }}</span></td>
           </tr>
           <!-- Expanded detail -->
           <tr v-if="expandedIdx === idx" class="detail-row">
-            <td :colspan="10">
+            <td :colspan="11">
               <div class="detail-content">
                 <div class="detail-section">
-                  <div class="section-title">区域构成</div>
+                  <div class="section-title">BS 三分类（观察用）</div>
                   <div class="detail-grid">
-                    <div class="detail-item"><span class="dl">总 BS 数</span><span class="dv">{{ fmt(item.total_bs) }}</span></div>
-                    <div class="detail-item"><span class="dl">活跃 BS</span><span class="dv font-mono" style="color:var(--c-success)">{{ item.active_bs_count ?? '-' }}</span></div>
-                    <div class="detail-item"><span class="dl">退出 BS</span><span class="dv font-mono" :style="(item.retired_bs_count ?? 0) > 0 ? 'color:var(--c-danger)' : ''">{{ item.retired_bs_count ?? 0 }}</span></div>
-                    <div class="detail-item"><span class="dl">合格 BS / 比例</span><span class="dv">{{ fmt(item.qualified_bs) }} ({{ pct(item.qualified_bs_ratio) }})</span></div>
-                    <div class="detail-item"><span class="dl">面积</span><span class="dv">{{ item.area_km2 != null ? Number(item.area_km2).toFixed(2) + ' km2' : '-' }}</span></div>
+                    <div class="detail-item"><span class="dl">总 BS</span><span class="dv">{{ fmt(item.total_bs) }}</span></div>
+                    <div class="detail-item"><span class="dl">正常 BS</span><span class="dv font-mono" style="color:var(--c-success);font-weight:600">{{ fmt(item.normal_bs ?? 0) }}</span></div>
+                    <div class="detail-item"><span class="dl">异常 BS</span><span class="dv font-mono" :style="(item.anomaly_bs ?? 0) > 0 ? 'color:var(--c-danger);font-weight:600' : ''">{{ fmt(item.anomaly_bs ?? 0) }}</span></div>
+                    <div class="detail-item"><span class="dl">证据不足 BS</span><span class="dv font-mono">{{ fmt(item.insufficient_bs ?? 0) }}</span></div>
                   </div>
                 </div>
                 <div class="detail-section">
-                  <div class="section-title">稳定性与健康</div>
+                  <div class="section-title">区域位置（基于正常 BS）</div>
                   <div class="detail-grid">
-                    <div class="detail-item">
-                      <span class="dl">边界稳定性</span>
-                      <span class="dv">
-                        <PercentBar v-if="item.boundary_stability_score != null" :value="item.boundary_stability_score" :label="item.boundary_stability_score >= 0.8 ? '稳定' : item.boundary_stability_score >= 0.5 ? '波动' : '剧变'" />
-                        <span v-else>-</span>
-                      </span>
-                    </div>
+                    <div class="detail-item"><span class="dl">LAC 质心（正常 BS 中位）</span><span class="dv font-mono">{{ item.center_lon ? `${Number(item.center_lon).toFixed(6)}, ${Number(item.center_lat).toFixed(6)}` : '-' }}</span></div>
+                    <div class="detail-item"><span class="dl">面积（bbox 粗估）</span><span class="dv">{{ item.area_km2 != null ? Number(item.area_km2).toFixed(2) + ' km²' : '-' }}</span></div>
                     <div class="detail-item"><span class="dl">异常 BS 比例</span><span class="dv" :style="(item.anomaly_bs_ratio ?? 0) > 0.2 ? 'color:var(--c-danger)' : ''">{{ item.anomaly_bs_ratio != null ? pct(item.anomaly_bs_ratio) : '-' }}</span></div>
-                    <div class="detail-item"><span class="dl">锚点资格</span><span class="dv" :style="item.anchor_eligible ? 'color:var(--c-success)' : ''">{{ item.anchor_eligible ? '是' : '否' }}</span></div>
-                    <div class="detail-item"><span class="dl">基线资格</span><span class="dv" :style="!item.baseline_eligible ? 'color:var(--c-danger)' : ''">{{ item.baseline_eligible ? '是' : '否' }}</span></div>
-                    <div class="detail-item"><span class="dl">趋势</span><span class="dv"><span class="tag" :style="trendTag(item.trend).style">{{ trendTag(item.trend).label }}</span></span></div>
+                  </div>
+                </div>
+                <div class="detail-section">
+                  <div class="section-title">BS 状态分布</div>
+                  <div class="detail-grid">
+                    <div class="detail-item"><span class="dl">活跃 BS</span><span class="dv font-mono" style="color:var(--c-success)">{{ item.active_bs_count ?? '-' }}</span></div>
+                    <div class="detail-item"><span class="dl">退出 BS</span><span class="dv font-mono" :style="(item.retired_bs_count ?? 0) > 0 ? 'color:var(--c-danger)' : ''">{{ item.retired_bs_count ?? 0 }}</span></div>
+                    <div class="detail-item"><span class="dl">合格 BS</span><span class="dv">{{ fmt(item.qualified_bs) }}</span></div>
+                    <div class="detail-item"><span class="dl">生命周期</span><span class="dv"><StatusTag :state="item.lifecycle_state as any" size="sm" /></span></div>
                   </div>
                 </div>
               </div>
@@ -140,7 +132,7 @@ onMounted(loadData)
           </tr>
         </template>
         <tr v-if="lacItems.length === 0">
-          <td colspan="10" class="empty-row">暂无 LAC 维护数据</td>
+          <td colspan="11" class="empty-row">暂无 LAC 维护数据</td>
         </tr>
       </tbody>
     </table>

@@ -37,6 +37,8 @@ DROP TABLE IF EXISTS rebuild5.profile_base;
 
 DROP TABLE IF EXISTS rebuild5.enriched_records;
 DROP TABLE IF EXISTS rebuild5.gps_anomaly_log;
+DROP TABLE IF EXISTS rebuild5.candidate_seed_history;
+DROP TABLE IF EXISTS rebuild5.snapshot_seed_records;
 
 TRUNCATE TABLE rebuild5.trusted_cell_library;
 TRUNCATE TABLE rebuild5.trusted_bs_library;

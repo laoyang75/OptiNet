@@ -18,8 +18,9 @@ SUMMARY = {
 
 DRIFT_ROWS = [
     {'drift_pattern': 'stable', 'count': 3900},
-    {'drift_pattern': 'collision', 'count': 12},
+    {'drift_pattern': 'dual_cluster', 'count': 12},
     {'drift_pattern': 'migration', 'count': 16},
+    {'drift_pattern': 'oversize_single', 'count': 4},
 ]
 
 
@@ -44,11 +45,14 @@ def test_build_maintenance_stats_payload_shapes_summary_for_governance_pages() -
         },
         'drift_distribution': {
             'stable': 3900,
-            'collision': 12,
+            'dual_cluster': 12,
             'migration': 16,
             'insufficient': 0,
             'large_coverage': 0,
-            'moderate_drift': 0,
+            'collision': 0,
+            'dynamic': 0,
+            'uncertain': 0,
+            'oversize_single': 4,
         },
     }
 

@@ -6,7 +6,17 @@ from typing import Any
 from ..core.database import fetchall, fetchone, paginate
 
 
-DRIFT_KEYS = ('insufficient', 'stable', 'collision', 'migration', 'large_coverage', 'moderate_drift')
+DRIFT_KEYS = (
+    'insufficient',
+    'stable',
+    'large_coverage',
+    'dual_cluster',
+    'migration',
+    'collision',       # 本阶段搁置，暂显 0；重跑后若有 >100km 双点会填充
+    'dynamic',
+    'uncertain',
+    'oversize_single',
+)
 
 
 def _missing_relation(exc: Exception) -> bool:
@@ -82,13 +92,34 @@ def get_maintenance_stats_payload() -> dict[str, Any]:
 def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: int = 50) -> dict[str, Any]:
     where_clauses = []
     if kind == 'collision':
-        where_clauses.append('is_collision')
+        # 新规则：collision 标签本阶段搁置（需要 >100km 双点，数据不足）
+        # UI 若查此 kind，用新 drift_pattern 字段（当前为 0），不再用旧 is_collision
+        where_clauses.append("drift_pattern = 'collision'")
     elif kind == 'migration':
         where_clauses.append("drift_pattern = 'migration'")
+    elif kind == 'dual_cluster':
+        where_clauses.append("drift_pattern = 'dual_cluster'")
+    elif kind == 'dynamic':
+        where_clauses.append("drift_pattern = 'dynamic'")
+    elif kind == 'uncertain':
+        where_clauses.append("drift_pattern = 'uncertain'")
     elif kind == 'multi_centroid':
-        where_clauses.append('is_multi_centroid')
+        # 与 UI "多质心" tab 对齐：uncertain（k_eff>=3 且未识别为动态）
+        where_clauses.append("drift_pattern = 'uncertain'")
+    elif kind == 'large_coverage':
+        where_clauses.append("drift_pattern = 'large_coverage'")
+    elif kind == 'oversize_single':
+        where_clauses.append("drift_pattern = 'oversize_single'")
+    elif kind == 'stable':
+        where_clauses.append("drift_pattern = 'stable'")
+    elif kind == 'insufficient':
+        where_clauses.append("drift_pattern = 'insufficient'")
     elif kind == 'anomaly':
-        where_clauses.append('(is_collision OR is_multi_centroid OR is_dynamic OR drift_pattern IN (\'migration\', \'large_coverage\', \'moderate_drift\'))')
+        # "全部异常" = 非 stable 且非 insufficient 的所有 cell
+        where_clauses.append(
+            "drift_pattern IN ('large_coverage', 'dual_cluster', 'migration', 'dynamic', "
+            "'uncertain', 'oversize_single', 'collision')"
+        )
     elif kind == 'dormant':
         where_clauses.append("lifecycle_state = 'dormant'")
     elif kind == 'retired':
@@ -151,16 +182,17 @@ def get_maintenance_bs_payload(page: int = 1, page_size: int = 50) -> dict[str, 
         SELECT
             t.operator_code, t.operator_cn, t.lac, t.bs_id, t.lifecycle_state,
             t.anchor_eligible, t.baseline_eligible, t.total_cells, t.qualified_cells, t.excellent_cells,
+            t.normal_cells, t.anomaly_cells, t.insufficient_cells,
             t.center_lon, t.center_lat, t.gps_p50_dist_m, t.gps_p90_dist_m,
             t.classification, t.position_grade, t.anomaly_cell_ratio,
             t.is_multi_centroid, t.window_active_cell_count,
-            (t.classification = 'large_spread') AS large_spread,
+            (t.classification != 'normal' AND t.classification != 'insufficient') AS is_anomaly_bs,
             loc.province_name, loc.city_name, loc.district_name
         FROM rebuild5.trusted_bs_library t
         LEFT JOIN rebuild4_meta.lac_location_snapshot loc
             ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
         WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
-        ORDER BY large_spread DESC, t.anomaly_cell_ratio DESC, t.total_cells DESC, t.bs_id
+        ORDER BY is_anomaly_bs DESC, t.anomaly_cells DESC NULLS LAST, t.total_cells DESC, t.bs_id
         """,
         page=page,
         page_size=page_size,
@@ -174,7 +206,9 @@ def get_maintenance_lac_payload(page: int = 1, page_size: int = 50) -> dict[str,
         SELECT
             t.operator_code, t.operator_cn, t.lac, t.lifecycle_state,
             t.anchor_eligible, t.baseline_eligible,
-            t.total_bs, t.qualified_bs, t.qualified_bs_ratio,
+            t.total_bs, t.normal_bs, t.anomaly_bs, t.insufficient_bs,
+            t.qualified_bs, t.qualified_bs_ratio,
+            t.center_lon, t.center_lat,
             t.area_km2, t.anomaly_bs_ratio,
             t.boundary_stability_score, t.active_bs_count, t.retired_bs_count,
             t.trend,
@@ -263,6 +297,7 @@ def get_maintenance_bs_detail_payload(bs_id: int) -> dict[str, Any] | None:
         SELECT
             operator_code, operator_cn, lac, bs_id, lifecycle_state,
             anchor_eligible, baseline_eligible, total_cells, qualified_cells, excellent_cells,
+            normal_cells, anomaly_cells, insufficient_cells,
             center_lon, center_lat, gps_p50_dist_m, gps_p90_dist_m,
             classification, position_grade, anomaly_cell_ratio,
             is_multi_centroid, window_active_cell_count

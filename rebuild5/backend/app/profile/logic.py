@@ -47,6 +47,77 @@ def load_core_position_filter_params(params: dict[str, Any] | None = None) -> di
     }
 
 
+def load_core_mad_filter_params(params: dict[str, Any] | None = None) -> dict[str, float]:
+    payload = params or load_antitoxin_params()
+    cfg = payload.get('core_mad_filter', {})
+    default_k_mad = float(cfg.get('k_mad', 3.0))
+    return {
+        'k_mad': default_k_mad,
+        'k_mad_small': float(cfg.get('k_mad_small', default_k_mad)),
+        'k_mad_medium': float(cfg.get('k_mad_medium', default_k_mad)),
+        'k_mad_large': float(cfg.get('k_mad_large', default_k_mad)),
+        'small_upper': int(cfg.get('small_upper', 50)),
+        'large_lower': int(cfg.get('large_lower', 200)),
+        'min_pts': int(cfg.get('min_pts', 4)),
+    }
+
+
+def load_gps_anomaly_filter_params(params: dict[str, Any] | None = None) -> dict[str, float]:
+    payload = params or load_antitoxin_params()
+    cfg = payload.get('gps_anomaly_filter', {})
+    return {
+        'max_anomaly_ratio': float(cfg.get('max_anomaly_ratio', 0.10)),
+        'max_anomaly_count': int(cfg.get('max_anomaly_count', 2)),
+    }
+
+
+def load_label_rules_params(params: dict[str, Any] | None = None) -> dict[str, float]:
+    payload = params or load_antitoxin_params()
+    cfg = payload.get('label_rules', {})
+    return {
+        'stable_max_p90_m': float(cfg.get('stable_max_p90_m', 1200)),
+        'large_coverage_max_p90_m': float(cfg.get('large_coverage_max_p90_m', 10000)),
+        'dual_cluster_max_dist_m': float(cfg.get('dual_cluster_max_dist_m', 5000)),
+        'dual_cluster_min_overlap_ratio': float(cfg.get('dual_cluster_min_overlap_ratio', 0.5)),
+        'migration_max_overlap_ratio': float(cfg.get('migration_max_overlap_ratio', 0.0)),
+        'migration_min_post_days': int(cfg.get('migration_min_post_days', 2)),
+        'collision_min_dist_m': float(cfg.get('collision_min_dist_m', 100000)),
+        'dynamic_min_span_m': float(cfg.get('dynamic_min_span_m', 5000)),
+        'dynamic_min_line_ratio': float(cfg.get('dynamic_min_line_ratio', 0.3)),
+        'dynamic_max_distance_cv': float(cfg.get('dynamic_max_distance_cv', 0.5)),
+        'dynamic_max_avg_dwell_days': float(cfg.get('dynamic_max_avg_dwell_days', 2)),
+    }
+
+
+def load_multi_centroid_v2_params(params: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = params or load_antitoxin_params()
+    cfg = payload.get('multi_centroid_v2', {})
+    return {
+        'dbscan_eps_m': float(cfg.get('dbscan_eps_m', 250)),
+        'dbscan_min_points': int(cfg.get('dbscan_min_points', 4)),
+        'min_cluster_dev_day_pts': int(cfg.get('min_cluster_dev_day_pts', 4)),
+        'multi_centroid_entry_p90_m': float(cfg.get('multi_centroid_entry_p90_m', 1300)),
+        'min_total_dedup_pts': int(cfg.get('min_total_dedup_pts', 8)),
+        'min_total_devs': int(cfg.get('min_total_devs', 3)),
+        'min_total_active_days': int(cfg.get('min_total_active_days', 3)),
+        'coord_scale_lon': float(cfg.get('coord_scale_lon', 85300)),
+        'coord_scale_lat': float(cfg.get('coord_scale_lat', 111000)),
+        'only_raw_gps': bool(cfg.get('only_raw_gps', True)),
+        'dedup_by': tuple(cfg.get('dedup_by', ['cell', 'dev', 'date'])),
+    }
+
+
+def build_core_mad_k_sql(total_pts_expr: str, params: dict[str, Any] | None = None) -> str:
+    cfg = params or load_core_mad_filter_params()
+    return (
+        f"CASE "
+        f"WHEN {total_pts_expr} < {int(cfg['small_upper'])} THEN {float(cfg['k_mad_small'])} "
+        f"WHEN {total_pts_expr} < {int(cfg['large_lower'])} THEN {float(cfg['k_mad_medium'])} "
+        f"ELSE {float(cfg['k_mad_large'])} "
+        f"END"
+    )
+
+
 def load_retention_params(path: Path | None = None) -> dict[str, Any]:
     target = path or settings.retention_params_path
     if not target.exists():

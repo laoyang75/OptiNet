@@ -15,7 +15,7 @@ import { fmt } from '../../composables/useFormat'
 import { STATE_LABELS, type LifecycleState } from '../../types'
 
 const emptyDistribution: Record<LifecycleState, number> = {
-  excellent: 0, qualified: 0, observing: 0, waiting: 0, dormant: 0, retired: 0,
+  excellent: 0, qualified: 0, observing: 0, waiting: 0, active: 0, dormant: 0, retired: 0,
 }
 
 const payload = ref<EvaluationOverviewPayload>({

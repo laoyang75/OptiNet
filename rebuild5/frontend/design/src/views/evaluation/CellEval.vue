@@ -16,7 +16,7 @@ import { OPERATORS, STATE_LABELS } from '../../types'
 import type { LifecycleState } from '../../types'
 
 /* ---------- state ---------- */
-const distribution = ref({ excellent: 0, qualified: 0, observing: 0, waiting: 0, dormant: 0, retired: 0 })
+const distribution = ref({ excellent: 0, qualified: 0, observing: 0, waiting: 0, active: 0, dormant: 0, retired: 0 })
 const items = ref<CellEvaluationItem[]>([])
 const stateFilter = ref('')
 const operatorFilter = ref('')

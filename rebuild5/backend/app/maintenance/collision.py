@@ -91,19 +91,22 @@ def _detect_geographic_collision(
     absolute_min_distance_m is a geographic collision: the same cell_id
     is being reported from physically distant locations.
 
-    This replaces the old _detect_absolute_collision which relied on
-    COUNT(DISTINCT bs_id) > 1 — structurally impossible given the PK.
+    2026-04-19 note:
+      - absolute_min_distance_m 由 yaml `collision.absolute_collision_min_distance_m`
+        提供，已与 `label_rules.collision_min_dist_m` 对齐到 100km。
+      - 本函数在 label_engine 之后运行，set 的 is_collision=TRUE 与 label_engine 的
+        `is_collision = (label='collision')` 判定一致，不再产生冲突。
+      - 额外副作用（antitoxin_hit / baseline_eligible）保留，用于阻断碰撞 cell 在下一批
+        Step 2 / Step 4 中被作为 donor 给其他记录补数，避免污染扩散。
 
-    Reads from: cell_centroid_detail (populated by publish_cell_centroid_detail)
+    Reads from: cell_centroid_detail (populated by label_engine / publish_cell_centroid_detail)
     Marks affected cells in trusted_cell_library:
-      is_collision=TRUE, drift_pattern='collision',
-      antitoxin_hit=TRUE, baseline_eligible=FALSE
+      is_collision=TRUE, antitoxin_hit=TRUE, baseline_eligible=FALSE
     """
     execute(
         """
         UPDATE rebuild5.trusted_cell_library c
         SET is_collision = TRUE,
-            drift_pattern = 'collision',
             antitoxin_hit = TRUE,
             baseline_eligible = FALSE
         FROM (
