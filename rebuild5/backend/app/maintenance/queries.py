@@ -6,6 +6,50 @@ from typing import Any
 from ..core.database import fetchall, fetchone, paginate
 
 
+def _attach_admin_area(items: list[dict[str, Any]]) -> None:
+    """In-place attach province_name / city_name / district_name to each item
+    by nearest centroid lookup against rebuild2.dim_admin_area.
+
+    Uses a single SQL call that expands items via UNNEST + LATERAL, so cost
+    is O(N rows × 2874 candidates) instead of the full-table cost that
+    LATERAL inside a paginate() SQL would incur (COUNT(*) forces every row).
+    """
+    if not items:
+        return
+    idx_arr: list[int] = []
+    lon_arr: list[float | None] = []
+    lat_arr: list[float | None] = []
+    for i, it in enumerate(items):
+        lon = it.get('center_lon')
+        lat = it.get('center_lat')
+        idx_arr.append(i)
+        lon_arr.append(float(lon) if lon is not None else None)
+        lat_arr.append(float(lat) if lat is not None else None)
+
+    rows = fetchall(
+        """
+        SELECT p.idx, loc.province_name, loc.city_name, loc.district_name
+        FROM unnest(%s::int[], %s::double precision[], %s::double precision[])
+             WITH ORDINALITY AS p(idx, lon, lat, ord)
+        LEFT JOIN LATERAL (
+            SELECT a.province_name, a.city_name, a.name AS district_name
+            FROM rebuild2.dim_admin_area a
+            WHERE p.lon IS NOT NULL AND p.lat IS NOT NULL
+            ORDER BY (a.center_lon - p.lon) * (a.center_lon - p.lon)
+                   + (a.center_lat - p.lat) * (a.center_lat - p.lat)
+            LIMIT 1
+        ) loc ON true
+        """,
+        (idx_arr, lon_arr, lat_arr),
+    )
+    admin_by_idx = {int(r['idx']): r for r in rows}
+    for i, it in enumerate(items):
+        row = admin_by_idx.get(i) or {}
+        it['province_name'] = row.get('province_name')
+        it['city_name'] = row.get('city_name')
+        it['district_name'] = row.get('district_name')
+
+
 DRIFT_KEYS = (
     'insufficient',
     'stable',
@@ -140,11 +184,8 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
             t.antitoxin_hit, t.cell_scale, t.window_obs_count, t.last_observed_at, t.independent_obs, t.distinct_dev_id,
             t.rsrp_avg, t.rsrq_avg, t.sinr_avg, t.pressure_avg,
             t.gps_valid_count, t.gps_confidence, t.signal_confidence, t.observed_span_hours, t.active_days,
-            t.active_days_30d, t.consecutive_inactive_days,
-            loc.province_name, loc.city_name, loc.district_name
+            t.active_days_30d, t.consecutive_inactive_days
         FROM rebuild5.trusted_cell_library t
-        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
-            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
         WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
         {where_sql}
         ORDER BY t.is_collision DESC, t.is_multi_centroid DESC, t.p90_radius_m DESC NULLS LAST, t.cell_id
@@ -173,6 +214,7 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
         key = f"{item['cell_id']}|{item.get('tech_norm') or ''}"
         item['centroids'] = centroids_by_cell.get(key, [])
 
+    _attach_admin_area(result['items'])
     return {'items': result['items'], 'kind': kind, '_page_info': result}
 
 
@@ -186,17 +228,15 @@ def get_maintenance_bs_payload(page: int = 1, page_size: int = 50) -> dict[str, 
             t.center_lon, t.center_lat, t.gps_p50_dist_m, t.gps_p90_dist_m,
             t.classification, t.position_grade, t.anomaly_cell_ratio,
             t.is_multi_centroid, t.window_active_cell_count,
-            (t.classification != 'normal' AND t.classification != 'insufficient') AS is_anomaly_bs,
-            loc.province_name, loc.city_name, loc.district_name
+            (t.classification != 'normal' AND t.classification != 'insufficient') AS is_anomaly_bs
         FROM rebuild5.trusted_bs_library t
-        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
-            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
         WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
         ORDER BY is_anomaly_bs DESC, t.anomaly_cells DESC NULLS LAST, t.total_cells DESC, t.bs_id
         """,
         page=page,
         page_size=page_size,
     )
+    _attach_admin_area(result['items'])
     return {'items': result['items'], '_page_info': result}
 
 
@@ -211,17 +251,15 @@ def get_maintenance_lac_payload(page: int = 1, page_size: int = 50) -> dict[str,
             t.center_lon, t.center_lat,
             t.area_km2, t.anomaly_bs_ratio,
             t.boundary_stability_score, t.active_bs_count, t.retired_bs_count,
-            t.trend,
-            loc.province_name, loc.city_name, loc.district_name
+            t.trend
         FROM rebuild5.trusted_lac_library t
-        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
-            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
         WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)
         ORDER BY t.anomaly_bs_ratio DESC, t.total_bs DESC, t.lac
         """,
         page=page,
         page_size=page_size,
     )
+    _attach_admin_area(result['items'])
     return {'items': result['items'], '_page_info': result}
 
 

@@ -15,7 +15,7 @@ ODS_RULES = [
     {"id": "ODS-004", "name": "4G LAC 保留值置空", "field": "lac", "action": "nullify", "where": "lac IN (65534, 65535) AND tech_norm = '4G'", "desc": "4G 16bit 保留值 0xFFFE/0xFFFF"},
     {"id": "ODS-004b", "name": "5G LAC 保留值置空", "field": "lac", "action": "nullify", "where": "lac IN (16777214, 16777215) AND tech_norm = '5G'", "desc": "5G 24bit 保留值 0xFFFFFE/0xFFFFFF"},
     {"id": "ODS-005", "name": "LAC 溢出值置空", "field": "lac", "action": "nullify", "where": "lac IN (268435455, 2147483647)", "desc": "LAC 28bit/INT_MAX 溢出值"},
-    {"id": "ODS-006", "name": "CellID=0 删行", "field": "cell_id", "action": "delete", "where": "cell_id = 0", "desc": "无有效小区标识"},
+    {"id": "ODS-006", "name": "CellID<=0 删行", "field": "cell_id", "action": "delete", "where": "cell_id <= 0", "desc": "无有效小区标识（0 或负值，负值如 -1 会被下游派生出 bs_id=0 污染 BS/LAC 聚合）"},
     {"id": "ODS-007", "name": "5G CellID 溢出值删行", "field": "cell_id", "action": "delete", "where": "cell_id = 268435455 AND tech_norm = '5G'", "desc": "5G CellID 溢出值"},
     {"id": "ODS-008", "name": "4G CellID 溢出值删行", "field": "cell_id", "action": "delete", "where": "cell_id = 2147483647 AND tech_norm = '4G'", "desc": "4G CellID 溢出值"},
     {"id": "ODS-006a", "name": "4G CellID 过小删行", "field": "cell_id", "action": "delete", "where": "cell_id > 0 AND cell_id < 1000 AND tech_norm = '4G'", "desc": "4G CellID 最小合法值 1000（bs_id=cell_id/256，cell_id<1000 会得到 bs_id<4 的非法基站）"},

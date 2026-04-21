@@ -3,8 +3,35 @@ from __future__ import annotations
 
 from typing import Any
 
+import yaml
+
 from .source_prep import DATASET_KEY
 from ..core.database import execute, fetchone
+from ..core.settings import settings
+
+
+_CELL_INFOS_CFG_CACHE: dict[str, float] | None = None
+
+
+def _load_cell_infos_cfg() -> dict[str, float]:
+    """Load cell_infos ETL params from antitoxin_params.yaml (section etl_cell_infos).
+
+    Rule ODS-019: filter stale cached cells whose age_sec > max_age_sec.
+    Fallback to defaults if config missing.
+    """
+    global _CELL_INFOS_CFG_CACHE
+    if _CELL_INFOS_CFG_CACHE is not None:
+        return _CELL_INFOS_CFG_CACHE
+    path = settings.antitoxin_params_path
+    cfg: dict[str, Any] = {}
+    if path.exists():
+        with path.open('r', encoding='utf-8') as f:
+            payload = yaml.safe_load(f) or {}
+        cfg = payload.get('etl_cell_infos') or {}
+    _CELL_INFOS_CFG_CACHE = {
+        'max_age_sec': float(cfg.get('max_age_sec', 300)),
+    }
+    return _CELL_INFOS_CFG_CACHE
 
 
 def step1_parse() -> dict[str, Any]:
@@ -37,11 +64,48 @@ def step1_parse() -> dict[str, Any]:
     details = {
         'ci': int(counts['ci']) if counts else 0,
         'ss1': int(counts['ss1']) if counts else 0,
+        'ods_019': _collect_ods_019_stats(),
     }
     return {'input_count': input_count, 'output_count': output_count, 'details': details}
 
 
+def _collect_ods_019_stats() -> dict[str, Any]:
+    """Count how many cell_infos objects ODS-019 filtered as stale cache.
+
+    Scans raw_gps once; expected cost is comparable to one parse-phase SELECT
+    but not structurally heavy. Used by /api/etl/clean-rules to surface
+    the drop count in the UI for this run.
+    """
+    max_age_sec = _load_cell_infos_cfg()['max_age_sec']
+    row = fetchone(
+        f"""
+        SELECT
+            COUNT(*) FILTER (WHERE (e.cell->>'isConnected')::int = 1) AS total_connected,
+            COUNT(*) FILTER (
+                WHERE (e.cell->>'isConnected')::int = 1
+                  AND e.cell->>'timeStamp' ~ '^[0-9]+$'
+                  AND e.cell->>'past_time' ~ '^[0-9]+(\\.[0-9]+)?$'
+                  AND (e.cell->>'past_time')::numeric
+                      - (e.cell->>'timeStamp')::numeric / 1000.0 > {max_age_sec}
+            ) AS dropped_stale
+        FROM rebuild5.raw_gps r,
+             jsonb_each(NULLIF(btrim(r."cell_infos"), '')::jsonb) AS e(key, cell)
+        WHERE r."cell_infos" IS NOT NULL AND length(r."cell_infos") > 5
+        """
+    )
+    total = int(row['total_connected']) if row else 0
+    dropped = int(row['dropped_stale']) if row else 0
+    return {
+        'max_age_sec': max_age_sec,
+        'total_connected_objects': total,
+        'dropped_stale_count': dropped,
+        'kept_count': max(total - dropped, 0),
+        'drop_rate': round(dropped / total, 4) if total else 0.0,
+    }
+
+
 def _parse_cell_infos(source_table: str, source_tag: str, target_table: str) -> None:
+    max_age_sec = _load_cell_infos_cfg()['max_age_sec']
     execute(f'DROP TABLE IF EXISTS {target_table}')
     execute(
         f"""
@@ -130,6 +194,19 @@ def _parse_cell_infos(source_table: str, source_tag: str, target_table: str) -> 
                 e.cell->'cell_identity'->>'nci',
                 e.cell->'cell_identity'->>'cid'
               ) IS NOT NULL
+          -- ODS-019: filter stale cached cells (age_sec > max_age_sec).
+          -- Field missing / malformed → KEEP (conservative fallback).
+          AND (
+              e.cell->>'timeStamp' IS NULL
+              OR e.cell->>'past_time' IS NULL
+              OR NOT (e.cell->>'timeStamp' ~ '^[0-9]+$')
+              OR NOT (e.cell->>'past_time' ~ '^[0-9]+(\\.[0-9]+)?$')
+              OR (
+                  (e.cell->>'past_time')::numeric
+                  - (e.cell->>'timeStamp')::numeric / 1000.0
+                  <= {max_age_sec}
+              )
+          )
         """
     )
 

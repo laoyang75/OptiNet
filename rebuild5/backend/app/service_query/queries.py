@@ -143,8 +143,14 @@ def get_service_cell_payload(
         f"""
         SELECT t.*, loc.province_name, loc.city_name, loc.district_name
         FROM rebuild5.trusted_cell_library t
-        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
-            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        LEFT JOIN LATERAL (
+            SELECT a.province_name, a.city_name, a.name AS district_name
+            FROM rebuild2.dim_admin_area a
+            WHERE t.center_lon IS NOT NULL AND t.center_lat IS NOT NULL
+            ORDER BY (a.center_lon - t.center_lon) * (a.center_lon - t.center_lon)
+                   + (a.center_lat - t.center_lat) * (a.center_lat - t.center_lat)
+            LIMIT 1
+        ) loc ON true
         WHERE {' AND '.join(filters)}
         ORDER BY t.p90_radius_m ASC NULLS LAST, t.operator_code, t.lac
         LIMIT 1
@@ -170,8 +176,14 @@ def get_service_bs_payload(bs_id: int, *, operator_code: str | None = None, lac:
         f"""
         SELECT t.*, loc.province_name, loc.city_name, loc.district_name
         FROM rebuild5.trusted_bs_library t
-        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
-            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        LEFT JOIN LATERAL (
+            SELECT a.province_name, a.city_name, a.name AS district_name
+            FROM rebuild2.dim_admin_area a
+            WHERE t.center_lon IS NOT NULL AND t.center_lat IS NOT NULL
+            ORDER BY (a.center_lon - t.center_lon) * (a.center_lon - t.center_lon)
+                   + (a.center_lat - t.center_lat) * (a.center_lat - t.center_lat)
+            LIMIT 1
+        ) loc ON true
         WHERE {' AND '.join(filters)}
         ORDER BY t.total_cells DESC, t.operator_code, t.lac
         LIMIT 1
@@ -207,8 +219,14 @@ def get_service_lac_payload(lac: int, *, operator_code: str | None = None) -> di
         f"""
         SELECT t.*, loc.province_name, loc.city_name, loc.district_name
         FROM rebuild5.trusted_lac_library t
-        LEFT JOIN rebuild4_meta.lac_location_snapshot loc
-            ON t.operator_code = loc.operator_code AND t.lac = loc.lac::bigint
+        LEFT JOIN LATERAL (
+            SELECT a.province_name, a.city_name, a.name AS district_name
+            FROM rebuild2.dim_admin_area a
+            WHERE t.center_lon IS NOT NULL AND t.center_lat IS NOT NULL
+            ORDER BY (a.center_lon - t.center_lon) * (a.center_lon - t.center_lon)
+                   + (a.center_lat - t.center_lat) * (a.center_lat - t.center_lat)
+            LIMIT 1
+        ) loc ON true
         WHERE {' AND '.join(filters)}
         ORDER BY t.total_bs DESC, t.operator_code
         LIMIT 1

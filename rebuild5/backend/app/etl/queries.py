@@ -273,8 +273,33 @@ def get_etl_coverage_payload() -> dict[str, Any]:
 
 
 def get_clean_rules_payload() -> dict[str, Any]:
-    latest = _latest_stats() or {'clean_rules': [], 'parsed_record_count': 0, 'cleaned_record_count': 0, 'clean_deleted_count': 0, 'clean_pass_rate': 0}
+    latest = _latest_stats() or {
+        'clean_rules': [], 'parsed_record_count': 0, 'cleaned_record_count': 0,
+        'clean_deleted_count': 0, 'clean_pass_rate': 0, 'parse_details': {},
+    }
     rows = build_clean_rule_rows(latest.get('clean_rules') or [])
+
+    # ODS-019 is enforced during parse (cell_infos JSON expansion), not in
+    # clean.ODS_RULES. Surface its drop count here so the UI shows the full
+    # 20-rule ODS set for the latest run. See rule doc: 01b_数据源接入_处理规则.md
+    parse_details = latest.get('parse_details') or {}
+    ods_019 = parse_details.get('ods_019') if isinstance(parse_details, dict) else None
+    if ods_019:
+        total = int(ods_019.get('total_connected_objects') or 0)
+        dropped = int(ods_019.get('dropped_stale_count') or 0)
+        max_age = ods_019.get('max_age_sec', 300)
+        rows.append({
+            'rule_id': 'ODS-019',
+            'rule_name': 'CellInfos 陈旧缓存过滤',
+            'description': (
+                f'past_time - timeStamp/1000 > {max_age}s 的对象视为设备启动后的历史缓存，'
+                f'解析阶段直接丢弃；字段缺失时按 KEEP'
+            ),
+            'hit_count': dropped,
+            'drop_count': dropped,
+            'pass_rate': round((total - dropped) / total, 4) if total else 1.0,
+        })
+
     return {
         'rules': rows,
         'summary': {

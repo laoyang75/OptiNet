@@ -127,3 +127,11 @@ postgis_centroid:
   multi_cluster_min_cluster_count: 3
   recalc_min_p90_delta_m: 200
   recalc_min_window_obs_delta: 10
+etl_cell_infos:
+  # 单条 raw_gps 报文内，cell_infos JSON 的每个对象按
+  # age_sec = past_time - timeStamp / 1000 计算"数据年龄"。
+  # age_sec > max_age_sec 视为"设备启动后的历史缓存"，不 emit 到 etl_ci。
+  # past_time 和 timeStamp 都是设备内部单调计数器，不依赖壁钟时间。
+  # 字段缺失或非数字时按 KEEP（保守兜底）。
+  # 对应规则 ODS-019（rebuild5/docs/01b_数据源接入_处理规则.md）。
+  max_age_sec: 300
