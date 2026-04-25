@@ -24,19 +24,25 @@ bash rebuild5/scripts/runbook/run_single_batch.sh 2025-12-01 1
 bash rebuild5/scripts/runbook/run_full_pipelined.sh
 ```
 
-### 1.4 跑全 7 批(串行 fallback,稳但慢)
+### 1.4 跑全 7 批(loop_optim artifact pipelined,默认推荐)
+
+```bash
+bash rebuild5/scripts/runbook/run_full_artifact_pipelined.sh
+```
+
+### 1.5 跑全 7 批(串行 fallback,稳但慢)
 
 ```bash
 bash rebuild5/scripts/runbook/run_full_serial.sh
 ```
 
-### 1.5 每批跑完打 4 哨兵
+### 1.6 每批跑完打 4 哨兵
 
 ```bash
 bash rebuild5/scripts/runbook/sentinels.sh <batch_id>
 ```
 
-### 1.6 终点验收(batch 7 完成后)
+### 1.7 终点验收(batch 7 完成后)
 
 ```bash
 bash rebuild5/scripts/runbook/endpoint_check.sh
@@ -100,12 +106,11 @@ bash rebuild5/scripts/runbook/endpoint_check.sh
 
 ## 4. 已验证的基线指标(2026-04-25)
 
-| 指标 | PG17 黄金 | Citus 串行(fix5 D) | Citus pipelined(fix6 03) |
-|---|---:|---:|---:|
-| TCL b7 总量 | 341,460 | 348,921(+2.19%) | 340,767(-0.20% vs PG17;-2.34% vs serial) |
-| stable | 337,480 | 344,339 | 336,804 |
-| dual_cluster | 442 | 445 | 465 |
-| 7 批总时长 | n/a | ~150 min | 132.45 min |
+| 指标 | PG17 黄金 | Citus 串行(fix5 D) | Citus pipelined(fix6 03) | Citus artifact pipelined(loop_optim 03) |
+|---|---:|---:|---:|---:|
+| TCL b7 总量 | 341,460 | 348,921(+2.19%) | 340,767(-0.20%) | 340,766(-0.20%) |
+| 7 批总时长 | n/a | ~150 min | ~132 min | **142.34 min** |
+| speedup | 1.0x | 1.0x | 1.13x | **1.05x** |
 
 ## 5. 历史诊断 trail
 

@@ -227,6 +227,8 @@ def _run_artifact_consumer(
             validation["raw_count"] = job.raw_count
             validation["artifact_relation"] = artifact_relation
             _assert_batch(validation, min_cells=min_cells, max_cells=max_cells, require_dynamic=require_dynamic)
+            execute("DROP VIEW IF EXISTS rb5.step2_batch_input")
+            execute(f"CREATE VIEW rb5.step2_batch_input AS SELECT * FROM {artifact_relation}")
             _run_batch_sentinels(batch_id=job.batch_id, day=job.day)
             _mark_artifact(job.batch_id, "consumed")
             batch_results.append(validation)

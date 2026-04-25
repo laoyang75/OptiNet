@@ -41,7 +41,7 @@ fix6_optim 实现了 Citus 兼容稳定 + pipelined 1.13× 加速 + runbook。
 - [x] 01 索引补全 — `01_index_additions_report.md`
 - [x] 02 artifact pipelined — `02_artifact_pipelined_report.md`
 - [x] 02b artifact 分布键 hotfix — `02b_artifact_dist_fix_report.md`
-- [ ] 03 重跑验证 — 等 02
+- [x] 03 重跑验证 — `03_rerun_report.md`
 - [ ] 04 UI — 等 03
 
 ## 引用 fix5/fix6 关键产出(loop_optim 期间共用)
