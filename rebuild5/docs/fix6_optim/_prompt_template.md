@@ -159,6 +159,41 @@ grep -lE "<本阶段相关关键词>" rebuild5/docs/
 
 ---
 
+## § 11 完工后流程(所有阶段统一,2026-04-25 起)
+
+**用户指令**:减少 ack 交互,agent 自主判断,完工自动 commit + push。每阶段 agent 都按这个流程收尾,**不再每个阶段重新约定**。
+
+1. 完成 § 6 所有验证项(任意挂 → 写 blocker note → 在对话报告 → 等上游)
+2. **commit + push**(每阶段一次):
+   - `git add` 显式列本阶段所有产物路径(代码 + 报告 + 修改的文档)
+   - 一个 commit,message 格式:`<type>(rebuild5): fix6_optim <阶段编号> <一句话总结>`(`type` = `feat` / `refactor` / `test` / `docs`)
+   - body 列 3-5 个 bullet 说明改动
+   - 末尾 `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
+   - `git push origin main`(本地研究 + private repo,不开 PR / 不开分支)
+3. 写完工 note(§ 8 完工 topic)
+4. 在对话用 § 9 完工话术汇报,带:
+   - 报告路径
+   - 关键指标(数字)
+   - commit SHA + GitHub URL
+   - notes topic
+
+**不再要求开跑前 ack**。除非你遇到:
+- 任意一个验证项确定挂(blocker)
+- 撞到 prompt 里没覆盖的范围模糊点
+- 发现上游 agent(02A 给 02B、02B 给 02C 等)的报告有错或不完整
+
+否则一路自主跑到完工话术。
+
+## § 12 上下游互相审核(从 02 阶段起)
+
+每个阶段 agent **不只是执行上游 agent 的报告**,还要**审核它**:
+
+1. 读上游报告时,检查关键判断的可行性(签名能否工作 / 命中是否准确 / 推荐项是否合并/分裂)
+2. 如发现误判 / 设计 corner case,在本阶段报告 §0 加一节 "**对上游报告的修订**",列出哪些点不采纳 + 为什么
+3. **不擅自悄悄绕过**上游推荐 —— 修订必须显式记录,这样下下游 agent 能看到完整决策链
+
+举例:02B agent 读到 02A 报告里"6 条必做",发现其中第 5 条(snapshot_seed_records)实际上 caller 上下文需要返回值,统一 helper 签名不支持 → 02B 报告 §0 写"对 02A §5 的修订:第 5 条 caller 需要返回 row count,因此把统一 helper 加 `return_rowcount: bool = False` 参数",然后照修订实施。
+
 ## 写 prompt 时的 Claude 自检清单
 
 在把 prompt 给 user 之前,过一遍:
@@ -175,5 +210,7 @@ grep -lE "<本阶段相关关键词>" rebuild5/docs/
 - [ ] § 8 notes topic 命名一致(`fix6_<阶段编号>_*`)
 - [ ] § 9 完工话术包含关键数字 placeholder
 - [ ] § 10 失败兜底含"不自作主张"
+- [ ] § 11 完工后流程已被本阶段引用(commit + push + note + 话术)
+- [ ] § 12 上下游互相审核已被本阶段引用(若是 02 起的下游阶段)
 
 漏一项 = prompt 不合格。
