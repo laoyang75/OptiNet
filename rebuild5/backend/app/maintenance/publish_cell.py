@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from ..core.citus_compat import execute_distributed_insert
 from ..core.database import execute, fetchone
 from ..etl.source_prep import DATASET_KEY
 from ..profile.pipeline import relation_exists
@@ -53,7 +54,7 @@ def publish_cell_library(
     # Previous library for anti-toxification
     prev_join = 'TRUE' if has_prev else 'FALSE'
 
-    execute(
+    execute_distributed_insert(
         f"""
         INSERT INTO rb5.trusted_cell_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
@@ -282,7 +283,7 @@ def publish_cell_library(
             END
         FROM merged m
         """,
-        (
+        params=(
             # merged CTE joins
             batch_id,  # cw.batch_id
             batch_id,  # a.batch_id

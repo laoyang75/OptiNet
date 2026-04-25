@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from typing import Any
 
+from ..core.citus_compat import execute_distributed_insert
 from ..core.database import execute, fetchone
 from ..etl.source_prep import DATASET_KEY
 from .logic import (
@@ -1543,7 +1544,7 @@ def build_profile_base(run_id: str) -> None:
 def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
     input_relation = get_step2_input_relation()
     execute('DELETE FROM rb5.candidate_seed_history WHERE batch_id = %s', (batch_id,))
-    execute(
+    execute_distributed_insert(
         f"""
         INSERT INTO rb5.candidate_seed_history (
             batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
@@ -1609,7 +1610,7 @@ def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
         WHERE c.has_raw_gps
           AND a.source_tid IS NULL
         """,
-        (batch_id, run_id, DATASET_KEY, run_id),
+        params=(batch_id, run_id, DATASET_KEY, run_id),
     )
     execute('ANALYZE rb5.candidate_seed_history')
 

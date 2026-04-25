@@ -206,7 +206,13 @@ def _execute_ctas_as_distributed(
 
     cur.execute(f"CREATE {unlogged}TABLE {relation} AS {select_sql} WITH NO DATA", params)
     _ensure_citus_layout(cur, relation)
-    cur.execute(f"INSERT INTO {relation} {select_sql}", params)
+    insert_sql = f"INSERT INTO {relation} {select_sql}"
+    if params:
+        from .citus_compat import execute_distributed_insert
+
+        execute_distributed_insert(insert_sql, params=params)
+    else:
+        cur.execute(insert_sql)
     return True
 
 

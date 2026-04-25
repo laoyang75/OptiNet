@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from ..core.citus_compat import execute_distributed_insert
 from ..core.database import execute, fetchone
 from ..core.parallel import NUM_WORKERS_INSERT, parallel_execute  # multiprocessing-based
 from ..etl.source_prep import DATASET_KEY
@@ -410,7 +411,7 @@ def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
     execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_new_cells ON rb5._snapshot_seed_new_cells (operator_code, lac, cell_id, tech_norm)')
     execute('ANALYZE rb5._snapshot_seed_new_cells')
 
-    execute(
+    execute_distributed_insert(
         f"""
         INSERT INTO rb5.snapshot_seed_records (
             batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
@@ -482,7 +483,7 @@ def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
             e.event_time_std DESC NULLS LAST,
             e.source_row_uid DESC
         """,
-        (run_id, DATASET_KEY),
+        params=(run_id, DATASET_KEY),
     )
     execute('DROP TABLE IF EXISTS rb5._snapshot_seed_new_cells')
 

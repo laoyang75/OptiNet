@@ -13,9 +13,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from psycopg import ClientCursor
-
-from ..core.database import execute, get_conn
+from ..core.citus_compat import execute_distributed_insert
+from ..core.database import execute
 from ..etl.source_prep import DATASET_KEY
 from ..profile.logic import (
     flatten_antitoxin_thresholds,
@@ -266,7 +265,7 @@ def publish_cell_centroid_detail(
         """
     )
     execute('ANALYZE rb5._cell_centroid_grid_points')
-    _execute_with_session_settings(
+    execute_distributed_insert(
         session_setup_sqls=['SET enable_nestloop = off'],
         sql=f"""
         CREATE UNLOGGED TABLE rb5._cell_centroid_clustered_grid AS
@@ -891,26 +890,6 @@ def publish_cell_centroid_detail(
 # ---------------------------------------------------------------------------
 
 
-def _execute_with_session_settings(
-    *,
-    session_setup_sqls: list[str],
-    sql: str,
-    params: tuple[Any, ...] | None = None,
-) -> None:
-    with get_conn() as conn:
-        with ClientCursor(conn) as cur:
-            for stmt in session_setup_sqls:
-                cur.execute(stmt)
-            if params:
-                # Citus distributed planner rejects parameterized INSERT...SELECT
-                # with CTEs at scale; inline params client-side before execution.
-                cur.execute(cur.mogrify(sql, params))
-            else:
-                cur.execute(sql)
-            for stmt in reversed(session_setup_sqls):
-                if stmt.upper().startswith('SET '):
-                    cur.execute(f"RESET {stmt.split()[1]}")
-
 def publish_bs_library(
     *,
     run_id: str,
@@ -937,7 +916,7 @@ def publish_bs_library(
     """
     thresholds = flatten_profile_thresholds(load_profile_params())
     execute('DELETE FROM rb5.trusted_bs_library WHERE batch_id = %s', (batch_id,))
-    _execute_with_session_settings(
+    execute_distributed_insert(
         session_setup_sqls=['SET enable_nestloop = off'],
         sql=f"""
         INSERT INTO rb5.trusted_bs_library (
@@ -1098,7 +1077,7 @@ def publish_bs_centroid_detail(
         else thresholds['bs_max_cell_to_bs_distance_m']
     )
     execute('DELETE FROM rb5.bs_centroid_detail WHERE batch_id = %s', (batch_id,))
-    execute(
+    execute_distributed_insert(
         f"""
         WITH candidates AS (
             SELECT
@@ -1192,7 +1171,7 @@ def publish_bs_centroid_detail(
         FROM ranked
         WHERE cluster_count > 1
         """,
-        (batch_id, batch_id, snapshot_version),
+        params=(batch_id, batch_id, snapshot_version),
     )
     execute(
         """
@@ -1237,7 +1216,7 @@ def publish_lac_library(
     """
     thresholds = flatten_profile_thresholds(load_profile_params())
     execute('DELETE FROM rb5.trusted_lac_library WHERE batch_id = %s', (batch_id,))
-    execute(
+    execute_distributed_insert(
         f"""
         INSERT INTO rb5.trusted_lac_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
@@ -1348,6 +1327,6 @@ def publish_lac_library(
         LEFT JOIN lac_geo lg ON lg.operator_code = ba.operator_code AND lg.lac = ba.lac
         LEFT JOIN prev_lac p ON p.operator_code = ba.operator_code AND p.lac = ba.lac
         """,
-        (batch_id, batch_id, batch_id,
-         batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id),
+        params=(batch_id, batch_id, batch_id,
+                batch_id, snapshot_version, snapshot_version_prev, DATASET_KEY, run_id),
     )
