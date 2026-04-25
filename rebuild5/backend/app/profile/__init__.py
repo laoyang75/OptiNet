@@ -1,1 +1,1 @@
-"""Step 2/3 profile pipeline package for rebuild5."""
+"""Step 2/3 profile pipeline package for rb5."""

@@ -9,7 +9,7 @@ Workflow:
    - run Step 1 on the slice
    - append the day's etl_cleaned into a cumulative table
    - run Step 2 -> Step 5 for that day
-4. Restore rebuild5.raw_gps to the full prepared dataset and rebuild5.etl_cleaned
+4. Restore rb5.raw_gps to the full prepared dataset and rb5.etl_cleaned
    to the cumulative 7-day output.
 """
 from __future__ import annotations
@@ -35,12 +35,12 @@ from rebuild5.scripts.run_daily_increment_batch_loop import _load_dataset_day_ra
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 
-FULL_RAW_BACKUP = 'rebuild5.raw_gps_full_backup'
-CUMULATIVE_ETL = 'rebuild5.etl_cleaned_daily_cumulative'
+FULL_RAW_BACKUP = 'rb5.raw_gps_full_backup'
+CUMULATIVE_ETL = 'rb5.etl_cleaned_daily_cumulative'
 RESET_SQL_PATH = Path(__file__).with_name('reset_step1_to_step5_for_full_rerun_v3.sql')
 
 
@@ -90,66 +90,66 @@ def _ensure_full_raw_backup(*, prepare_dataset_flag: bool) -> dict[str, object] 
         _log({'event': 'prepare_dataset_done', 'result': prepare_result})
         if relation_exists(FULL_RAW_BACKUP):
             execute(f'DROP TABLE IF EXISTS {FULL_RAW_BACKUP}')
-        execute(f'ALTER TABLE rebuild5.raw_gps RENAME TO raw_gps_full_backup')
+        execute(f'ALTER TABLE rb5.raw_gps RENAME TO raw_gps_full_backup')
         return prepare_result
 
     if relation_exists(FULL_RAW_BACKUP):
         row = fetchone(f'SELECT COUNT(*) AS cnt FROM {FULL_RAW_BACKUP}')
         return {'reused_backup_rows': int(row["cnt"]) if row else 0}
 
-    if not relation_exists('rebuild5.raw_gps'):
-        raise RuntimeError('skip-prepare requires rebuild5.raw_gps or rebuild5.raw_gps_full_backup to exist')
+    if not relation_exists('rb5.raw_gps'):
+        raise RuntimeError('skip-prepare requires rb5.raw_gps or rb5.raw_gps_full_backup to exist')
 
-    execute(f'ALTER TABLE rebuild5.raw_gps RENAME TO raw_gps_full_backup')
+    execute(f'ALTER TABLE rb5.raw_gps RENAME TO raw_gps_full_backup')
     row = fetchone(f'SELECT COUNT(*) AS cnt FROM {FULL_RAW_BACKUP}')
     return {'reused_backup_rows': int(row["cnt"]) if row else 0}
 
 
 def _materialize_raw_gps_day(day: date) -> int:
     start_ts, end_ts = _iso_day_bounds(day)
-    execute('DROP TABLE IF EXISTS rebuild5.raw_gps')
+    execute('DROP TABLE IF EXISTS rb5.raw_gps')
     execute(
         """
-        CREATE TABLE rebuild5.raw_gps AS
+        CREATE TABLE rb5.raw_gps AS
         SELECT *
-        FROM rebuild5.raw_gps_full_backup
+        FROM rb5.raw_gps_full_backup
         WHERE ts >= %s
           AND ts < %s
         """,
         (start_ts, end_ts),
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rebuild5.raw_gps ("记录数唯一标识")')
-    execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rebuild5.raw_gps (ts)')
-    row = fetchone('SELECT COUNT(*) AS cnt FROM rebuild5.raw_gps')
+    execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rb5.raw_gps ("记录数唯一标识")')
+    execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rb5.raw_gps (ts)')
+    row = fetchone('SELECT COUNT(*) AS cnt FROM rb5.raw_gps')
     return int(row['cnt']) if row else 0
 
 
 def _append_day_etl_to_cumulative() -> int:
     if not relation_exists(CUMULATIVE_ETL):
-        execute(f'CREATE TABLE {CUMULATIVE_ETL} AS SELECT * FROM rebuild5.etl_cleaned WHERE false')
-    execute(f'INSERT INTO {CUMULATIVE_ETL} SELECT * FROM rebuild5.etl_cleaned')
+        execute(f'CREATE TABLE {CUMULATIVE_ETL} AS SELECT * FROM rb5.etl_cleaned WHERE false')
+    execute(f'INSERT INTO {CUMULATIVE_ETL} SELECT * FROM rb5.etl_cleaned')
     row = fetchone(f'SELECT COUNT(*) AS cnt FROM {CUMULATIVE_ETL}')
     return int(row['cnt']) if row else 0
 
 
 def _finalize_cumulative_outputs() -> None:
-    execute('DROP TABLE IF EXISTS rebuild5.raw_gps')
+    execute('DROP TABLE IF EXISTS rb5.raw_gps')
     execute(f'ALTER TABLE {FULL_RAW_BACKUP} RENAME TO raw_gps')
 
     execute(f'DROP VIEW IF EXISTS {COMPAT_FILLED_VIEW}')
-    execute('DROP TABLE IF EXISTS rebuild5.etl_cleaned')
+    execute('DROP TABLE IF EXISTS rb5.etl_cleaned')
     execute(f'ALTER TABLE {CUMULATIVE_ETL} RENAME TO etl_cleaned')
-    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rebuild5.etl_cleaned (event_time_std)')
-    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rebuild5.etl_cleaned (record_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rb5.etl_cleaned (event_time_std)')
+    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rb5.etl_cleaned (record_id)')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_etl_cleaned_path_lookup
-        ON rebuild5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+        ON rb5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
         """
     )
-    execute(f'CREATE VIEW {COMPAT_FILLED_VIEW} AS SELECT * FROM rebuild5.etl_cleaned')
-    execute('ANALYZE rebuild5.raw_gps')
-    execute('ANALYZE rebuild5.etl_cleaned')
+    execute(f'CREATE VIEW {COMPAT_FILLED_VIEW} AS SELECT * FROM rb5.etl_cleaned')
+    execute('ANALYZE rb5.raw_gps')
+    execute('ANALYZE rb5.etl_cleaned')
 
 
 def main() -> None:
@@ -197,7 +197,7 @@ def main() -> None:
             })
 
             run_daily_batches(
-                input_relation='rebuild5.etl_cleaned',
+                input_relation='rb5.etl_cleaned',
                 start_day=day,
                 end_day=day,
                 plan_only=False,
@@ -208,7 +208,7 @@ def main() -> None:
         _finalize_cumulative_outputs()
         _log({'event': 'finalize_done'})
     finally:
-        if relation_exists(FULL_RAW_BACKUP) and not relation_exists('rebuild5.raw_gps'):
+        if relation_exists(FULL_RAW_BACKUP) and not relation_exists('rb5.raw_gps'):
             execute(f'ALTER TABLE {FULL_RAW_BACKUP} RENAME TO raw_gps')
 
 

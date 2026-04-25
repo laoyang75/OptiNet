@@ -117,7 +117,7 @@ def get_maintenance_stats_payload() -> dict[str, Any]:
     summary = _safe_fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step5_run_stats
+        FROM rb5_meta.step5_run_stats
         ORDER BY batch_id DESC NULLS LAST, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """
@@ -125,8 +125,8 @@ def get_maintenance_stats_payload() -> dict[str, Any]:
     drift_rows = _safe_fetchall(
         """
         SELECT drift_pattern, COUNT(*) AS count
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
         GROUP BY drift_pattern
         """
     )
@@ -168,6 +168,12 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
         where_clauses.append("lifecycle_state = 'dormant'")
     elif kind == 'retired':
         where_clauses.append("lifecycle_state = 'retired'")
+    elif kind == 'has_ta':
+        # 有效 TA 观测 > 0（TA 估距有数据，但样本少的可能不可信）
+        where_clauses.append("ta_n_obs > 0")
+    elif kind == 'ta_reliable':
+        # TA 样本 >= 10，估距可用于研究结论
+        where_clauses.append("ta_n_obs >= 10")
 
     where_sql = ''
     if where_clauses:
@@ -183,25 +189,32 @@ def get_maintenance_cells_payload(kind: str = 'all', page: int = 1, page_size: i
             t.gps_anomaly_type, t.is_collision, t.is_dynamic, t.is_multi_centroid,
             t.antitoxin_hit, t.cell_scale, t.window_obs_count, t.last_observed_at, t.independent_obs, t.distinct_dev_id,
             t.rsrp_avg, t.rsrq_avg, t.sinr_avg, t.pressure_avg,
+            t.ta_n_obs, t.ta_p50, t.ta_p90, t.ta_dist_p90_m, t.freq_band, t.ta_verification,
             t.gps_valid_count, t.gps_confidence, t.signal_confidence, t.observed_span_hours, t.active_days,
             t.active_days_30d, t.consecutive_inactive_days
-        FROM rebuild5.trusted_cell_library t
-        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library t
+        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
         {where_sql}
         ORDER BY t.is_collision DESC, t.is_multi_centroid DESC, t.p90_radius_m DESC NULLS LAST, t.cell_id
         """,
         page=page,
         page_size=page_size,
     )
-    # Attach centroid details for multi_centroid cells
-    multi_ids = [r['cell_id'] for r in result['items'] if r.get('is_multi_centroid')]
+    # Attach centroid details for multi-centroid and pattern-based multi-cluster cells.
+    # 旧字段 is_multi_centroid 与新 drift_pattern 不同步（is_multi_centroid=false 但
+    # drift_pattern='dual_cluster' 的情况下 cell_centroid_detail 里确有多簇），所以两个条件都取。
+    _multi_drifts = {'dual_cluster', 'collision', 'migration', 'uncertain'}
+    multi_ids = [
+        r['cell_id'] for r in result['items']
+        if r.get('is_multi_centroid') or r.get('drift_pattern') in _multi_drifts
+    ]
     centroids_by_cell: dict[int, list[dict]] = {}
     if multi_ids:
         centroid_rows = _safe_fetchall(
             """
             SELECT cell_id, tech_norm, cluster_id, center_lon, center_lat, obs_count, dev_count, share_ratio
-            FROM rebuild5.cell_centroid_detail
-            WHERE cell_id = ANY(%s) AND batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.cell_centroid_detail)
+            FROM rb5.cell_centroid_detail
+            WHERE cell_id = ANY(%s) AND batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.cell_centroid_detail)
             ORDER BY cell_id, cluster_id
             """,
             (multi_ids,),
@@ -229,8 +242,8 @@ def get_maintenance_bs_payload(page: int = 1, page_size: int = 50) -> dict[str, 
             t.classification, t.position_grade, t.anomaly_cell_ratio,
             t.is_multi_centroid, t.window_active_cell_count,
             (t.classification != 'normal' AND t.classification != 'insufficient') AS is_anomaly_bs
-        FROM rebuild5.trusted_bs_library t
-        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
+        FROM rb5.trusted_bs_library t
+        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_bs_library)
         ORDER BY is_anomaly_bs DESC, t.anomaly_cells DESC NULLS LAST, t.total_cells DESC, t.bs_id
         """,
         page=page,
@@ -252,8 +265,8 @@ def get_maintenance_lac_payload(page: int = 1, page_size: int = 50) -> dict[str,
             t.area_km2, t.anomaly_bs_ratio,
             t.boundary_stability_score, t.active_bs_count, t.retired_bs_count,
             t.trend
-        FROM rebuild5.trusted_lac_library t
-        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)
+        FROM rb5.trusted_lac_library t
+        WHERE t.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_lac_library)
         ORDER BY t.anomaly_bs_ratio DESC, t.total_bs DESC, t.lac
         """,
         page=page,
@@ -268,7 +281,7 @@ def get_collision_payload(page: int = 1, page_size: int = 50) -> dict[str, Any]:
         """
         SELECT batch_id, snapshot_version, cell_id, is_collision_id,
                collision_combo_count, dominant_combo, combo_keys_json
-        FROM rebuild5.collision_id_list
+        FROM rb5.collision_id_list
         ORDER BY collision_combo_count DESC, cell_id
         """,
         page=page,
@@ -281,8 +294,8 @@ def get_drift_payload() -> dict[str, Any]:
     rows = _safe_fetchall(
         """
         SELECT drift_pattern, COUNT(*) AS count
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
         GROUP BY drift_pattern
         ORDER BY count DESC, drift_pattern
         """
@@ -308,8 +321,8 @@ def get_maintenance_cell_detail_payload(cell_id: int) -> dict[str, Any] | None:
             independent_obs, distinct_dev_id,
             rsrp_avg, rsrq_avg, sinr_avg, pressure_avg,
             active_days_30d, consecutive_inactive_days
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
           AND cell_id = %s
         """,
         (cell_id,),
@@ -319,7 +332,7 @@ def get_maintenance_cell_detail_payload(cell_id: int) -> dict[str, Any] | None:
     centroids = _safe_fetchall(
         """
         SELECT cluster_id, center_lon, center_lat, obs_count, radius_m
-        FROM rebuild5.cell_centroid_detail
+        FROM rb5.cell_centroid_detail
         WHERE cell_id = %s
           AND tech_norm IS NOT DISTINCT FROM %s
         ORDER BY obs_count DESC
@@ -339,8 +352,8 @@ def get_maintenance_bs_detail_payload(bs_id: int) -> dict[str, Any] | None:
             center_lon, center_lat, gps_p50_dist_m, gps_p90_dist_m,
             classification, position_grade, anomaly_cell_ratio,
             is_multi_centroid, window_active_cell_count
-        FROM rebuild5.trusted_bs_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
+        FROM rb5.trusted_bs_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_bs_library)
           AND bs_id = %s
         """,
         (bs_id,),
@@ -350,8 +363,8 @@ def get_maintenance_bs_detail_payload(bs_id: int) -> dict[str, Any] | None:
     child_cells = _safe_fetchall(
         """
         SELECT cell_id, lifecycle_state, position_grade, p90_radius_m, drift_pattern, is_collision
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
           AND bs_id = %s
         ORDER BY independent_obs DESC
         """,
@@ -369,17 +382,17 @@ def get_antitoxin_hits_payload(page: int = 1, page_size: int = 50) -> dict[str, 
                    lifecycle_state, antitoxin_hit,
                    center_lon, center_lat, p90_radius_m, distinct_dev_id,
                    max_spread_m, drift_pattern, active_days_30d
-            FROM rebuild5.trusted_cell_library
-            WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+            FROM rb5.trusted_cell_library
+            WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
               AND antitoxin_hit = true
         ),
         prev AS (
             SELECT operator_code, lac, cell_id, tech_norm,
                    center_lon, center_lat, p90_radius_m, distinct_dev_id
-            FROM rebuild5.trusted_cell_library
+            FROM rb5.trusted_cell_library
             WHERE batch_id = (
-                SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library
-                WHERE batch_id < (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+                SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library
+                WHERE batch_id < (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
             )
         )
         SELECT
@@ -439,8 +452,8 @@ def get_exit_warnings_payload(page: int = 1, page_size: int = 50) -> dict[str, A
                      THEN ROUND(consecutive_inactive_days / 7.0, 2)
                  ELSE ROUND(consecutive_inactive_days / 14.0, 2)
             END AS urgency_ratio
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
           AND lifecycle_state NOT IN ('dormant', 'retired')
           AND consecutive_inactive_days > 0
         ORDER BY

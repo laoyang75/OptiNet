@@ -1,4 +1,4 @@
-"""Step 3 evaluation pipeline for rebuild5."""
+"""Step 3 evaluation pipeline for rb5."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -109,7 +109,7 @@ def build_final_snapshot_views(
     version so downstream pages and diffs see a complete batch view.
     """
     prev_cell_filter = f'WHERE prev.batch_id = {previous_batch_id}' if previous_batch_id else 'WHERE false'
-    if previous_batch_id and relation_exists('rebuild5.trusted_cell_library'):
+    if previous_batch_id and relation_exists('rb5.trusted_cell_library'):
         carry_forward_sql = f"""
         SELECT
             {batch_id}::int AS batch_id,
@@ -144,14 +144,14 @@ def build_final_snapshot_views(
             prev.rsrp_avg,
             prev.rsrq_avg,
             prev.sinr_avg
-        FROM rebuild5.trusted_snapshot_cell prev
-        JOIN rebuild5.trusted_cell_library pub
+        FROM rb5.trusted_snapshot_cell prev
+        JOIN rb5.trusted_cell_library pub
           ON pub.batch_id = {previous_batch_id}
          AND pub.operator_code = prev.operator_code
          AND pub.lac = prev.lac
          AND pub.cell_id = prev.cell_id
          AND pub.tech_norm IS NOT DISTINCT FROM prev.tech_norm
-        LEFT JOIN rebuild5._snapshot_current_cell curr
+        LEFT JOIN rb5._snapshot_current_cell curr
           ON curr.operator_code = prev.operator_code
          AND curr.lac = prev.lac
          AND curr.cell_id = prev.cell_id
@@ -196,39 +196,39 @@ def build_final_snapshot_views(
             NULL::double precision AS sinr_avg
         WHERE false
         """
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_final_cell')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_final_cell')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._snapshot_final_cell AS
-        SELECT * FROM rebuild5._snapshot_current_cell
+        CREATE UNLOGGED TABLE rb5._snapshot_final_cell AS
+        SELECT * FROM rb5._snapshot_current_cell
         UNION ALL
         {carry_forward_sql}
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_final_cell')
+    _disable_autovacuum('rb5._snapshot_final_cell')
 
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_final_bs_center')
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_final_bs')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_final_bs_center')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_final_bs')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._snapshot_final_bs_center AS
+        CREATE UNLOGGED TABLE rb5._snapshot_final_bs_center AS
         SELECT
             operator_code,
             lac,
             bs_id,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon) AS center_lon,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat) AS center_lat
-        FROM rebuild5._snapshot_final_cell
+        FROM rb5._snapshot_final_cell
         WHERE center_lon IS NOT NULL AND center_lat IS NOT NULL
         GROUP BY operator_code, lac, bs_id
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_final_bs_center')
+    _disable_autovacuum('rb5._snapshot_final_bs_center')
 
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_final_bs_dist')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_final_bs_dist')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._snapshot_final_bs_dist AS
+        CREATE UNLOGGED TABLE rb5._snapshot_final_bs_dist AS
         SELECT
             c.operator_code,
             c.lac,
@@ -239,8 +239,8 @@ def build_final_snapshot_views(
             PERCENTILE_CONT(0.9) WITHIN GROUP (
                 ORDER BY SQRT(POWER((c.center_lon - b.center_lon) * 85300, 2) + POWER((c.center_lat - b.center_lat) * 111000, 2))
             ) AS gps_p90_dist_m
-        FROM rebuild5._snapshot_final_cell c
-        JOIN rebuild5._snapshot_final_bs_center b
+        FROM rb5._snapshot_final_cell c
+        JOIN rb5._snapshot_final_bs_center b
           ON b.operator_code = c.operator_code
          AND b.lac = c.lac
          AND b.bs_id = c.bs_id
@@ -248,12 +248,12 @@ def build_final_snapshot_views(
         GROUP BY c.operator_code, c.lac, c.bs_id
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_final_bs_dist')
+    _disable_autovacuum('rb5._snapshot_final_bs_dist')
 
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_final_bs')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_final_bs')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._snapshot_final_bs AS
+        CREATE UNLOGGED TABLE rb5._snapshot_final_bs AS
         SELECT
             {batch_id}::int AS batch_id,
             '{snapshot_version}'::text AS snapshot_version,
@@ -292,20 +292,20 @@ def build_final_snapshot_views(
                 WHEN COUNT(*) FILTER (WHERE c.gps_valid_count > 0) >= {thresholds['bs_observing_min_cells_with_gps']} THEN 'qualified'
                 ELSE 'unqualified'
             END AS position_grade
-        FROM rebuild5._snapshot_final_cell c
-        LEFT JOIN rebuild5._snapshot_final_bs_center b
+        FROM rb5._snapshot_final_cell c
+        LEFT JOIN rb5._snapshot_final_bs_center b
           ON b.operator_code = c.operator_code AND b.lac = c.lac AND b.bs_id = c.bs_id
-        LEFT JOIN rebuild5._snapshot_final_bs_dist d
+        LEFT JOIN rb5._snapshot_final_bs_dist d
           ON d.operator_code = c.operator_code AND d.lac = c.lac AND d.bs_id = c.bs_id
         GROUP BY c.operator_code, c.lac, c.bs_id, b.center_lon, b.center_lat, d.gps_p50_dist_m, d.gps_p90_dist_m
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_final_bs')
+    _disable_autovacuum('rb5._snapshot_final_bs')
 
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_final_lac')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_final_lac')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._snapshot_final_lac AS
+        CREATE UNLOGGED TABLE rb5._snapshot_final_lac AS
         WITH lac_center AS (
             SELECT
                 operator_code,
@@ -313,7 +313,7 @@ def build_final_snapshot_views(
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon) AS center_lon,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat) AS center_lat,
                 ((MAX(center_lon) - MIN(center_lon)) * 85300) * ((MAX(center_lat) - MIN(center_lat)) * 111000) / 1000000.0 AS area_km2
-            FROM rebuild5._snapshot_final_bs
+            FROM rb5._snapshot_final_bs
             WHERE center_lon IS NOT NULL AND center_lat IS NOT NULL
             GROUP BY operator_code, lac
         )
@@ -351,13 +351,13 @@ def build_final_snapshot_views(
                 WHEN COUNT(*) FILTER (WHERE b.lifecycle_state <> 'waiting') >= {thresholds['lac_observing_min_non_waiting_bs']} THEN 'qualified'
                 ELSE 'unqualified'
             END AS position_grade
-        FROM rebuild5._snapshot_final_bs b
+        FROM rb5._snapshot_final_bs b
         LEFT JOIN lac_center c
           ON c.operator_code = b.operator_code AND c.lac = b.lac
         GROUP BY b.operator_code, b.lac, c.center_lon, c.center_lat, c.area_km2
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_final_lac')
+    _disable_autovacuum('rb5._snapshot_final_lac')
 
 
 def build_current_cell_snapshot(
@@ -373,11 +373,11 @@ def build_current_cell_snapshot(
 
     Snapshot = this round's evaluation result only (no carry-forward from published library).
     """
-    execute('DROP TABLE IF EXISTS rebuild5._candidate_eval_input')
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_current_cell')
+    execute('DROP TABLE IF EXISTS rb5._candidate_eval_input')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_current_cell')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._candidate_eval_input AS
+        CREATE UNLOGGED TABLE rb5._candidate_eval_input AS
         WITH current_profile AS (
             SELECT DISTINCT ON (operator_code, lac, cell_id, tech_norm)
                 operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
@@ -386,7 +386,7 @@ def build_current_cell_snapshot(
                 p50_radius_m, p90_radius_m, rsrp_avg, rsrq_avg, sinr_avg,
                 gps_valid_count, gps_original_count, signal_original_count,
                 gps_original_ratio, gps_valid_ratio, signal_original_ratio
-            FROM rebuild5.profile_base
+            FROM rb5.profile_base
             WHERE run_id = %s
             ORDER BY operator_code, lac, cell_id, tech_norm, independent_obs DESC NULLS LAST, record_count DESC NULLS LAST
         ),
@@ -398,7 +398,7 @@ def build_current_cell_snapshot(
                 p50_radius_m, p90_radius_m, rsrp_avg, rsrq_avg, sinr_avg,
                 gps_valid_count, gps_original_count, signal_original_count,
                 gps_original_ratio, gps_valid_ratio, signal_original_ratio
-            FROM rebuild5.candidate_cell_pool
+            FROM rb5.candidate_cell_pool
         )
         SELECT
             COALESCE(c.operator_code, h.operator_code) AS operator_code,
@@ -528,12 +528,12 @@ def build_current_cell_snapshot(
         """,
         (run_id,),
     )
-    _disable_autovacuum('rebuild5._candidate_eval_input')
+    _disable_autovacuum('rb5._candidate_eval_input')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._snapshot_current_cell AS
+        CREATE UNLOGGED TABLE rb5._snapshot_current_cell AS
         WITH collision_flags AS (
-            {f'SELECT DISTINCT cell_id, TRUE AS is_collision_id FROM rebuild5.collision_id_list WHERE batch_id = {previous_batch_id} AND cell_id IS NOT NULL' if relation_exists('rebuild5.collision_id_list') and previous_batch_id else 'SELECT NULL::bigint AS cell_id, TRUE AS is_collision_id WHERE false'}
+            {f'SELECT DISTINCT cell_id, TRUE AS is_collision_id FROM rb5.collision_id_list WHERE batch_id = {previous_batch_id} AND cell_id IS NOT NULL' if relation_exists('rb5.collision_id_list') and previous_batch_id else 'SELECT NULL::bigint AS cell_id, TRUE AS is_collision_id WHERE false'}
         )
         SELECT
             {batch_id}::int AS batch_id,
@@ -594,14 +594,14 @@ def build_current_cell_snapshot(
             p.rsrp_avg,
             p.rsrq_avg,
             p.sinr_avg
-        FROM rebuild5._candidate_eval_input p
+        FROM rb5._candidate_eval_input p
         LEFT JOIN collision_flags cf ON cf.cell_id = p.cell_id
         """,
     )
-    _disable_autovacuum('rebuild5._snapshot_current_cell')
+    _disable_autovacuum('rb5._snapshot_current_cell')
     execute(
         """
-        UPDATE rebuild5._snapshot_current_cell s
+        UPDATE rb5._snapshot_current_cell s
         SET baseline_eligible = (s.anchor_eligible AND s.lifecycle_state = 'excellent')
         """
     )
@@ -616,26 +616,26 @@ def build_current_bs_snapshot(
     thresholds: dict[str, float],
     antitoxin_thresholds: dict[str, float],
 ) -> None:
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_bs_center')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_bs_center')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._snapshot_bs_center AS
+        CREATE UNLOGGED TABLE rb5._snapshot_bs_center AS
         SELECT
             operator_code,
             lac,
             bs_id,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon) AS center_lon,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat) AS center_lat
-        FROM rebuild5._snapshot_current_cell
+        FROM rb5._snapshot_current_cell
         WHERE center_lon IS NOT NULL AND center_lat IS NOT NULL
         GROUP BY operator_code, lac, bs_id
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_bs_center')
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_bs_dist')
+    _disable_autovacuum('rb5._snapshot_bs_center')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_bs_dist')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._snapshot_bs_dist AS
+        CREATE UNLOGGED TABLE rb5._snapshot_bs_dist AS
         SELECT
             c.operator_code,
             c.lac,
@@ -646,8 +646,8 @@ def build_current_bs_snapshot(
             PERCENTILE_CONT(0.9) WITHIN GROUP (
                 ORDER BY SQRT(POWER((c.center_lon - b.center_lon) * 85300, 2) + POWER((c.center_lat - b.center_lat) * 111000, 2))
             ) AS gps_p90_dist_m
-        FROM rebuild5._snapshot_current_cell c
-        JOIN rebuild5._snapshot_bs_center b
+        FROM rb5._snapshot_current_cell c
+        JOIN rb5._snapshot_bs_center b
           ON b.operator_code = c.operator_code
          AND b.lac = c.lac
          AND b.bs_id = c.bs_id
@@ -655,11 +655,11 @@ def build_current_bs_snapshot(
         GROUP BY c.operator_code, c.lac, c.bs_id
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_bs_dist')
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_current_bs')
+    _disable_autovacuum('rb5._snapshot_bs_dist')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_current_bs')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._snapshot_current_bs AS
+        CREATE UNLOGGED TABLE rb5._snapshot_current_bs AS
         SELECT
             {batch_id}::int AS batch_id,
             '{snapshot_version}'::text AS snapshot_version,
@@ -698,15 +698,15 @@ def build_current_bs_snapshot(
                 WHEN COUNT(*) FILTER (WHERE c.gps_valid_count > 0) >= {thresholds['bs_observing_min_cells_with_gps']} THEN 'qualified'
                 ELSE 'unqualified'
             END AS position_grade
-        FROM rebuild5._snapshot_current_cell c
-        LEFT JOIN rebuild5._snapshot_bs_center b
+        FROM rb5._snapshot_current_cell c
+        LEFT JOIN rb5._snapshot_bs_center b
           ON b.operator_code = c.operator_code AND b.lac = c.lac AND b.bs_id = c.bs_id
-        LEFT JOIN rebuild5._snapshot_bs_dist d
+        LEFT JOIN rb5._snapshot_bs_dist d
           ON d.operator_code = c.operator_code AND d.lac = c.lac AND d.bs_id = c.bs_id
         GROUP BY c.operator_code, c.lac, c.bs_id, b.center_lon, b.center_lat, d.gps_p50_dist_m, d.gps_p90_dist_m
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_current_bs')
+    _disable_autovacuum('rb5._snapshot_current_bs')
 
 
 def build_current_lac_snapshot(
@@ -717,10 +717,10 @@ def build_current_lac_snapshot(
     previous_snapshot_version: str,
     thresholds: dict[str, float],
 ) -> None:
-    execute('DROP TABLE IF EXISTS rebuild5._snapshot_current_lac')
+    execute('DROP TABLE IF EXISTS rb5._snapshot_current_lac')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._snapshot_current_lac AS
+        CREATE UNLOGGED TABLE rb5._snapshot_current_lac AS
         WITH lac_center AS (
             SELECT
                 operator_code,
@@ -728,7 +728,7 @@ def build_current_lac_snapshot(
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lon) AS center_lon,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat) AS center_lat,
                 ((MAX(center_lon) - MIN(center_lon)) * 85300) * ((MAX(center_lat) - MIN(center_lat)) * 111000) / 1000000.0 AS area_km2
-            FROM rebuild5._snapshot_current_bs
+            FROM rb5._snapshot_current_bs
             WHERE center_lon IS NOT NULL AND center_lat IS NOT NULL
             GROUP BY operator_code, lac
         )
@@ -766,22 +766,22 @@ def build_current_lac_snapshot(
                 WHEN COUNT(*) FILTER (WHERE b.lifecycle_state <> 'waiting') >= {thresholds['lac_observing_min_non_waiting_bs']} THEN 'qualified'
                 ELSE 'unqualified'
             END AS position_grade
-        FROM rebuild5._snapshot_current_bs b
+        FROM rb5._snapshot_current_bs b
         LEFT JOIN lac_center c
           ON c.operator_code = b.operator_code AND c.lac = b.lac
         GROUP BY b.operator_code, b.lac, c.center_lon, c.center_lat, c.area_km2
         """
     )
-    _disable_autovacuum('rebuild5._snapshot_current_lac')
+    _disable_autovacuum('rb5._snapshot_current_lac')
 
 
 def write_snapshot_history(*, run_id: str, batch_id: int) -> None:
-    execute('DELETE FROM rebuild5.trusted_snapshot_cell WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.trusted_snapshot_bs WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.trusted_snapshot_lac WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.trusted_snapshot_cell WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.trusted_snapshot_bs WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.trusted_snapshot_lac WHERE batch_id = %s', (batch_id,))
     execute(
         """
-        INSERT INTO rebuild5.trusted_snapshot_cell (
+        INSERT INTO rb5.trusted_snapshot_cell (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
             lifecycle_state, is_registered, anchor_eligible, baseline_eligible, is_collision_id,
@@ -798,12 +798,12 @@ def write_snapshot_history(*, run_id: str, batch_id: int) -> None:
             position_grade, gps_confidence, signal_confidence,
             independent_obs, distinct_dev_id, gps_valid_count, active_days, observed_span_hours,
             rsrp_avg, rsrq_avg, sinr_avg
-        FROM rebuild5._snapshot_final_cell
+        FROM rb5._snapshot_final_cell
         """
     )
     execute(
         """
-        INSERT INTO rebuild5.trusted_snapshot_bs (
+        INSERT INTO rb5.trusted_snapshot_bs (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             operator_code, operator_cn, lac, bs_id, lifecycle_state,
             is_registered, anchor_eligible, baseline_eligible,
@@ -818,12 +818,12 @@ def write_snapshot_history(*, run_id: str, batch_id: int) -> None:
             cell_count, qualified_cell_count, excellent_cell_count, cells_with_gps,
             center_lon, center_lat, gps_p50_dist_m, gps_p90_dist_m,
             classification, position_grade
-        FROM rebuild5._snapshot_final_bs
+        FROM rb5._snapshot_final_bs
         """
     )
     execute(
         """
-        INSERT INTO rebuild5.trusted_snapshot_lac (
+        INSERT INTO rb5.trusted_snapshot_lac (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             operator_code, operator_cn, lac, lifecycle_state,
             is_registered, anchor_eligible, baseline_eligible,
@@ -836,7 +836,7 @@ def write_snapshot_history(*, run_id: str, batch_id: int) -> None:
             is_registered, anchor_eligible, baseline_eligible,
             bs_count, excellent_bs_count, qualified_bs_count, non_waiting_bs_count, cell_count,
             center_lon, center_lat, area_km2, anomaly_bs_ratio, position_grade
-        FROM rebuild5._snapshot_final_lac
+        FROM rb5._snapshot_final_lac
         """
     )
 
@@ -849,14 +849,14 @@ def build_snapshot_diffs(
     previous_batch_id: int,
     previous_snapshot_version: str,
 ) -> None:
-    execute('DELETE FROM rebuild5.snapshot_diff_cell WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.snapshot_diff_bs WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.snapshot_diff_lac WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.snapshot_diff_cell WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.snapshot_diff_bs WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.snapshot_diff_lac WHERE batch_id = %s', (batch_id,))
 
     prev_cell_filter = f'WHERE batch_id = {previous_batch_id}' if previous_batch_id else 'WHERE false'
     execute(
         f"""
-        INSERT INTO rebuild5.snapshot_diff_cell (
+        INSERT INTO rb5.snapshot_diff_cell (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             operator_code, lac, bs_id, cell_id,
             tech_norm,
@@ -866,10 +866,10 @@ def build_snapshot_diffs(
             centroid_shift_m, prev_p90_radius_m, curr_p90_radius_m
         )
         WITH prev AS (
-            SELECT * FROM rebuild5.trusted_snapshot_cell {prev_cell_filter}
+            SELECT * FROM rb5.trusted_snapshot_cell {prev_cell_filter}
         ),
         curr AS (
-            SELECT * FROM rebuild5._snapshot_final_cell
+            SELECT * FROM rb5._snapshot_final_cell
         )
         SELECT
             {batch_id}::int,
@@ -886,10 +886,34 @@ def build_snapshot_diffs(
             CASE
                 WHEN prev.cell_id IS NULL THEN 'new'
                 WHEN curr.cell_id IS NULL THEN 'removed'
-                WHEN CASE curr.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END
-                   > CASE prev.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END THEN 'promoted'
-                WHEN CASE curr.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END
-                   < CASE prev.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END THEN 'demoted'
+                WHEN CASE
+                        WHEN curr.lifecycle_state = 'waiting' THEN 0
+                        WHEN curr.lifecycle_state = 'observing' THEN 1
+                        WHEN curr.lifecycle_state = 'qualified' THEN 2
+                        WHEN curr.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END
+                   > CASE
+                        WHEN prev.lifecycle_state = 'waiting' THEN 0
+                        WHEN prev.lifecycle_state = 'observing' THEN 1
+                        WHEN prev.lifecycle_state = 'qualified' THEN 2
+                        WHEN prev.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END THEN 'promoted'
+                WHEN CASE
+                        WHEN curr.lifecycle_state = 'waiting' THEN 0
+                        WHEN curr.lifecycle_state = 'observing' THEN 1
+                        WHEN curr.lifecycle_state = 'qualified' THEN 2
+                        WHEN curr.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END
+                   < CASE
+                        WHEN prev.lifecycle_state = 'waiting' THEN 0
+                        WHEN prev.lifecycle_state = 'observing' THEN 1
+                        WHEN prev.lifecycle_state = 'qualified' THEN 2
+                        WHEN prev.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END THEN 'demoted'
                 WHEN COALESCE(curr.anchor_eligible, FALSE) <> COALESCE(prev.anchor_eligible, FALSE)
                   OR COALESCE(curr.baseline_eligible, FALSE) <> COALESCE(prev.baseline_eligible, FALSE) THEN 'eligibility_changed'
                 WHEN SQRT(
@@ -922,17 +946,17 @@ def build_snapshot_diffs(
     prev_bs_filter = f'WHERE batch_id = {previous_batch_id}' if previous_batch_id else 'WHERE false'
     execute(
         f"""
-        INSERT INTO rebuild5.snapshot_diff_bs (
+        INSERT INTO rb5.snapshot_diff_bs (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             operator_code, lac, bs_id, diff_kind,
             prev_lifecycle_state, curr_lifecycle_state,
             prev_cell_count, curr_cell_count, centroid_shift_m
         )
         WITH prev AS (
-            SELECT * FROM rebuild5.trusted_snapshot_bs {prev_bs_filter}
+            SELECT * FROM rb5.trusted_snapshot_bs {prev_bs_filter}
         ),
         curr AS (
-            SELECT * FROM rebuild5._snapshot_final_bs
+            SELECT * FROM rb5._snapshot_final_bs
         )
         SELECT
             {batch_id}::int,
@@ -947,10 +971,34 @@ def build_snapshot_diffs(
             CASE
                 WHEN prev.bs_id IS NULL THEN 'new'
                 WHEN curr.bs_id IS NULL THEN 'removed'
-                WHEN CASE curr.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END
-                   > CASE prev.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END THEN 'promoted'
-                WHEN CASE curr.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END
-                   < CASE prev.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END THEN 'demoted'
+                WHEN CASE
+                        WHEN curr.lifecycle_state = 'waiting' THEN 0
+                        WHEN curr.lifecycle_state = 'observing' THEN 1
+                        WHEN curr.lifecycle_state = 'qualified' THEN 2
+                        WHEN curr.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END
+                   > CASE
+                        WHEN prev.lifecycle_state = 'waiting' THEN 0
+                        WHEN prev.lifecycle_state = 'observing' THEN 1
+                        WHEN prev.lifecycle_state = 'qualified' THEN 2
+                        WHEN prev.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END THEN 'promoted'
+                WHEN CASE
+                        WHEN curr.lifecycle_state = 'waiting' THEN 0
+                        WHEN curr.lifecycle_state = 'observing' THEN 1
+                        WHEN curr.lifecycle_state = 'qualified' THEN 2
+                        WHEN curr.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END
+                   < CASE
+                        WHEN prev.lifecycle_state = 'waiting' THEN 0
+                        WHEN prev.lifecycle_state = 'observing' THEN 1
+                        WHEN prev.lifecycle_state = 'qualified' THEN 2
+                        WHEN prev.lifecycle_state = 'excellent' THEN 3
+                        ELSE 0
+                     END THEN 'demoted'
                 WHEN COALESCE(curr.cell_count, 0) <> COALESCE(prev.cell_count, 0) THEN 'geometry_changed'
                 ELSE 'unchanged'
             END,
@@ -970,54 +1018,108 @@ def build_snapshot_diffs(
         """
     )
 
-    prev_lac_filter = f'WHERE batch_id = {previous_batch_id}' if previous_batch_id else 'WHERE false'
-    execute(
-        f"""
-        INSERT INTO rebuild5.snapshot_diff_lac (
-            batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
-            operator_code, lac, diff_kind,
-            prev_lifecycle_state, curr_lifecycle_state,
-            prev_bs_count, curr_bs_count,
-            prev_area_km2, curr_area_km2
+    if not previous_batch_id:
+        execute(
+            f"""
+            INSERT INTO rb5.snapshot_diff_lac (
+                batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
+                operator_code, lac, diff_kind,
+                prev_lifecycle_state, curr_lifecycle_state,
+                prev_bs_count, curr_bs_count,
+                prev_area_km2, curr_area_km2
+            )
+            SELECT
+                {batch_id}::int,
+                '{snapshot_version}'::text,
+                '{previous_snapshot_version}'::text,
+                '{DATASET_KEY}'::text,
+                '{run_id}'::text,
+                NOW(),
+                curr.operator_code,
+                curr.lac,
+                'new'::text,
+                NULL::text,
+                curr.lifecycle_state,
+                NULL::bigint,
+                curr.bs_count,
+                NULL::double precision,
+                curr.area_km2
+            FROM rb5._snapshot_final_lac curr
+            """
         )
-        WITH prev AS (
-            SELECT * FROM rebuild5.trusted_snapshot_lac {prev_lac_filter}
-        ),
-        curr AS (
-            SELECT * FROM rebuild5._snapshot_final_lac
+    else:
+        prev_lac_filter = f'WHERE batch_id = {previous_batch_id}'
+        execute(
+            f"""
+            INSERT INTO rb5.snapshot_diff_lac (
+                batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
+                operator_code, lac, diff_kind,
+                prev_lifecycle_state, curr_lifecycle_state,
+                prev_bs_count, curr_bs_count,
+                prev_area_km2, curr_area_km2
+            )
+            WITH prev AS (
+                SELECT * FROM rb5.trusted_snapshot_lac {prev_lac_filter}
+            ),
+            curr AS (
+                SELECT * FROM rb5._snapshot_final_lac
+            )
+            SELECT
+                {batch_id}::int,
+                '{snapshot_version}'::text,
+                '{previous_snapshot_version}'::text,
+                '{DATASET_KEY}'::text,
+                '{run_id}'::text,
+                NOW(),
+                COALESCE(curr.operator_code, prev.operator_code),
+                COALESCE(curr.lac, prev.lac),
+                CASE
+                    WHEN prev.lac IS NULL THEN 'new'
+                    WHEN curr.lac IS NULL THEN 'removed'
+                    WHEN CASE
+                            WHEN curr.lifecycle_state = 'waiting' THEN 0
+                            WHEN curr.lifecycle_state = 'observing' THEN 1
+                            WHEN curr.lifecycle_state = 'qualified' THEN 2
+                            WHEN curr.lifecycle_state = 'excellent' THEN 3
+                            ELSE 0
+                         END
+                       > CASE
+                            WHEN prev.lifecycle_state = 'waiting' THEN 0
+                            WHEN prev.lifecycle_state = 'observing' THEN 1
+                            WHEN prev.lifecycle_state = 'qualified' THEN 2
+                            WHEN prev.lifecycle_state = 'excellent' THEN 3
+                            ELSE 0
+                         END THEN 'promoted'
+                    WHEN CASE
+                            WHEN curr.lifecycle_state = 'waiting' THEN 0
+                            WHEN curr.lifecycle_state = 'observing' THEN 1
+                            WHEN curr.lifecycle_state = 'qualified' THEN 2
+                            WHEN curr.lifecycle_state = 'excellent' THEN 3
+                            ELSE 0
+                         END
+                       < CASE
+                            WHEN prev.lifecycle_state = 'waiting' THEN 0
+                            WHEN prev.lifecycle_state = 'observing' THEN 1
+                            WHEN prev.lifecycle_state = 'qualified' THEN 2
+                            WHEN prev.lifecycle_state = 'excellent' THEN 3
+                            ELSE 0
+                         END THEN 'demoted'
+                    WHEN COALESCE(curr.bs_count, 0) <> COALESCE(prev.bs_count, 0)
+                      OR ABS(COALESCE(curr.area_km2, 0) - COALESCE(prev.area_km2, 0)) >= 0.01 THEN 'geometry_changed'
+                    ELSE 'unchanged'
+                END,
+                prev.lifecycle_state,
+                curr.lifecycle_state,
+                prev.bs_count,
+                curr.bs_count,
+                prev.area_km2,
+                curr.area_km2
+            FROM curr
+            FULL OUTER JOIN prev
+              ON prev.operator_code = curr.operator_code
+             AND prev.lac = curr.lac
+            """
         )
-        SELECT
-            {batch_id}::int,
-            '{snapshot_version}'::text,
-            '{previous_snapshot_version}'::text,
-            '{DATASET_KEY}'::text,
-            '{run_id}'::text,
-            NOW(),
-            COALESCE(curr.operator_code, prev.operator_code),
-            COALESCE(curr.lac, prev.lac),
-            CASE
-                WHEN prev.lac IS NULL THEN 'new'
-                WHEN curr.lac IS NULL THEN 'removed'
-                WHEN CASE curr.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END
-                   > CASE prev.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END THEN 'promoted'
-                WHEN CASE curr.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END
-                   < CASE prev.lifecycle_state WHEN 'waiting' THEN 0 WHEN 'observing' THEN 1 WHEN 'qualified' THEN 2 WHEN 'excellent' THEN 3 ELSE 0 END THEN 'demoted'
-                WHEN COALESCE(curr.bs_count, 0) <> COALESCE(prev.bs_count, 0)
-                  OR ABS(COALESCE(curr.area_km2, 0) - COALESCE(prev.area_km2, 0)) >= 0.01 THEN 'geometry_changed'
-                ELSE 'unchanged'
-            END,
-            prev.lifecycle_state,
-            curr.lifecycle_state,
-            prev.bs_count,
-            curr.bs_count,
-            prev.area_km2,
-            curr.area_km2
-        FROM curr
-        FULL OUTER JOIN prev
-          ON prev.operator_code = curr.operator_code
-         AND prev.lac = curr.lac
-        """
-    )
 
 
 def write_step3_run_stats(
@@ -1029,7 +1131,7 @@ def write_step3_run_stats(
     waiting_pruned_count: int,
     dormant_marked_count: int,
 ) -> dict[str, Any]:
-    profile_base_row = fetchone('SELECT COUNT(*) AS cnt FROM rebuild5.profile_base WHERE run_id = %s', (run_id,))
+    profile_base_row = fetchone('SELECT COUNT(*) AS cnt FROM rb5.profile_base WHERE run_id = %s', (run_id,))
     cell_row = fetchone(
         """
         SELECT
@@ -1039,7 +1141,7 @@ def write_step3_run_stats(
             COUNT(*) FILTER (WHERE lifecycle_state = 'qualified') AS qualified_count,
             COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_count,
             COUNT(*) FILTER (WHERE anchor_eligible) AS anchor_count
-        FROM rebuild5.trusted_snapshot_cell
+        FROM rb5.trusted_snapshot_cell
         WHERE batch_id = %s
         """,
         (batch_id,),
@@ -1051,7 +1153,7 @@ def write_step3_run_stats(
             COUNT(*) FILTER (WHERE lifecycle_state = 'observing') AS observing_count,
             COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_count,
             COUNT(*) FILTER (WHERE lifecycle_state = 'qualified') AS qualified_count
-        FROM rebuild5.trusted_snapshot_bs
+        FROM rb5.trusted_snapshot_bs
         WHERE batch_id = %s
         """,
         (batch_id,),
@@ -1063,7 +1165,7 @@ def write_step3_run_stats(
             COUNT(*) FILTER (WHERE lifecycle_state = 'observing') AS observing_count,
             COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_count,
             COUNT(*) FILTER (WHERE lifecycle_state = 'qualified') AS qualified_count
-        FROM rebuild5.trusted_snapshot_lac
+        FROM rb5.trusted_snapshot_lac
         WHERE batch_id = %s
         """,
         (batch_id,),
@@ -1078,7 +1180,7 @@ def write_step3_run_stats(
             COUNT(*) FILTER (WHERE diff_kind = 'geometry_changed') AS geometry_changed_count,
             COUNT(*) FILTER (WHERE curr_lifecycle_state = 'qualified' AND (prev_lifecycle_state IS NULL OR prev_lifecycle_state <> 'qualified')) AS new_qualified_count,
             COUNT(*) FILTER (WHERE curr_lifecycle_state = 'excellent' AND (prev_lifecycle_state IS NULL OR prev_lifecycle_state <> 'excellent')) AS new_excellent_count
-        FROM rebuild5.snapshot_diff_cell
+        FROM rb5.snapshot_diff_cell
         WHERE batch_id = %s
         """,
         (batch_id,),
@@ -1119,10 +1221,10 @@ def write_step3_run_stats(
         'snapshot_eligibility_changed_count': int(diff_row['eligibility_changed_count']) if diff_row else 0,
         'snapshot_geometry_changed_count': int(diff_row['geometry_changed_count']) if diff_row else 0,
     }
-    execute('DELETE FROM rebuild5_meta.step3_run_stats WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.step3_run_stats WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.step3_run_stats (
+        INSERT INTO rb5_meta.step3_run_stats (
             run_id, dataset_key, batch_id, snapshot_version, trusted_snapshot_version_prev, status,
             started_at, finished_at,
             profile_base_cell_count, mode_filtered_count, region_filtered_count, gps_filtered_count,
@@ -1163,17 +1265,17 @@ def write_step3_run_stats(
 
 def cleanup_step3_temp_tables() -> None:
     for table_name in (
-        'rebuild5._candidate_eval_input',
-        'rebuild5._snapshot_current_cell',
-        'rebuild5._snapshot_bs_center',
-        'rebuild5._snapshot_bs_dist',
-        'rebuild5._snapshot_current_bs',
-        'rebuild5._snapshot_current_lac',
-        'rebuild5._snapshot_final_cell',
-        'rebuild5._snapshot_final_bs_center',
-        'rebuild5._snapshot_final_bs_dist',
-        'rebuild5._snapshot_final_bs',
-        'rebuild5._snapshot_final_lac',
+        'rb5._candidate_eval_input',
+        'rb5._snapshot_current_cell',
+        'rb5._snapshot_bs_center',
+        'rb5._snapshot_bs_dist',
+        'rb5._snapshot_current_bs',
+        'rb5._snapshot_current_lac',
+        'rb5._snapshot_final_cell',
+        'rb5._snapshot_final_bs_center',
+        'rb5._snapshot_final_bs_dist',
+        'rb5._snapshot_final_bs',
+        'rb5._snapshot_final_lac',
     ):
         execute(f'DROP TABLE IF EXISTS {table_name}')
 
@@ -1186,7 +1288,7 @@ def _ensure_candidate_pool() -> None:
     """Create candidate_cell_pool if not exists."""
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.candidate_cell_pool (
+        CREATE TABLE IF NOT EXISTS rb5.candidate_cell_pool (
             operator_code TEXT,
             operator_cn TEXT,
             lac BIGINT,
@@ -1221,11 +1323,11 @@ def _ensure_candidate_pool() -> None:
         )
         """
     )
-    execute('ALTER TABLE rebuild5.candidate_cell_pool ADD COLUMN IF NOT EXISTS first_obs_at TIMESTAMPTZ')
-    execute('ALTER TABLE rebuild5.candidate_cell_pool ADD COLUMN IF NOT EXISTS last_obs_at TIMESTAMPTZ')
+    execute('ALTER TABLE rb5.candidate_cell_pool ADD COLUMN IF NOT EXISTS first_obs_at TIMESTAMPTZ')
+    execute('ALTER TABLE rb5.candidate_cell_pool ADD COLUMN IF NOT EXISTS last_obs_at TIMESTAMPTZ')
     execute(
         """
-        ALTER TABLE rebuild5.candidate_cell_pool
+        ALTER TABLE rb5.candidate_cell_pool
         DROP CONSTRAINT IF EXISTS candidate_cell_pool_operator_code_lac_cell_id_key
         """
     )
@@ -1238,7 +1340,7 @@ def _ensure_candidate_pool() -> None:
                 FROM pg_constraint
                 WHERE conname = 'candidate_cell_pool_operator_code_lac_cell_id_tech_norm_key'
             ) THEN
-                ALTER TABLE rebuild5.candidate_cell_pool
+                ALTER TABLE rb5.candidate_cell_pool
                 ADD CONSTRAINT candidate_cell_pool_operator_code_lac_cell_id_tech_norm_key
                 UNIQUE (operator_code, lac, cell_id, tech_norm);
             END IF;
@@ -1256,9 +1358,9 @@ def _update_candidate_pool(*, batch_id: int) -> dict[str, int]:
     # Remove graduated cells from pool (they're now in snapshot for Step 5)
     execute(
         """
-        DELETE FROM rebuild5.candidate_cell_pool cp
+        DELETE FROM rb5.candidate_cell_pool cp
         WHERE EXISTS (
-            SELECT 1 FROM rebuild5._snapshot_current_cell s
+            SELECT 1 FROM rb5._snapshot_current_cell s
             WHERE s.operator_code = cp.operator_code
               AND s.lac = cp.lac
               AND s.cell_id = cp.cell_id
@@ -1267,10 +1369,10 @@ def _update_candidate_pool(*, batch_id: int) -> dict[str, int]:
         )
         """
     )
-    if relation_exists('rebuild5._candidate_eval_input'):
+    if relation_exists('rb5._candidate_eval_input'):
         execute(
             """
-            INSERT INTO rebuild5.candidate_cell_pool (
+            INSERT INTO rb5.candidate_cell_pool (
                 operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
                 independent_obs, independent_devs, independent_days, record_count,
                 first_obs_at, last_obs_at, observed_span_hours, active_days, center_lon, center_lat,
@@ -1287,8 +1389,8 @@ def _update_candidate_pool(*, batch_id: int) -> dict[str, int]:
                 p.gps_valid_count, p.gps_original_count, p.signal_original_count,
                 p.gps_original_ratio, p.gps_valid_ratio, p.signal_original_ratio,
                 s.lifecycle_state, %s, %s
-            FROM rebuild5._candidate_eval_input p
-            JOIN rebuild5._snapshot_current_cell s
+            FROM rb5._candidate_eval_input p
+            JOIN rb5._snapshot_current_cell s
               ON p.operator_code = s.operator_code
              AND p.lac = s.lac
              AND p.cell_id = s.cell_id
@@ -1328,7 +1430,7 @@ def _update_candidate_pool(*, batch_id: int) -> dict[str, int]:
     prune_row = fetchone(
         """
         WITH pruned AS (
-            DELETE FROM rebuild5.candidate_cell_pool
+            DELETE FROM rb5.candidate_cell_pool
             WHERE lifecycle_state IN ('waiting', 'observing')
               AND COALESCE(first_seen_batch_id, %s) <= %s - %s
             RETURNING 1

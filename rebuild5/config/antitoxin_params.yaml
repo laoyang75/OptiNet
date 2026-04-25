@@ -79,11 +79,18 @@ label_rules:
   dynamic_max_distance_cv: 0.5
   dynamic_max_avg_dwell_days: 2
 multi_centroid_v2:
-  dbscan_eps_m: 250
+  # 2026-04-21 调整：250 → 500，原 250m 对城市中 cell 覆盖偏严，
+  # 亦庄 7 个点跨 2.5km 因 250m 门槛聚不成簇的案例表明放宽到 500m 更合理
+  dbscan_eps_m: 500
   dbscan_min_points: 4
   # 2026-04-19 方案 7.4：10 → 4，与 dbscan_min_points 对齐
   # 依据：3000 样本评估，原值 10 把 71.6% 有数据的 cell 误判 insufficient
   min_cluster_dev_day_pts: 4
+  # 2026-04-21 新增：簇至少包含 N 个不同设备才成有效簇（ODS-024）
+  # 依据：单设备跨 N 天贡献 N 个 dev-day 会通过 min_cluster_dev_day_pts，
+  # 但 "同设备反复刷" 不应等同于 "多设备独立确认"。cell 21330987 案例：
+  # E781VF 1 台设备 6 天贡献 6 个 dev-day，按当前规则成簇，但按多样性规则 dev=1 应废弃。
+  min_cluster_dev_count: 2
   # 方案 7.4：p90 < 此门槛直接判 stable（整体紧凑无需多质心）
   multi_centroid_entry_p90_m: 1300
   # 方案 7.4：多质心层的稀疏保护（比单簇要求更严）
@@ -135,3 +142,18 @@ etl_cell_infos:
   # 字段缺失或非数字时按 KEEP（保守兜底）。
   # 对应规则 ODS-019（rebuild5/docs/01b_数据源接入_处理规则.md）。
   max_age_sec: 300
+etl_ss1:
+  # ss1 是"过去一段时间的信号时序"，一条 raw_gps 里包含多个 ss1 子记录（批）。
+  # 以批内最新子记录 ts_block（unix 秒）为锚点；丢弃 batch_max_ts - ts_sec > max_age_from_anchor_sec 的子记录。
+  # 对应规则 ODS-020（rebuild5/docs/01b_数据源接入_处理规则.md）。
+  # age < 0（ts_block 晚于锚点）不会出现，因为锚点就是 MAX。
+  # 字段缺失或格式异常时按 KEEP（保守兜底，不因畸形字段误伤）。
+  # 2026-04-23：DEDUP-V2.1 加入 record_id 去重后，从 1h 放宽到 3h 补偿样本损失。
+  max_age_from_anchor_sec: 10800
+  # 只保留 sig_tech 和 cell_tech 匹配的 cell（INNER JOIN）。
+  # 丢弃"有 cell_id 但无配套信号"的记录（实测 99% 双卡场景只有 1 个 sig，第二张 cell 大概率是缓存 cell_id）。
+  # 对应规则 ODS-021。
+  require_sig_cell_tech_match: true
+  # sig 条目 4 个字段（ss/rsrp/rsrq/sinr）全为 -1 视为无效条目，丢弃整条 sig。
+  # 对应规则 ODS-022。
+  drop_sig_all_minus1: true

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Run rebuild5 batches in true daily-increment semantics.
 
-This driver reuses the existing Step 1 output (`rebuild5.etl_cleaned`) and
+This driver reuses the existing Step 1 output (`rb5.etl_cleaned`) and
 replays Step 2 -> Step 5 day by day by materializing one stored `event_time_std`
-day into `rebuild5.step2_batch_input` for each batch.
+day into `rb5.step2_batch_input` for each batch.
 
 Important constraints:
 1. This script assumes Step 1 has already completed.
@@ -25,7 +25,7 @@ import yaml
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -81,11 +81,11 @@ def _day_start_ts(day: date) -> datetime:
 def ensure_daily_indices(*, input_relation: str) -> None:
     if relation_exists(input_relation):
         execute(f'ANALYZE {input_relation}')
-    if input_relation == 'rebuild5.etl_cleaned':
-        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rebuild5.etl_cleaned (event_time_std)')
-    if input_relation == 'rebuild5.etl_cleaned' and relation_exists('rebuild5.raw_gps'):
-        execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rebuild5.raw_gps (ts)')
-        execute('ANALYZE rebuild5.raw_gps')
+    if input_relation == 'rb5.etl_cleaned':
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rb5.etl_cleaned (event_time_std)')
+    if input_relation == 'rb5.etl_cleaned' and relation_exists('rb5.raw_gps'):
+        execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rb5.raw_gps (ts)')
+        execute('ANALYZE rb5.raw_gps')
 
 
 def summarize_day_counts(*, input_relation: str, start_day: date, end_day: date) -> list[dict[str, object]]:
@@ -118,17 +118,17 @@ def _assert_ready_for_daily_rebaseline(*, input_relation: str, allow_existing_st
         ('trusted_snapshot_cell', get_latest_batch_id()),
         ('trusted_cell_library', get_latest_published_batch_id()),
     ]
-    if relation_exists('rebuild5_meta.step2_run_stats'):
-        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5_meta.step2_run_stats')
+    if relation_exists('rb5_meta.step2_run_stats'):
+        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5_meta.step2_run_stats')
         state_checks.append(('step2_run_stats', int(row['batch_id']) if row else 0))
-    if relation_exists('rebuild5_meta.step3_run_stats'):
-        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5_meta.step3_run_stats')
+    if relation_exists('rb5_meta.step3_run_stats'):
+        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5_meta.step3_run_stats')
         state_checks.append(('step3_run_stats', int(row['batch_id']) if row else 0))
-    if relation_exists('rebuild5_meta.step4_run_stats'):
-        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5_meta.step4_run_stats')
+    if relation_exists('rb5_meta.step4_run_stats'):
+        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5_meta.step4_run_stats')
         state_checks.append(('step4_run_stats', int(row['batch_id']) if row else 0))
-    if relation_exists('rebuild5_meta.step5_run_stats'):
-        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5_meta.step5_run_stats')
+    if relation_exists('rb5_meta.step5_run_stats'):
+        row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5_meta.step5_run_stats')
         state_checks.append(('step5_run_stats', int(row['batch_id']) if row else 0))
 
     dirty = {name: batch_id for name, batch_id in state_checks if batch_id > 0}
@@ -175,35 +175,35 @@ def materialize_step2_scope(*, day: date, input_relation: str) -> int:
 
 def _cleanup_after_step4() -> None:
     for rel in (
-        'rebuild5.path_a_records',
-        'rebuild5._profile_seed_grid',
-        'rebuild5._profile_primary_seed',
-        'rebuild5._profile_seed_distance',
-        'rebuild5._profile_core_cutoff',
-        'rebuild5._profile_core_points',
-        'rebuild5._profile_core_gps',
-        'rebuild5._profile_counts',
-        'rebuild5.profile_obs',
-        'rebuild5.profile_base',
+        'rb5.path_a_records',
+        'rb5._profile_seed_grid',
+        'rb5._profile_primary_seed',
+        'rb5._profile_seed_distance',
+        'rb5._profile_core_cutoff',
+        'rb5._profile_core_points',
+        'rb5._profile_core_gps',
+        'rb5._profile_counts',
+        'rb5.profile_obs',
+        'rb5.profile_base',
     ):
         execute(f'DROP TABLE IF EXISTS {rel}')
 
 
 def _cleanup_after_step5() -> None:
     for rel in (
-        'rebuild5.cell_metrics_base',
-        'rebuild5.cell_radius_stats',
-        'rebuild5.cell_activity_stats',
-        'rebuild5.cell_drift_stats',
-        'rebuild5.cell_daily_centroid',
-        'rebuild5.cell_metrics_window',
-        'rebuild5.cell_anomaly_summary',
-        'rebuild5.cell_core_seed_grid',
-        'rebuild5.cell_core_primary_seed',
-        'rebuild5.cell_core_seed_distance',
-        'rebuild5.cell_core_cutoff',
-        'rebuild5.cell_core_points',
-        'rebuild5.cell_core_gps_stats',
+        'rb5.cell_metrics_base',
+        'rb5.cell_radius_stats',
+        'rb5.cell_activity_stats',
+        'rb5.cell_drift_stats',
+        'rb5.cell_daily_centroid',
+        'rb5.cell_metrics_window',
+        'rb5.cell_anomaly_summary',
+        'rb5.cell_core_seed_grid',
+        'rb5.cell_core_primary_seed',
+        'rb5.cell_core_seed_distance',
+        'rb5.cell_core_cutoff',
+        'rb5.cell_core_points',
+        'rb5.cell_core_gps_stats',
     ):
         execute(f'DROP TABLE IF EXISTS {rel}')
 
@@ -288,7 +288,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--input-relation',
-        default='rebuild5.etl_cleaned',
+        default='rb5.etl_cleaned',
         help='source relation used to materialize each daily Step 2 scope',
     )
     parser.add_argument('--start-day', help='inclusive day bucket, e.g. 2025-12-01')

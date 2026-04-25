@@ -11,7 +11,7 @@ from ..etl.source_prep import DATASET_KEY
 def ensure_enrichment_schema() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5_meta.step4_run_stats (
+        CREATE TABLE IF NOT EXISTS rb5_meta.step4_run_stats (
             run_id TEXT PRIMARY KEY,
             batch_id INTEGER NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -43,7 +43,7 @@ def ensure_enrichment_schema() -> None:
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.step4_fill_coverage (
+        CREATE TABLE IF NOT EXISTS rb5.step4_fill_coverage (
             batch_id INTEGER NOT NULL,
             field_name TEXT NOT NULL,
             filled_count BIGINT NOT NULL,
@@ -55,7 +55,7 @@ def ensure_enrichment_schema() -> None:
     )
     execute(
         """
-        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.enriched_records (
+        CREATE UNLOGGED TABLE IF NOT EXISTS rb5.enriched_records (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -69,8 +69,11 @@ def ensure_enrichment_schema() -> None:
             operator_cn TEXT,
             lac BIGINT,
             bs_id BIGINT,
-            cell_id BIGINT,
+            cell_id BIGINT NOT NULL,
             tech_norm TEXT,
+            cell_origin TEXT,
+            timing_advance INTEGER,
+            freq_channel INTEGER,
             -- 原始 GPS
             gps_valid BOOLEAN,
             lon_raw DOUBLE PRECISION,
@@ -111,21 +114,24 @@ def ensure_enrichment_schema() -> None:
             path_a_is_collision BOOLEAN,
             donor_anchor_eligible BOOLEAN,
             donor_baseline_eligible BOOLEAN,
-            PRIMARY KEY (batch_id, source_row_uid)
+            PRIMARY KEY (batch_id, source_row_uid, cell_id)
         )
         """
     )
-    execute("ALTER TABLE rebuild5.enriched_records SET (autovacuum_enabled = false)")
-    execute("ALTER TABLE rebuild5.enriched_records ADD COLUMN IF NOT EXISTS path_a_is_collision BOOLEAN")
+    execute("ALTER TABLE rb5.enriched_records SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.enriched_records ADD COLUMN IF NOT EXISTS path_a_is_collision BOOLEAN")
+    execute("ALTER TABLE rb5.enriched_records ADD COLUMN IF NOT EXISTS cell_origin TEXT")
+    execute("ALTER TABLE rb5.enriched_records ADD COLUMN IF NOT EXISTS timing_advance INTEGER")
+    execute("ALTER TABLE rb5.enriched_records ADD COLUMN IF NOT EXISTS freq_channel INTEGER")
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_enriched_batch_record_cell
-        ON rebuild5.enriched_records (batch_id, record_id, cell_id, lac, tech_norm)
+        ON rb5.enriched_records (batch_id, record_id, cell_id, lac, tech_norm)
         """
     )
     execute(
         """
-        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.gps_anomaly_log (
+        CREATE UNLOGGED TABLE IF NOT EXISTS rb5.gps_anomaly_log (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -134,7 +140,7 @@ def ensure_enrichment_schema() -> None:
             operator_code TEXT,
             lac BIGINT,
             bs_id BIGINT,
-            cell_id BIGINT,
+            cell_id BIGINT NOT NULL,
             tech_norm TEXT,
             dev_id TEXT,
             event_time_std TIMESTAMPTZ,
@@ -151,15 +157,15 @@ def ensure_enrichment_schema() -> None:
             anomaly_threshold_m DOUBLE PRECISION,
             anomaly_source TEXT,
             is_collision_id BOOLEAN,
-            PRIMARY KEY (batch_id, source_row_uid)
+            PRIMARY KEY (batch_id, source_row_uid, cell_id)
         )
         """
     )
-    execute("ALTER TABLE rebuild5.gps_anomaly_log SET (autovacuum_enabled = false)")
-    execute("ALTER TABLE rebuild5.gps_anomaly_log ADD COLUMN IF NOT EXISTS tech_norm TEXT")
+    execute("ALTER TABLE rb5.gps_anomaly_log SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.gps_anomaly_log ADD COLUMN IF NOT EXISTS tech_norm TEXT")
     execute(
         """
-        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.snapshot_seed_records (
+        CREATE UNLOGGED TABLE IF NOT EXISTS rb5.snapshot_seed_records (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -172,8 +178,11 @@ def ensure_enrichment_schema() -> None:
             operator_cn TEXT,
             lac BIGINT,
             bs_id BIGINT,
-            cell_id BIGINT,
+            cell_id BIGINT NOT NULL,
             tech_norm TEXT,
+            cell_origin TEXT,
+            timing_advance INTEGER,
+            freq_channel INTEGER,
             gps_valid BOOLEAN,
             lon_final DOUBLE PRECISION,
             lat_final DOUBLE PRECISION,
@@ -183,11 +192,14 @@ def ensure_enrichment_schema() -> None:
             sinr_final DOUBLE PRECISION,
             pressure_final DOUBLE PRECISION,
             seed_source TEXT,
-            PRIMARY KEY (batch_id, source_row_uid)
+            PRIMARY KEY (batch_id, source_row_uid, cell_id)
         )
         """
     )
-    execute("ALTER TABLE rebuild5.snapshot_seed_records SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.snapshot_seed_records SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.snapshot_seed_records ADD COLUMN IF NOT EXISTS cell_origin TEXT")
+    execute("ALTER TABLE rb5.snapshot_seed_records ADD COLUMN IF NOT EXISTS timing_advance INTEGER")
+    execute("ALTER TABLE rb5.snapshot_seed_records ADD COLUMN IF NOT EXISTS freq_channel INTEGER")
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +220,7 @@ def write_step4_coverage(*, batch_id: int, stats: dict[str, Any]) -> None:
     for field_name, filled_count, fill_rate, donor_source in rows:
         execute(
             """
-            INSERT INTO rebuild5.step4_fill_coverage (batch_id, field_name, filled_count, fill_rate, donor_source)
+            INSERT INTO rb5.step4_fill_coverage (batch_id, field_name, filled_count, fill_rate, donor_source)
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (batch_id, field_name) DO UPDATE SET
                 filled_count = EXCLUDED.filled_count,
@@ -220,10 +232,10 @@ def write_step4_coverage(*, batch_id: int, stats: dict[str, Any]) -> None:
 
 
 def write_step4_stats(stats: dict[str, Any]) -> None:
-    execute('DELETE FROM rebuild5_meta.step4_run_stats WHERE run_id = %s', (stats['run_id'],))
+    execute('DELETE FROM rb5_meta.step4_run_stats WHERE run_id = %s', (stats['run_id'],))
     execute(
         """
-        INSERT INTO rebuild5_meta.step4_run_stats (
+        INSERT INTO rb5_meta.step4_run_stats (
             run_id, batch_id, dataset_key, snapshot_version, snapshot_version_prev, status,
             started_at, finished_at,
             total_path_a, donor_matched_count,
@@ -261,10 +273,10 @@ def write_step4_stats(stats: dict[str, Any]) -> None:
 
 def write_run_log(*, run_id: str, batch_id: int, snapshot_version: str,
                   status: str, result_summary: dict[str, Any]) -> None:
-    execute('DELETE FROM rebuild5_meta.run_log WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.run_log WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.run_log (
+        INSERT INTO rb5_meta.run_log (
             run_id, run_type, dataset_key, snapshot_version, status,
             started_at, finished_at, step_chain, result_summary, error
         ) VALUES (

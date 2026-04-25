@@ -96,6 +96,7 @@ def load_multi_centroid_v2_params(params: dict[str, Any] | None = None) -> dict[
         'dbscan_eps_m': float(cfg.get('dbscan_eps_m', 250)),
         'dbscan_min_points': int(cfg.get('dbscan_min_points', 4)),
         'min_cluster_dev_day_pts': int(cfg.get('min_cluster_dev_day_pts', 4)),
+        'min_cluster_dev_count': int(cfg.get('min_cluster_dev_count', 2)),
         'multi_centroid_entry_p90_m': float(cfg.get('multi_centroid_entry_p90_m', 1300)),
         'min_total_dedup_pts': int(cfg.get('min_total_dedup_pts', 8)),
         'min_total_devs': int(cfg.get('min_total_devs', 3)),

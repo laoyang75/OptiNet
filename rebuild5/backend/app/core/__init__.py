@@ -1,1 +1,1 @@
-"""Core utilities for rebuild5."""
+"""Core utilities for rb5."""

@@ -18,10 +18,10 @@ from ..profile.pipeline import relation_exists
 
 def build_cell_drift_stats(*, batch_id: int) -> None:
     """Materialize max_spread, net_drift and drift_ratio in a dedicated stage table."""
-    execute('DROP TABLE IF EXISTS rebuild5.cell_drift_stats')
+    execute('DROP TABLE IF EXISTS rb5.cell_drift_stats')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5.cell_drift_stats AS
+        CREATE UNLOGGED TABLE rb5.cell_drift_stats AS
         WITH spread AS (
             SELECT
                 a.operator_code, a.lac, a.cell_id, a.tech_norm,
@@ -29,8 +29,8 @@ def build_cell_drift_stats(*, batch_id: int) -> None:
                     POWER((a.center_lon - b.center_lon) * 85300, 2)
                   + POWER((a.center_lat - b.center_lat) * 111000, 2)
                 )) AS max_spread_m
-            FROM rebuild5.cell_daily_centroid a
-            JOIN rebuild5.cell_daily_centroid b
+            FROM rb5.cell_daily_centroid a
+            JOIN rb5.cell_daily_centroid b
               ON a.batch_id = b.batch_id
              AND a.operator_code = b.operator_code
              AND a.lac = b.lac
@@ -53,7 +53,7 @@ def build_cell_drift_stats(*, batch_id: int) -> None:
                 (array_agg(center_lon ORDER BY obs_date DESC))[1] AS last_lon,
                 (array_agg(center_lat ORDER BY obs_date DESC))[1] AS last_lat,
                 COUNT(*) AS drift_days
-            FROM rebuild5.cell_daily_centroid
+            FROM rb5.cell_daily_centroid
             WHERE batch_id = {batch_id}
               AND center_lon IS NOT NULL
             GROUP BY operator_code, lac, cell_id, tech_norm
@@ -97,14 +97,14 @@ def build_cell_drift_stats(*, batch_id: int) -> None:
          AND e.tech_norm IS NOT DISTINCT FROM s.tech_norm
         """
     )
-    execute("ALTER TABLE rebuild5.cell_drift_stats SET (autovacuum_enabled = false)")
-    execute('ANALYZE rebuild5.cell_drift_stats')
+    execute("ALTER TABLE rb5.cell_drift_stats SET (autovacuum_enabled = false)")
+    execute('ANALYZE rb5.cell_drift_stats')
 
 
 def compute_drift_metrics(*, batch_id: int) -> None:
     """Backward-compatible wrapper that materializes drift stats and refreshes the final join."""
     build_cell_drift_stats(batch_id=batch_id)
-    if relation_exists('rebuild5.cell_metrics_base'):
+    if relation_exists('rb5.cell_metrics_base'):
         from .window import build_cell_metrics_window
 
         build_cell_metrics_window(batch_id=batch_id)
@@ -126,10 +126,10 @@ def compute_gps_anomaly_summary(
     migration suspects.
     """
     thresholds = antitoxin or flatten_antitoxin_thresholds(load_antitoxin_params())
-    execute('DROP TABLE IF EXISTS rebuild5.cell_anomaly_summary')
+    execute('DROP TABLE IF EXISTS rb5.cell_anomaly_summary')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5.cell_anomaly_summary AS
+        CREATE UNLOGGED TABLE rb5.cell_anomaly_summary AS
         WITH raw AS (
             SELECT
                 operator_code,
@@ -139,7 +139,7 @@ def compute_gps_anomaly_summary(
                 event_time_std,
                 DATE(event_time_std) AS anomaly_date,
                 EXTRACT(HOUR FROM event_time_std)::int AS anomaly_hour
-            FROM rebuild5.gps_anomaly_log
+            FROM rb5.gps_anomaly_log
             WHERE batch_id = {batch_id}
         ),
         agg AS (
@@ -242,7 +242,7 @@ def compute_gps_anomaly_summary(
          AND h.lac = a.lac
          AND h.cell_id = a.cell_id
          AND h.tech_norm IS NOT DISTINCT FROM a.tech_norm
-        LEFT JOIN rebuild5.cell_metrics_window m
+        LEFT JOIN rb5.cell_metrics_window m
           ON m.batch_id = {batch_id}
          AND m.operator_code = a.operator_code
          AND m.lac = a.lac
@@ -250,4 +250,4 @@ def compute_gps_anomaly_summary(
          AND m.tech_norm IS NOT DISTINCT FROM a.tech_norm
         """
     )
-    execute("ALTER TABLE rebuild5.cell_anomaly_summary SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.cell_anomaly_summary SET (autovacuum_enabled = false)")

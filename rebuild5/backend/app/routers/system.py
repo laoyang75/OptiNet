@@ -1,4 +1,4 @@
-"""System routes for rebuild5."""
+"""System routes for rb5."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Query

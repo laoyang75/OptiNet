@@ -27,7 +27,7 @@ if str(REPO_ROOT) not in sys.path:
 
 DEFAULT_BASE_DSN = os.getenv(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 DEFAULT_SCRATCH_DB = 'ip_loc2_step5_smoke'
 BATCH_ID = 101
@@ -357,7 +357,7 @@ def _seed_sample(runtime: dict[str, Any]) -> None:
         with conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO rebuild5.enriched_records (
+                INSERT INTO rb5.enriched_records (
                     batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
                     event_time_std, dev_id,
                     operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
@@ -397,7 +397,7 @@ def _seed_sample(runtime: dict[str, Any]) -> None:
             )
             cur.executemany(
                 """
-                INSERT INTO rebuild5.trusted_snapshot_cell (
+                INSERT INTO rb5.trusted_snapshot_cell (
                     batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
                     operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
                     lifecycle_state, is_registered, anchor_eligible, baseline_eligible,
@@ -450,7 +450,7 @@ def _seed_sample(runtime: dict[str, Any]) -> None:
             )
     execute(
         """
-        INSERT INTO rebuild5_meta.step3_run_stats (
+        INSERT INTO rb5_meta.step3_run_stats (
             run_id, dataset_key, batch_id, snapshot_version, trusted_snapshot_version_prev, status,
             started_at, finished_at,
             profile_base_cell_count, mode_filtered_count, region_filtered_count, gps_filtered_count,
@@ -480,36 +480,36 @@ def _seed_sample(runtime: dict[str, Any]) -> None:
 
 def _truncate_step5_outputs(runtime: dict[str, Any]) -> None:
     execute = runtime['execute']
-    execute('TRUNCATE rebuild5.trusted_cell_library')
-    execute('TRUNCATE rebuild5.trusted_bs_library')
-    execute('TRUNCATE rebuild5.trusted_lac_library')
-    execute('TRUNCATE rebuild5.label_results')
-    execute('TRUNCATE rebuild5.collision_id_list')
-    execute('TRUNCATE rebuild5.cell_centroid_detail')
-    execute('TRUNCATE rebuild5.bs_centroid_detail')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_daily_centroid')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_metrics_window')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_anomaly_summary')
-    execute('DELETE FROM rebuild5_meta.step5_run_stats')
+    execute('TRUNCATE rb5.trusted_cell_library')
+    execute('TRUNCATE rb5.trusted_bs_library')
+    execute('TRUNCATE rb5.trusted_lac_library')
+    execute('TRUNCATE rb5.label_results')
+    execute('TRUNCATE rb5.collision_id_list')
+    execute('TRUNCATE rb5.cell_centroid_detail')
+    execute('TRUNCATE rb5.bs_centroid_detail')
+    execute('DROP TABLE IF EXISTS rb5.cell_daily_centroid')
+    execute('DROP TABLE IF EXISTS rb5.cell_metrics_window')
+    execute('DROP TABLE IF EXISTS rb5.cell_anomaly_summary')
+    execute('DELETE FROM rb5_meta.step5_run_stats')
 
 
 def _collect_counts(runtime: dict[str, Any]) -> dict[str, int]:
     fetchone = runtime['fetchone']
     relation_exists = runtime['relation_exists']
     tables = {
-        'enriched_records': 'rebuild5.enriched_records',
-        'trusted_snapshot_cell': 'rebuild5.trusted_snapshot_cell',
-        'cell_sliding_window': 'rebuild5.cell_sliding_window',
-        'cell_daily_centroid': 'rebuild5.cell_daily_centroid',
-        'cell_metrics_window': 'rebuild5.cell_metrics_window',
-        'cell_anomaly_summary': 'rebuild5.cell_anomaly_summary',
-        'trusted_cell_library': 'rebuild5.trusted_cell_library',
-        'collision_id_list': 'rebuild5.collision_id_list',
-        'trusted_bs_library': 'rebuild5.trusted_bs_library',
-        'trusted_lac_library': 'rebuild5.trusted_lac_library',
-        'label_results': 'rebuild5.label_results',
-        'cell_centroid_detail': 'rebuild5.cell_centroid_detail',
-        'bs_centroid_detail': 'rebuild5.bs_centroid_detail',
+        'enriched_records': 'rb5.enriched_records',
+        'trusted_snapshot_cell': 'rb5.trusted_snapshot_cell',
+        'cell_sliding_window': 'rb5.cell_sliding_window',
+        'cell_daily_centroid': 'rb5.cell_daily_centroid',
+        'cell_metrics_window': 'rb5.cell_metrics_window',
+        'cell_anomaly_summary': 'rb5.cell_anomaly_summary',
+        'trusted_cell_library': 'rb5.trusted_cell_library',
+        'collision_id_list': 'rb5.collision_id_list',
+        'trusted_bs_library': 'rb5.trusted_bs_library',
+        'trusted_lac_library': 'rb5.trusted_lac_library',
+        'label_results': 'rb5.label_results',
+        'cell_centroid_detail': 'rb5.cell_centroid_detail',
+        'bs_centroid_detail': 'rb5.bs_centroid_detail',
     }
     counts: dict[str, int] = {}
     for key, table in tables.items():
@@ -518,19 +518,19 @@ def _collect_counts(runtime: dict[str, Any]) -> dict[str, int]:
             continue
         row = fetchone(f'SELECT COUNT(*) AS cnt FROM {table} WHERE batch_id = %s', (BATCH_ID,))
         counts[key] = int(row['cnt']) if row else 0
-    if relation_exists('rebuild5.trusted_cell_library'):
+    if relation_exists('rb5.trusted_cell_library'):
         row = fetchone(
-            'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_cell_library WHERE batch_id = %s AND is_multi_centroid',
+            'SELECT COUNT(*) AS cnt FROM rb5.trusted_cell_library WHERE batch_id = %s AND is_multi_centroid',
             (BATCH_ID,),
         )
         counts['multi_centroid_cells'] = int(row['cnt']) if row else 0
     else:
         counts['multi_centroid_cells'] = 0
-    if relation_exists('rebuild5.trusted_bs_library'):
+    if relation_exists('rb5.trusted_bs_library'):
         row = fetchone(
             """
             SELECT COUNT(*) AS cnt
-            FROM rebuild5.trusted_bs_library
+            FROM rb5.trusted_bs_library
             WHERE batch_id = %s
               AND classification IN ('large_spread', 'multi_centroid', 'dynamic_bs', 'collision_bs')
             """,
@@ -584,7 +584,7 @@ def _run_phases(runtime: dict[str, Any]) -> dict[str, Any]:
             lambda: _collect_counts(runtime),
         )
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_csw_cell ON rebuild5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_csw_cell ON rb5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id)')
     report.append(
         _time_phase(
             'build_daily_centroids',
@@ -599,8 +599,8 @@ def _run_phases(runtime: dict[str, Any]) -> dict[str, Any]:
             lambda: _collect_counts(runtime),
         )
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_cdc_cell_date ON rebuild5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, obs_date)')
-    execute('CREATE INDEX IF NOT EXISTS idx_cmw_cell ON rebuild5.cell_metrics_window (batch_id, operator_code, lac, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_cdc_cell_date ON rb5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, obs_date)')
+    execute('CREATE INDEX IF NOT EXISTS idx_cmw_cell ON rb5.cell_metrics_window (batch_id, operator_code, lac, cell_id)')
     report.append(
         _time_phase(
             'compute_drift_metrics',
@@ -615,8 +615,8 @@ def _run_phases(runtime: dict[str, Any]) -> dict[str, Any]:
             lambda: _collect_counts(runtime),
         )
     )
-    if runtime['relation_exists']('rebuild5.cell_anomaly_summary'):
-        execute('CREATE INDEX IF NOT EXISTS idx_cas_cell ON rebuild5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id)')
+    if runtime['relation_exists']('rb5.cell_anomaly_summary'):
+        execute('CREATE INDEX IF NOT EXISTS idx_cas_cell ON rb5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id)')
     report.append(
         _time_phase(
             'publish_cell_library',
@@ -630,8 +630,8 @@ def _run_phases(runtime: dict[str, Any]) -> dict[str, Any]:
             lambda: _collect_counts(runtime),
         )
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_tcl_collision ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, cell_id)')
-    execute('CREATE INDEX IF NOT EXISTS idx_tcl_bs ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, bs_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_tcl_collision ON rb5.trusted_cell_library (batch_id, operator_code, lac, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_tcl_bs ON rb5.trusted_cell_library (batch_id, operator_code, lac, bs_id)')
     report.append(
         _time_phase(
             'run_label_engine',

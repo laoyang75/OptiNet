@@ -32,6 +32,7 @@ from .window import (
     build_cell_core_gps_stats,
     build_cell_metrics_base,
     build_cell_radius_stats,
+    build_cell_ta_stats,
     build_daily_centroids,
     refresh_sliding_window,
 )
@@ -42,7 +43,7 @@ def _latest_step3() -> dict[str, Any] | None:
     return fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step3_run_stats
+        FROM rb5_meta.step3_run_stats
         ORDER BY batch_id DESC NULLS LAST, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """
@@ -53,7 +54,7 @@ def _step3_for_batch(batch_id: int) -> dict[str, Any] | None:
     return fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step3_run_stats
+        FROM rb5_meta.step3_run_stats
         WHERE batch_id = %s
         ORDER BY finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
@@ -63,12 +64,12 @@ def _step3_for_batch(batch_id: int) -> dict[str, Any] | None:
 
 
 def _latest_published_snapshot_version(*, current_batch_id: int) -> str:
-    if not relation_exists('rebuild5.trusted_cell_library'):
+    if not relation_exists('rb5.trusted_cell_library'):
         return 'v0'
     row = fetchone(
         """
         SELECT snapshot_version
-        FROM rebuild5.trusted_cell_library
+        FROM rb5.trusted_cell_library
         WHERE batch_id < %s
         ORDER BY batch_id DESC, cell_id
         LIMIT 1
@@ -91,24 +92,24 @@ def run_maintenance_pipeline_for_batch(*, batch_id: int) -> dict[str, Any]:
 def _run_maintenance_pipeline_for_step3(step3: dict[str, Any] | None) -> dict[str, Any]:
     # -- Prepare --
     # cell_sliding_window is persistent across batches (continuous window) — do NOT drop
-    execute('DROP TABLE IF EXISTS rebuild5.cell_daily_centroid')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_metrics_base')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_radius_stats')
-    execute('DROP TABLE IF EXISTS rebuild5._cell_radius_raw_radius')
-    execute('DROP TABLE IF EXISTS rebuild5._cell_radius_core_radius')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_drift_stats')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_metrics_window')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_anomaly_summary')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_initial_center')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_point_distance')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_mad_stats')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_seed_grid')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_primary_seed')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_seed_distance')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_cutoff')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_points')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_gps_stats')
-    execute('DROP TABLE IF EXISTS rebuild5.cell_core_gps_day_dedup')
+    execute('DROP TABLE IF EXISTS rb5.cell_daily_centroid')
+    execute('DROP TABLE IF EXISTS rb5.cell_metrics_base')
+    execute('DROP TABLE IF EXISTS rb5.cell_radius_stats')
+    execute('DROP TABLE IF EXISTS rb5._cell_radius_raw_radius')
+    execute('DROP TABLE IF EXISTS rb5._cell_radius_core_radius')
+    execute('DROP TABLE IF EXISTS rb5.cell_drift_stats')
+    execute('DROP TABLE IF EXISTS rb5.cell_metrics_window')
+    execute('DROP TABLE IF EXISTS rb5.cell_anomaly_summary')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_initial_center')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_point_distance')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_mad_stats')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_seed_grid')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_primary_seed')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_seed_distance')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_cutoff')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_points')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_gps_stats')
+    execute('DROP TABLE IF EXISTS rb5.cell_core_gps_day_dedup')
     ensure_maintenance_schema()
 
     if not step3:
@@ -133,26 +134,26 @@ def _run_maintenance_pipeline_for_step3(step3: dict[str, Any] | None) -> dict[st
     # -- 5.0 Window preparation --
     _tick('sliding_window')
     refresh_sliding_window(batch_id=batch_id)
-    execute('CREATE INDEX IF NOT EXISTS idx_csw_cell ON rebuild5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_csw_cell ON rb5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id)')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_csw_lookup
-        ON rebuild5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id, tech_norm, event_time_std)
+        ON rb5.cell_sliding_window (batch_id, operator_code, lac, bs_id, cell_id, tech_norm, event_time_std)
         """
     )
-    execute('ALTER TABLE rebuild5.cell_sliding_window SET (parallel_workers = 16)')
+    execute('ALTER TABLE rb5.cell_sliding_window SET (parallel_workers = 16)')
     _tick('daily_centroids')
     build_daily_centroids(batch_id=batch_id)
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_cdc_cell_date
-        ON rebuild5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, tech_norm, obs_date)
+        ON rb5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, tech_norm, obs_date)
         """
     )
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_cdc_lookup
-        ON rebuild5.cell_daily_centroid (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5.cell_daily_centroid (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
     _tick('metrics_base')
@@ -161,6 +162,8 @@ def _run_maintenance_pipeline_for_step3(step3: dict[str, Any] | None) -> dict[st
     build_cell_core_gps_stats(batch_id=batch_id)
     _tick('metrics_radius')
     build_cell_radius_stats()
+    _tick('ta_stats')
+    build_cell_ta_stats()
 
     # -- 5.2 Cell maintenance --
     _tick('drift_metrics')
@@ -168,28 +171,28 @@ def _run_maintenance_pipeline_for_step3(step3: dict[str, Any] | None) -> dict[st
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_cmw_cell
-        ON rebuild5.cell_metrics_window (batch_id, operator_code, lac, cell_id, tech_norm)
+        ON rb5.cell_metrics_window (batch_id, operator_code, lac, cell_id, tech_norm)
         """
     )
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_cmw_lookup
-        ON rebuild5.cell_metrics_window (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5.cell_metrics_window (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
     _tick('anomaly_summary')
     compute_gps_anomaly_summary(batch_id=batch_id, antitoxin=antitoxin)
-    if relation_exists('rebuild5.cell_anomaly_summary'):
+    if relation_exists('rb5.cell_anomaly_summary'):
         execute(
             """
             CREATE INDEX IF NOT EXISTS idx_cas_cell
-            ON rebuild5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id, tech_norm)
+            ON rb5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id, tech_norm)
             """
         )
         execute(
             """
             CREATE INDEX IF NOT EXISTS idx_cas_lookup
-            ON rebuild5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id, tech_norm)
+            ON rb5.cell_anomaly_summary (batch_id, operator_code, lac, cell_id, tech_norm)
             """
         )
 
@@ -202,21 +205,21 @@ def _run_maintenance_pipeline_for_step3(step3: dict[str, Any] | None) -> dict[st
         antitoxin=antitoxin,
     )
     # Index for collision self-join and BS/LAC publish
-    execute('CREATE INDEX IF NOT EXISTS idx_tcl_collision ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, cell_id)')
-    execute('CREATE INDEX IF NOT EXISTS idx_tcl_batch_cell_id ON rebuild5.trusted_cell_library (batch_id, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_tcl_collision ON rb5.trusted_cell_library (batch_id, operator_code, lac, cell_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_tcl_batch_cell_id ON rb5.trusted_cell_library (batch_id, cell_id)')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_tcl_abs_collision
-        ON rebuild5.trusted_cell_library (batch_id, operator_code, tech_norm, lac, cell_id, bs_id)
+        ON rb5.trusted_cell_library (batch_id, operator_code, tech_norm, lac, cell_id, bs_id)
         """
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_tcl_bs ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, bs_id)')
-    execute('ANALYZE rebuild5.trusted_cell_library')
+    execute('CREATE INDEX IF NOT EXISTS idx_tcl_bs ON rb5.trusted_cell_library (batch_id, operator_code, lac, bs_id)')
+    execute('ANALYZE rb5.trusted_cell_library')
 
     # -- 5.35 Authoritative label engine --
     _tick('label_engine')
     run_label_engine(batch_id=batch_id, snapshot_version=snapshot_version)
-    execute('ANALYZE rebuild5.trusted_cell_library')
+    execute('ANALYZE rb5.trusted_cell_library')
 
     # -- 5.1 Collision detection --
     _tick('collision')
@@ -234,7 +237,7 @@ def _run_maintenance_pipeline_for_step3(step3: dict[str, Any] | None) -> dict[st
         snapshot_version_prev=snapshot_version_prev,
         antitoxin=antitoxin,
     )
-    execute('ANALYZE rebuild5.trusted_bs_library')
+    execute('ANALYZE rb5.trusted_bs_library')
     publish_bs_centroid_detail(
         batch_id=batch_id,
         snapshot_version=snapshot_version,

@@ -33,7 +33,7 @@ def get_enrichment_stats_payload() -> dict[str, Any]:
     row = _safe_fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step4_run_stats
+        FROM rb5_meta.step4_run_stats
         ORDER BY batch_id DESC NULLS LAST, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """
@@ -91,8 +91,8 @@ def get_enrichment_coverage_payload() -> dict[str, Any]:
             filled_count,
             fill_rate,
             donor_source
-        FROM rebuild5.step4_fill_coverage
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.step4_fill_coverage)
+        FROM rb5.step4_fill_coverage
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.step4_fill_coverage)
         ORDER BY field_name
         """
     )
@@ -101,7 +101,7 @@ def get_enrichment_coverage_payload() -> dict[str, Any]:
 
 def get_enrichment_anomalies_payload(page: int = 1, page_size: int = 50) -> dict[str, Any]:
     latest_batch = _safe_fetchone(
-        'SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5.gps_anomaly_log'
+        'SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5.gps_anomaly_log'
     ) or {'batch_id': 0}
     result = paginate(
         """
@@ -111,7 +111,7 @@ def get_enrichment_anomalies_payload(page: int = 1, page_size: int = 50) -> dict
             lon_raw, lat_raw, donor_center_lon, donor_center_lat,
             distance_to_donor_m, anomaly_type, anomaly_threshold_m,
             anomaly_source, is_collision_id, donor_snapshot_version
-        FROM rebuild5.gps_anomaly_log
+        FROM rb5.gps_anomaly_log
         WHERE batch_id = %s
         ORDER BY distance_to_donor_m DESC NULLS LAST, event_time_std DESC
         """,

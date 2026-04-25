@@ -33,7 +33,7 @@ def _latest_version() -> dict[str, Any]:
     row = _safe_fetchone(
         """
         SELECT run_id, dataset_key, snapshot_version, snapshot_version_prev
-        FROM rebuild5_meta.step5_run_stats
+        FROM rb5_meta.step5_run_stats
         ORDER BY batch_id DESC NULLS LAST, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """
@@ -52,7 +52,7 @@ def search_service_payload(q: str | None = None, level: str = 'cell', operator_c
     filters: list[str] = []
 
     if normalized_level == 'cell':
-        filters.append(_latest_batch_filter('rebuild5.trusted_cell_library'))
+        filters.append(_latest_batch_filter('rb5.trusted_cell_library'))
         if operator_code:
             filters.append('operator_code = %s')
             params.append(operator_code)
@@ -67,12 +67,12 @@ def search_service_payload(q: str | None = None, level: str = 'cell', operator_c
                 lifecycle_state, position_grade, center_lon, center_lat,
                 p90_radius_m, anchor_eligible, baseline_eligible,
                 drift_pattern, is_collision, is_dynamic, is_multi_centroid
-            FROM rebuild5.trusted_cell_library
+            FROM rb5.trusted_cell_library
             WHERE {' AND '.join(filters)}
             ORDER BY p90_radius_m ASC NULLS LAST, cell_id
             """
     elif normalized_level == 'bs':
-        filters.append(_latest_batch_filter('rebuild5.trusted_bs_library'))
+        filters.append(_latest_batch_filter('rb5.trusted_bs_library'))
         if operator_code:
             filters.append('operator_code = %s')
             params.append(operator_code)
@@ -88,12 +88,12 @@ def search_service_payload(q: str | None = None, level: str = 'cell', operator_c
                 gps_p90_dist_m AS p90_radius_m, anchor_eligible, baseline_eligible,
                 classification AS drift_pattern, FALSE AS is_collision, FALSE AS is_dynamic, FALSE AS is_multi_centroid,
                 total_cells, qualified_cells, excellent_cells
-            FROM rebuild5.trusted_bs_library
+            FROM rb5.trusted_bs_library
             WHERE {' AND '.join(filters)}
             ORDER BY gps_p90_dist_m ASC NULLS LAST, total_cells DESC, bs_id
             """
     else:
-        filters.append(_latest_batch_filter('rebuild5.trusted_lac_library'))
+        filters.append(_latest_batch_filter('rb5.trusted_lac_library'))
         if operator_code:
             filters.append('operator_code = %s')
             params.append(operator_code)
@@ -109,7 +109,7 @@ def search_service_payload(q: str | None = None, level: str = 'cell', operator_c
                 NULL::double precision AS p90_radius_m, anchor_eligible, baseline_eligible,
                 trend AS drift_pattern, FALSE AS is_collision, FALSE AS is_dynamic, FALSE AS is_multi_centroid,
                 total_bs, qualified_bs, qualified_bs_ratio
-            FROM rebuild5.trusted_lac_library
+            FROM rb5.trusted_lac_library
             WHERE {' AND '.join(filters)}
             ORDER BY qualified_bs_ratio DESC NULLS LAST, total_bs DESC, lac
             """
@@ -126,7 +126,7 @@ def get_service_cell_payload(
     tech_norm: str | None = None,
 ) -> dict[str, Any]:
     filters = [
-        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)',
+        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)',
         't.cell_id = %s',
     ]
     params: list[Any] = [cell_id]
@@ -142,7 +142,7 @@ def get_service_cell_payload(
     row = _safe_fetchone(
         f"""
         SELECT t.*, loc.province_name, loc.city_name, loc.district_name
-        FROM rebuild5.trusted_cell_library t
+        FROM rb5.trusted_cell_library t
         LEFT JOIN LATERAL (
             SELECT a.province_name, a.city_name, a.name AS district_name
             FROM rebuild2.dim_admin_area a
@@ -162,7 +162,7 @@ def get_service_cell_payload(
 
 def get_service_bs_payload(bs_id: int, *, operator_code: str | None = None, lac: int | None = None) -> dict[str, Any]:
     filters = [
-        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)',
+        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_bs_library)',
         't.bs_id = %s',
     ]
     params: list[Any] = [bs_id]
@@ -175,7 +175,7 @@ def get_service_bs_payload(bs_id: int, *, operator_code: str | None = None, lac:
     row = _safe_fetchone(
         f"""
         SELECT t.*, loc.province_name, loc.city_name, loc.district_name
-        FROM rebuild5.trusted_bs_library t
+        FROM rb5.trusted_bs_library t
         LEFT JOIN LATERAL (
             SELECT a.province_name, a.city_name, a.name AS district_name
             FROM rebuild2.dim_admin_area a
@@ -195,8 +195,8 @@ def get_service_bs_payload(bs_id: int, *, operator_code: str | None = None, lac:
     row['cells'] = _safe_fetchall(
         """
         SELECT cell_id, lifecycle_state, position_grade, p90_radius_m, drift_pattern, is_collision, is_multi_centroid
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
           AND operator_code = %s AND lac = %s AND bs_id = %s
         ORDER BY p90_radius_m ASC NULLS LAST, cell_id
         LIMIT 200
@@ -208,7 +208,7 @@ def get_service_bs_payload(bs_id: int, *, operator_code: str | None = None, lac:
 
 def get_service_lac_payload(lac: int, *, operator_code: str | None = None) -> dict[str, Any]:
     filters = [
-        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_lac_library)',
+        't.batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_lac_library)',
         't.lac = %s',
     ]
     params: list[Any] = [lac]
@@ -218,7 +218,7 @@ def get_service_lac_payload(lac: int, *, operator_code: str | None = None) -> di
     row = _safe_fetchone(
         f"""
         SELECT t.*, loc.province_name, loc.city_name, loc.district_name
-        FROM rebuild5.trusted_lac_library t
+        FROM rb5.trusted_lac_library t
         LEFT JOIN LATERAL (
             SELECT a.province_name, a.city_name, a.name AS district_name
             FROM rebuild2.dim_admin_area a
@@ -238,8 +238,8 @@ def get_service_lac_payload(lac: int, *, operator_code: str | None = None) -> di
     row['bs_items'] = _safe_fetchall(
         """
         SELECT bs_id, lifecycle_state, classification, total_cells, qualified_cells, excellent_cells, anomaly_cell_ratio
-        FROM rebuild5.trusted_bs_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_bs_library)
+        FROM rb5.trusted_bs_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_bs_library)
           AND operator_code = %s AND lac = %s
         ORDER BY anomaly_cell_ratio DESC, total_cells DESC, bs_id
         LIMIT 300
@@ -259,8 +259,8 @@ def get_service_coverage_payload() -> dict[str, Any]:
             COALESCE(AVG(CASE WHEN lifecycle_state IN ('qualified', 'excellent') THEN 1 ELSE 0 END), 0) AS qualified_pct,
             COALESCE(AVG(CASE WHEN lifecycle_state = 'excellent' THEN 1 ELSE 0 END), 0) AS excellent_pct,
             COALESCE(AVG(p90_radius_m), 0) AS avg_p90
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
         GROUP BY operator_code
         ORDER BY cells DESC, operator_code
         """
@@ -271,8 +271,8 @@ def get_service_coverage_payload() -> dict[str, Any]:
             COUNT(*) AS trusted_cell_total,
             COUNT(DISTINCT lac) AS lac_total,
             COALESCE(AVG(p90_radius_m), 0) AS avg_p90
-        FROM rebuild5.trusted_cell_library
-        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
         """
     ) or {'trusted_cell_total': 0, 'lac_total': 0, 'avg_p90': 0}
     return {'version': _latest_version(), 'summary': summary, 'operators': operator_rows}
@@ -283,11 +283,11 @@ def get_service_report_payload() -> dict[str, Any]:
         """
         WITH latest_batch AS (
             SELECT COALESCE(MAX(batch_id), 0) AS batch_id
-            FROM rebuild5.trusted_lac_library
+            FROM rb5.trusted_lac_library
         ),
         lac_rows AS (
             SELECT operator_code, operator_cn, lac, batch_id
-            FROM rebuild5.trusted_lac_library
+            FROM rb5.trusted_lac_library
             WHERE batch_id = (SELECT batch_id FROM latest_batch)
         ),
         cell_agg AS (
@@ -298,7 +298,7 @@ def get_service_report_payload() -> dict[str, Any]:
                 COUNT(*) FILTER (WHERE lifecycle_state IN ('qualified', 'excellent')) AS qualified_cell_total,
                 COUNT(*) FILTER (WHERE lifecycle_state = 'excellent') AS excellent_cell_total,
                 COALESCE(AVG(p90_radius_m), 0) AS avg_p90
-            FROM rebuild5.trusted_cell_library
+            FROM rb5.trusted_cell_library
             WHERE batch_id = (SELECT batch_id FROM latest_batch)
             GROUP BY operator_code, lac
         ),
@@ -308,7 +308,7 @@ def get_service_report_payload() -> dict[str, Any]:
                 lac,
                 COUNT(*) AS bs_total,
                 COUNT(*) FILTER (WHERE lifecycle_state = 'qualified') AS qualified_bs_total
-            FROM rebuild5.trusted_bs_library
+            FROM rb5.trusted_bs_library
             WHERE batch_id = (SELECT batch_id FROM latest_batch)
             GROUP BY operator_code, lac
         )

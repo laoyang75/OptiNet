@@ -7,7 +7,7 @@ import threading
 import time
 import psycopg
 
-DSN = "postgresql://postgres:123456@192.168.200.217:5433/ip_loc2"
+DSN = "postgresql://postgres:123456@192.168.200.217:5488/yangca"
 WORKERS = [2, 4, 8, 12, 16, 20, 24, 28]
 
 BASELINES = {"A": 27.0, "B": 12.0, "C": 25.0, "D": 7.0}

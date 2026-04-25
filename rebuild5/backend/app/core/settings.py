@@ -1,4 +1,4 @@
-"""Application settings for rebuild5."""
+"""Application settings for rb5."""
 from __future__ import annotations
 
 import os
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-DEFAULT_DSN = "postgresql://postgres:123456@192.168.200.217:5433/ip_loc2"
+DEFAULT_DSN = "postgresql://postgres:123456@192.168.200.217:5488/yangca"
 
 
 @dataclass(slots=True)

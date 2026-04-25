@@ -53,6 +53,13 @@ export interface MaintenanceCellItem {
   pressure_avg: number | null
   active_days_30d: number
   consecutive_inactive_days: number
+  // TA 覆盖评估字段（batch 7 起落地；trusted_cell_library.ta_* 列）
+  ta_n_obs: number | null
+  ta_p50: number | null
+  ta_p90: number | null
+  ta_dist_p90_m: number | null
+  freq_band: string | null
+  ta_verification: string | null
 }
 
 export interface MaintenanceCellsPayload {

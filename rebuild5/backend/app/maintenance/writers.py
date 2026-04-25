@@ -15,13 +15,13 @@ def collect_step5_stats(
     row = fetchone(
         """
         SELECT
-            (SELECT COUNT(*) FROM rebuild5.trusted_cell_library WHERE batch_id = %s) AS published_cell_count,
-            (SELECT COUNT(*) FROM rebuild5.trusted_bs_library WHERE batch_id = %s) AS published_bs_count,
-            (SELECT COUNT(*) FROM rebuild5.trusted_lac_library WHERE batch_id = %s) AS published_lac_count,
-            (SELECT COUNT(*) FROM rebuild5.trusted_cell_library WHERE batch_id = %s AND is_collision) AS collision_cell_count,
-            (SELECT COUNT(*) FROM rebuild5.trusted_cell_library WHERE batch_id = %s AND is_multi_centroid) AS multi_centroid_cell_count,
-            (SELECT COUNT(*) FROM rebuild5.trusted_cell_library WHERE batch_id = %s AND is_dynamic) AS dynamic_cell_count,
-            (SELECT COUNT(*) FROM rebuild5.trusted_bs_library WHERE batch_id = %s
+            (SELECT COUNT(*) FROM rb5.trusted_cell_library WHERE batch_id = %s) AS published_cell_count,
+            (SELECT COUNT(*) FROM rb5.trusted_bs_library WHERE batch_id = %s) AS published_bs_count,
+            (SELECT COUNT(*) FROM rb5.trusted_lac_library WHERE batch_id = %s) AS published_lac_count,
+            (SELECT COUNT(*) FROM rb5.trusted_cell_library WHERE batch_id = %s AND is_collision) AS collision_cell_count,
+            (SELECT COUNT(*) FROM rb5.trusted_cell_library WHERE batch_id = %s AND is_multi_centroid) AS multi_centroid_cell_count,
+            (SELECT COUNT(*) FROM rb5.trusted_cell_library WHERE batch_id = %s AND is_dynamic) AS dynamic_cell_count,
+            (SELECT COUNT(*) FROM rb5.trusted_bs_library WHERE batch_id = %s
                 AND classification IN ('large_spread', 'dynamic_bs')) AS anomaly_bs_count
         """,
         (batch_id, batch_id, batch_id, batch_id, batch_id, batch_id, batch_id),
@@ -44,10 +44,10 @@ def collect_step5_stats(
 
 
 def write_step5_stats(stats: dict[str, Any]) -> None:
-    execute('DELETE FROM rebuild5_meta.step5_run_stats WHERE run_id = %s', (stats['run_id'],))
+    execute('DELETE FROM rb5_meta.step5_run_stats WHERE run_id = %s', (stats['run_id'],))
     execute(
         """
-        INSERT INTO rebuild5_meta.step5_run_stats (
+        INSERT INTO rb5_meta.step5_run_stats (
             run_id, batch_id, dataset_key, snapshot_version, snapshot_version_prev, status,
             started_at, finished_at,
             published_cell_count, published_bs_count, published_lac_count,
@@ -71,10 +71,10 @@ def write_step5_stats(stats: dict[str, Any]) -> None:
 
 def write_run_log(*, run_id: str, snapshot_version: str,
                   status: str, result_summary: dict[str, Any]) -> None:
-    execute('DELETE FROM rebuild5_meta.run_log WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.run_log WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.run_log (
+        INSERT INTO rb5_meta.run_log (
             run_id, run_type, dataset_key, snapshot_version, status,
             started_at, finished_at, step_chain, result_summary, error
         ) VALUES (

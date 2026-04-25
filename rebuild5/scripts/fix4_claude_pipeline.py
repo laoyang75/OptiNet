@@ -17,7 +17,7 @@ from datetime import date, timedelta
 
 import psycopg
 
-DB_DSN = "postgresql://postgres:123456@192.168.200.217:5433/ip_loc2"
+DB_DSN = "postgresql://postgres:123456@192.168.200.217:5488/yangca"
 SCHEMA = "rebuild5_fix4"
 OUTLIER_THRESHOLD_M = 3000  # two-stage filter radius
 

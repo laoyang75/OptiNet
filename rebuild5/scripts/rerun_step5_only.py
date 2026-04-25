@@ -15,7 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 from rebuild5.backend.app.core.database import execute, fetchall
@@ -36,15 +36,15 @@ def _parse_args() -> argparse.Namespace:
 
 def _reset_step5_outputs() -> None:
     statements = (
-        'DELETE FROM rebuild5_meta.step5_run_stats',
-        "DELETE FROM rebuild5_meta.run_log WHERE run_type = 'maintenance'",
-        'TRUNCATE TABLE rebuild5.trusted_cell_library',
-        'TRUNCATE TABLE rebuild5.trusted_bs_library',
-        'TRUNCATE TABLE rebuild5.trusted_lac_library',
-        'TRUNCATE TABLE rebuild5.collision_id_list',
-        'TRUNCATE TABLE rebuild5.cell_centroid_detail',
-        'TRUNCATE TABLE rebuild5.bs_centroid_detail',
-        'TRUNCATE TABLE rebuild5.cell_sliding_window',
+        'DELETE FROM rb5_meta.step5_run_stats',
+        "DELETE FROM rb5_meta.run_log WHERE run_type = 'maintenance'",
+        'TRUNCATE TABLE rb5.trusted_cell_library',
+        'TRUNCATE TABLE rb5.trusted_bs_library',
+        'TRUNCATE TABLE rb5.trusted_lac_library',
+        'TRUNCATE TABLE rb5.collision_id_list',
+        'TRUNCATE TABLE rb5.cell_centroid_detail',
+        'TRUNCATE TABLE rb5.bs_centroid_detail',
+        'TRUNCATE TABLE rb5.cell_sliding_window',
     )
     for stmt in statements:
         execute(stmt)
@@ -54,7 +54,7 @@ def _available_batches() -> list[int]:
     rows = fetchall(
         """
         SELECT DISTINCT batch_id
-        FROM rebuild5_meta.step3_run_stats
+        FROM rb5_meta.step3_run_stats
         WHERE batch_id IS NOT NULL
         ORDER BY batch_id
         """

@@ -46,7 +46,7 @@ def _latest_step2_row() -> dict[str, Any] | None:
     return _safe_fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step2_run_stats
+        FROM rb5_meta.step2_run_stats
         ORDER BY batch_id DESC NULLS LAST, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """
@@ -57,7 +57,7 @@ def _latest_step3_row() -> dict[str, Any] | None:
     return _safe_fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step3_run_stats
+        FROM rb5_meta.step3_run_stats
         ORDER BY batch_id DESC, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """

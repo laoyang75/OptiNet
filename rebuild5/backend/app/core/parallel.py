@@ -110,9 +110,9 @@ def parallel_execute(
     示例（IO密集型，已有 WHERE 子句）：
         parallel_execute(
             \"\"\"
-            INSERT INTO rebuild5.enriched_records (...)
+            INSERT INTO rb5.enriched_records (...)
             SELECT {batch_id}::int, ...
-            FROM rebuild5.path_a_records p
+            FROM rb5.path_a_records p
             WHERE TRUE
               {shard_filter}
             \"\"\",
@@ -125,8 +125,8 @@ def parallel_execute(
     示例（CPU密集型，无其他 WHERE 子句）：
         parallel_execute(
             \"\"\"
-            INSERT INTO rebuild5.cell_metrics_window (...)
-            SELECT ... FROM rebuild5.cell_sliding_window
+            INSERT INTO rb5.cell_metrics_window (...)
+            SELECT ... FROM rb5.cell_sliding_window
             {shard_filter}
             GROUP BY operator_code, lac, bs_id, cell_id
             \"\"\",

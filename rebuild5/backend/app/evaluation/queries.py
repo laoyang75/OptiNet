@@ -12,7 +12,7 @@ def get_batches_payload() -> dict[str, Any]:
     rows = _safe_fetchall(
         """
         SELECT batch_id, snapshot_version, dataset_key, run_id, finished_at
-        FROM rebuild5_meta.step3_run_stats
+        FROM rb5_meta.step3_run_stats
         ORDER BY batch_id DESC
         """
     )
@@ -33,7 +33,7 @@ def get_batches_payload() -> dict[str, Any]:
 def _step3_row_for_batch(batch_id: int | None = None) -> dict[str, Any] | None:
     if batch_id is not None:
         return _safe_fetchone(
-            'SELECT * FROM rebuild5_meta.step3_run_stats WHERE batch_id = %s',
+            'SELECT * FROM rb5_meta.step3_run_stats WHERE batch_id = %s',
             (batch_id,),
         )
     return _latest_step3_row()
@@ -71,7 +71,7 @@ def get_evaluation_overview_payload(batch_id: int | None = None) -> dict[str, An
         }
 
     unchanged_row = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.snapshot_diff_cell WHERE batch_id = %s AND diff_kind = %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.snapshot_diff_cell WHERE batch_id = %s AND diff_kind = %s',
         (step3['batch_id'], 'unchanged'),
     )
     return {
@@ -155,7 +155,7 @@ def get_snapshot_payload(batch_id: int | None = None) -> dict[str, Any]:
         """
         SELECT operator_code, lac, bs_id, cell_id, diff_kind,
                tech_norm, prev_lifecycle_state, curr_lifecycle_state, centroid_shift_m
-        FROM rebuild5.snapshot_diff_cell
+        FROM rb5.snapshot_diff_cell
         WHERE batch_id = %s AND diff_kind <> 'unchanged'
         ORDER BY CASE diff_kind
             WHEN 'promoted' THEN 1
@@ -170,7 +170,7 @@ def get_snapshot_payload(batch_id: int | None = None) -> dict[str, Any]:
         (step3['batch_id'],),
     )
     unchanged_row = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.snapshot_diff_cell WHERE batch_id = %s AND diff_kind = %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.snapshot_diff_cell WHERE batch_id = %s AND diff_kind = %s',
         (step3['batch_id'], 'unchanged'),
     )
     return {
@@ -219,7 +219,7 @@ def get_watchlist_payload(batch_id: int | None = None) -> dict[str, Any]:
         """
         SELECT operator_code, lac, cell_id, lifecycle_state,
                independent_obs, distinct_dev_id, p90_radius_m, observed_span_hours, is_collision_id
-        FROM rebuild5.trusted_snapshot_cell
+        FROM rb5.trusted_snapshot_cell
         WHERE batch_id = %s AND lifecycle_state IN ('waiting', 'observing')
         ORDER BY lifecycle_state DESC, independent_obs DESC, distinct_dev_id DESC
         LIMIT 200
@@ -257,7 +257,7 @@ def get_cell_evaluation_payload(page: int = 1, page_size: int = 50, batch_id: in
                observed_span_hours, p50_radius_m, p90_radius_m,
                center_lon, center_lat, active_days, rsrp_avg,
                is_collision_id
-        FROM rebuild5.trusted_snapshot_cell
+        FROM rb5.trusted_snapshot_cell
         WHERE batch_id = %s
         ORDER BY independent_obs DESC, cell_id
         """,
@@ -297,7 +297,7 @@ def get_bs_evaluation_payload(page: int = 1, page_size: int = 50, batch_id: int 
                center_lon, center_lat,
                (classification = 'large_spread') AS large_spread,
                classification
-        FROM rebuild5.trusted_snapshot_bs
+        FROM rb5.trusted_snapshot_bs
         WHERE batch_id = %s
         ORDER BY cell_count DESC, bs_id
         """,
@@ -335,7 +335,7 @@ def get_lac_evaluation_payload(page: int = 1, page_size: int = 50, batch_id: int
                qualified_bs_count AS qualified_bs,
                COALESCE(qualified_bs_count::double precision / NULLIF(bs_count, 0), 0) AS qualified_bs_ratio,
                area_km2, anomaly_bs_ratio
-        FROM rebuild5.trusted_snapshot_lac
+        FROM rb5.trusted_snapshot_lac
         WHERE batch_id = %s
         ORDER BY bs_count DESC, lac
         """,
@@ -368,7 +368,7 @@ def get_trend_payload() -> dict[str, Any]:
                evaluated_cell_count, anchor_eligible_cell_count,
                bs_waiting_count, bs_observing_count, bs_qualified_count, bs_excellent_count,
                lac_waiting_count, lac_observing_count, lac_qualified_count, lac_excellent_count
-        FROM rebuild5_meta.step3_run_stats
+        FROM rb5_meta.step3_run_stats
         ORDER BY batch_id
         """
     )
@@ -414,7 +414,7 @@ def get_cell_detail_payload(cell_id: int, batch_id: int | None = None) -> dict[s
                observed_span_hours, p50_radius_m, p90_radius_m,
                center_lon, center_lat, active_days, rsrp_avg,
                is_collision_id
-        FROM rebuild5.trusted_snapshot_cell
+        FROM rb5.trusted_snapshot_cell
         WHERE batch_id = %s AND cell_id = %s
         """,
         (step3['batch_id'], cell_id),
@@ -434,7 +434,7 @@ def get_bs_detail_payload(bs_id: int, batch_id: int | None = None) -> dict[str, 
                qualified_cell_count AS qualified_cells,
                excellent_cell_count AS excellent_cells,
                center_lon, center_lat, classification
-        FROM rebuild5.trusted_snapshot_bs
+        FROM rb5.trusted_snapshot_bs
         WHERE batch_id = %s AND bs_id = %s
         """,
         (step3['batch_id'], bs_id),
@@ -444,7 +444,7 @@ def get_bs_detail_payload(bs_id: int, batch_id: int | None = None) -> dict[str, 
     child_cells = _safe_fetchall(
         """
         SELECT cell_id, lifecycle_state, position_grade, independent_obs, p90_radius_m
-        FROM rebuild5.trusted_snapshot_cell
+        FROM rb5.trusted_snapshot_cell
         WHERE batch_id = %s AND bs_id = %s
         ORDER BY independent_obs DESC
         """,
@@ -462,7 +462,7 @@ def get_lac_detail_payload(lac: int, batch_id: int | None = None) -> dict[str, A
         SELECT operator_code, lac, lifecycle_state, anchor_eligible,
                bs_count AS total_bs, excellent_bs_count, qualified_bs_count AS qualified_bs,
                area_km2, anomaly_bs_ratio
-        FROM rebuild5.trusted_snapshot_lac
+        FROM rb5.trusted_snapshot_lac
         WHERE batch_id = %s AND lac = %s
         """,
         (step3['batch_id'], lac),
@@ -473,7 +473,7 @@ def get_lac_detail_payload(lac: int, batch_id: int | None = None) -> dict[str, A
         """
         SELECT bs_id, lifecycle_state, cell_count AS total_cells,
                qualified_cell_count AS qualified_cells, classification
-        FROM rebuild5.trusted_snapshot_bs
+        FROM rb5.trusted_snapshot_bs
         WHERE batch_id = %s AND lac = %s
         ORDER BY cell_count DESC
         """,
@@ -489,11 +489,11 @@ def get_cell_rule_impact_payload(batch_id: int | None = None) -> dict[str, Any]:
         return {'rules': thresholds, 'impact': []}
     bid = step3['batch_id']
     blocked_obs = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_snapshot_cell WHERE batch_id = %s AND lifecycle_state IN (%s,%s) AND independent_obs < %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.trusted_snapshot_cell WHERE batch_id = %s AND lifecycle_state IN (%s,%s) AND independent_obs < %s',
         (bid, 'waiting', 'observing', thresholds['qualified_min_obs']),
     )
     collision_cells = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_snapshot_cell WHERE batch_id = %s AND is_collision_id = true',
+        'SELECT COUNT(*) AS cnt FROM rb5.trusted_snapshot_cell WHERE batch_id = %s AND is_collision_id = true',
         (bid,),
     )
     return {
@@ -512,11 +512,11 @@ def get_bs_rule_impact_payload(batch_id: int | None = None) -> dict[str, Any]:
         return {'rules': thresholds, 'impact': []}
     bid = step3['batch_id']
     blocked_excellent = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_snapshot_bs WHERE batch_id = %s AND lifecycle_state IN (%s,%s,%s) AND excellent_cell_count < %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.trusted_snapshot_bs WHERE batch_id = %s AND lifecycle_state IN (%s,%s,%s) AND excellent_cell_count < %s',
         (bid, 'waiting', 'observing', 'qualified', thresholds['bs_excellent_min_excellent_cells']),
     )
     blocked_qualified = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_snapshot_bs WHERE batch_id = %s AND lifecycle_state IN (%s,%s) AND qualified_cell_count < %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.trusted_snapshot_bs WHERE batch_id = %s AND lifecycle_state IN (%s,%s) AND qualified_cell_count < %s',
         (bid, 'waiting', 'observing', thresholds['bs_qualified_min_qualified_cells']),
     )
     return {
@@ -535,11 +535,11 @@ def get_lac_rule_impact_payload(batch_id: int | None = None) -> dict[str, Any]:
         return {'rules': thresholds, 'impact': []}
     bid = step3['batch_id']
     blocked_count = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_snapshot_lac WHERE batch_id = %s AND lifecycle_state IN (%s,%s) AND excellent_bs_count < %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.trusted_snapshot_lac WHERE batch_id = %s AND lifecycle_state IN (%s,%s) AND excellent_bs_count < %s',
         (bid, 'waiting', 'observing', thresholds['lac_qualified_min_excellent_bs']),
     )
     blocked_excellent = _safe_fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.trusted_snapshot_lac WHERE batch_id = %s AND lifecycle_state IN (%s,%s,%s) AND excellent_bs_count < %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.trusted_snapshot_lac WHERE batch_id = %s AND lifecycle_state IN (%s,%s,%s) AND excellent_bs_count < %s',
         (bid, 'waiting', 'observing', 'qualified', thresholds['lac_excellent_min_excellent_bs']),
     )
     return {

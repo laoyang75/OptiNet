@@ -31,13 +31,13 @@ def _apply_maintenance_table_policies() -> None:
     persistent window and should keep default autovacuum behavior.
     """
     for table_name in (
-        'rebuild5.trusted_cell_library',
-        'rebuild5.trusted_bs_library',
-        'rebuild5.trusted_lac_library',
-        'rebuild5.label_results',
-        'rebuild5.collision_id_list',
-        'rebuild5.cell_centroid_detail',
-        'rebuild5.bs_centroid_detail',
+        'rb5.trusted_cell_library',
+        'rb5.trusted_bs_library',
+        'rb5.trusted_lac_library',
+        'rb5.label_results',
+        'rb5.collision_id_list',
+        'rb5.cell_centroid_detail',
+        'rb5.bs_centroid_detail',
     ):
         execute(f"ALTER TABLE {table_name} SET (autovacuum_enabled = false)")
 
@@ -45,7 +45,7 @@ def _apply_maintenance_table_policies() -> None:
 def _create_step5_run_stats() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5_meta.step5_run_stats (
+        CREATE TABLE IF NOT EXISTS rb5_meta.step5_run_stats (
             run_id TEXT PRIMARY KEY,
             batch_id INTEGER NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -69,7 +69,7 @@ def _create_step5_run_stats() -> None:
 def _create_trusted_cell_library() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.trusted_cell_library (
+        CREATE TABLE IF NOT EXISTS rb5.trusted_cell_library (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -117,16 +117,29 @@ def _create_trusted_cell_library() -> None:
             window_obs_count BIGINT NOT NULL DEFAULT 0,
             active_days_30d INTEGER DEFAULT 0,
             consecutive_inactive_days INTEGER DEFAULT 0,
+            ta_n_obs BIGINT DEFAULT 0,
+            ta_p50 INTEGER,
+            ta_p90 INTEGER,
+            ta_dist_p90_m INTEGER,
+            freq_band TEXT,
+            ta_verification TEXT,
             PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
         )
         """
     )
+    # 向后兼容：TA 辅助研究字段（2026-04-23 新增）
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_n_obs BIGINT DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_p50 INTEGER')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_p90 INTEGER')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_dist_p90_m INTEGER')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS freq_band TEXT')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_verification TEXT')
 
 
 def _create_trusted_bs_library() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.trusted_bs_library (
+        CREATE TABLE IF NOT EXISTS rb5.trusted_bs_library (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -160,15 +173,15 @@ def _create_trusted_bs_library() -> None:
         """
     )
     # 向后兼容：确保新字段在旧库上也存在
-    execute('ALTER TABLE rebuild5.trusted_bs_library ADD COLUMN IF NOT EXISTS normal_cells BIGINT NOT NULL DEFAULT 0')
-    execute('ALTER TABLE rebuild5.trusted_bs_library ADD COLUMN IF NOT EXISTS anomaly_cells BIGINT NOT NULL DEFAULT 0')
-    execute('ALTER TABLE rebuild5.trusted_bs_library ADD COLUMN IF NOT EXISTS insufficient_cells BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_bs_library ADD COLUMN IF NOT EXISTS normal_cells BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_bs_library ADD COLUMN IF NOT EXISTS anomaly_cells BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_bs_library ADD COLUMN IF NOT EXISTS insufficient_cells BIGINT NOT NULL DEFAULT 0')
 
 
 def _create_trusted_lac_library() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.trusted_lac_library (
+        CREATE TABLE IF NOT EXISTS rb5.trusted_lac_library (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -200,20 +213,20 @@ def _create_trusted_lac_library() -> None:
         )
         """
     )
-    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS excellent_bs BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS excellent_bs BIGINT NOT NULL DEFAULT 0')
     # LAC 层三分类（正常/异常/数据不足 BS）— 观察字段
-    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS normal_bs BIGINT NOT NULL DEFAULT 0')
-    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS anomaly_bs BIGINT NOT NULL DEFAULT 0')
-    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS insufficient_bs BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS normal_bs BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS anomaly_bs BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS insufficient_bs BIGINT NOT NULL DEFAULT 0')
     # LAC 质心（基于正常 BS）
-    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lon DOUBLE PRECISION')
-    execute('ALTER TABLE rebuild5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lat DOUBLE PRECISION')
+    execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lon DOUBLE PRECISION')
+    execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lat DOUBLE PRECISION')
 
 
 def _create_collision_id_list() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.collision_id_list (
+        CREATE TABLE IF NOT EXISTS rb5.collision_id_list (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             cell_id BIGINT NOT NULL,
@@ -231,7 +244,7 @@ def _create_collision_id_list() -> None:
 def _create_label_results() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.label_results (
+        CREATE TABLE IF NOT EXISTS rb5.label_results (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             operator_code TEXT NOT NULL,
@@ -263,7 +276,7 @@ def _create_label_results() -> None:
 def _create_cell_centroid_detail() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.cell_centroid_detail (
+        CREATE TABLE IF NOT EXISTS rb5.cell_centroid_detail (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             operator_code TEXT NOT NULL,
@@ -288,7 +301,7 @@ def _create_cell_centroid_detail() -> None:
 def _create_bs_centroid_detail() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.bs_centroid_detail (
+        CREATE TABLE IF NOT EXISTS rb5.bs_centroid_detail (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             operator_code TEXT NOT NULL,
@@ -307,25 +320,25 @@ def _create_bs_centroid_detail() -> None:
 
 
 def _ensure_maintenance_compat_columns() -> None:
-    execute('ALTER TABLE rebuild5.cell_centroid_detail ADD COLUMN IF NOT EXISTS radius_m DOUBLE PRECISION')
-    execute('ALTER TABLE rebuild5.trusted_cell_library ADD COLUMN IF NOT EXISTS tech_norm TEXT')
-    execute('ALTER TABLE rebuild5.trusted_cell_library ADD COLUMN IF NOT EXISTS centroid_pattern TEXT')
-    execute('ALTER TABLE rebuild5.cell_centroid_detail ADD COLUMN IF NOT EXISTS tech_norm TEXT')
-    execute('ALTER TABLE rebuild5.cell_sliding_window ADD COLUMN IF NOT EXISTS tech_norm TEXT')
-    execute('ALTER TABLE rebuild5.cell_daily_centroid ADD COLUMN IF NOT EXISTS tech_norm TEXT')
-    execute('ALTER TABLE rebuild5.cell_metrics_window ADD COLUMN IF NOT EXISTS tech_norm TEXT')
-    execute('ALTER TABLE rebuild5.trusted_cell_library DROP CONSTRAINT IF EXISTS trusted_cell_library_pkey')
+    execute('ALTER TABLE rb5.cell_centroid_detail ADD COLUMN IF NOT EXISTS radius_m DOUBLE PRECISION')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS centroid_pattern TEXT')
+    execute('ALTER TABLE rb5.cell_centroid_detail ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rb5.cell_daily_centroid ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rb5.cell_metrics_window ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rb5.trusted_cell_library DROP CONSTRAINT IF EXISTS trusted_cell_library_pkey')
     execute(
         """
-        ALTER TABLE rebuild5.trusted_cell_library
+        ALTER TABLE rb5.trusted_cell_library
         ADD CONSTRAINT trusted_cell_library_pkey
         PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('ALTER TABLE rebuild5.cell_centroid_detail DROP CONSTRAINT IF EXISTS cell_centroid_detail_pkey')
+    execute('ALTER TABLE rb5.cell_centroid_detail DROP CONSTRAINT IF EXISTS cell_centroid_detail_pkey')
     execute(
         """
-        ALTER TABLE rebuild5.cell_centroid_detail
+        ALTER TABLE rb5.cell_centroid_detail
         ADD CONSTRAINT cell_centroid_detail_pkey
         PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm, cluster_id)
         """
@@ -335,15 +348,18 @@ def _ensure_maintenance_compat_columns() -> None:
 def _create_cell_sliding_window() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.cell_sliding_window (
+        CREATE TABLE IF NOT EXISTS rb5.cell_sliding_window (
             batch_id INTEGER NOT NULL,
             source_row_uid TEXT NOT NULL,
             record_id TEXT NOT NULL,
             operator_code TEXT,
             lac BIGINT,
             bs_id BIGINT,
-            cell_id BIGINT,
+            cell_id BIGINT NOT NULL,
             tech_norm TEXT,
+            cell_origin TEXT,
+            timing_advance INTEGER,
+            freq_channel INTEGER,
             dev_id TEXT,
             event_time_std TIMESTAMPTZ,
             gps_valid BOOLEAN,
@@ -354,16 +370,19 @@ def _create_cell_sliding_window() -> None:
             sinr_final DOUBLE PRECISION,
             pressure_final DOUBLE PRECISION,
             source_type TEXT,
-            PRIMARY KEY (batch_id, source_row_uid)
+            PRIMARY KEY (batch_id, source_row_uid, cell_id)
         )
         """
     )
+    execute("ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS cell_origin TEXT")
+    execute("ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS timing_advance INTEGER")
+    execute("ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS freq_channel INTEGER")
 
 
 def _create_cell_daily_centroid() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.cell_daily_centroid (
+        CREATE TABLE IF NOT EXISTS rb5.cell_daily_centroid (
             batch_id INTEGER NOT NULL,
             operator_code TEXT,
             lac BIGINT,
@@ -387,7 +406,7 @@ def _create_cell_metrics_window() -> None:
     """
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.cell_metrics_window (
+        CREATE TABLE IF NOT EXISTS rb5.cell_metrics_window (
             batch_id INTEGER NOT NULL,
             operator_code TEXT,
             lac BIGINT,

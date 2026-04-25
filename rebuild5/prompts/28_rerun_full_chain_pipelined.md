@@ -3,6 +3,16 @@
 > **数据库**：`postgresql://postgres:123456@192.168.200.217:5433/ip_loc2`
 > **仓库**：`/Users/yangcongan/cursor/WangYou_Data`
 > **脚本**：`rebuild5/scripts/run_step1_step25_pipelined_temp.py`
+>
+> **本轮生效的关键规则**（冒烟 §1.2 会校验是否落地）：
+> - **ODS-019**：cell_infos 陈旧缓存过滤，timeStamp 单位**自动识别**（≤13 位毫秒 / ≥14 位纳秒，实测约 9% 设备用纳秒）
+> - **ODS-020/021/022**：ss1 批内锚点陈旧过滤 + tech 匹配 INNER JOIN + 全 -1 sig 过滤
+> - **`ODS-023`**（2026-04-23 新增）：LTE TDD 占位 TA 剔除 —— `cell_origin='cell_infos' AND tech_norm='4G' AND freq_channel BETWEEN 36000 AND 43589 AND timing_advance >= 16` 置 NULL。基于发现中国移动 TDD 基站约 69% TA 固化在 16-23 占位值（非距离信号），剔除占位后 TDD 有效 TA 保留约 23%。规则详见 `rebuild5/docs/gps研究/11_TA字段应用可行性研究.md`。
+> - **ODS-024**：簇至少需要 `min_cluster_dev_count=2` 个不同设备（防单设备跨天刷成假簇）
+> - **DBSCAN 参数调整**：`dbscan_eps_m` **250 → 500**（原 250m 对城市 cell 偏严，典型亦庄 7 点 2.5km 分散聚不成簇案例表明放宽更合理）
+> - **`DEDUP-V2.1`**（2026-04-23 修订 V2）：Step 2 `_profile_gps_day_dedup` 和 Step 5 `cell_core_gps_day_dedup` 按 `cell_origin` 分两套去重键：`cell_infos` 用 `(cell, dev, 5min_bucket)`；**`ss1` 用 `(cell, dev, record_id)`**（每 raw_gps 报文 1 点，消除 forward-fill 冗余）。配套 `etl_ss1.max_age_from_anchor_sec: 3600→10800`。修复 cell 20752955 类"单远点污染 + 样本稀释"，同时压 ss1 冗余约 50%。规则详见 `rebuild5/docs/01b_数据源接入_处理规则.md § 下游去重策略`。
+> - **方案 B 加权 p90**（2026-04-23 新增）：`build_cell_radius_stats` 产出的 p50/p90 改为**设备逆频加权**（每设备总权重归一化为 1，防单设备刷屏主导）。cell 19450676 实测 p90 从 6478m 降到 4718m（-30%）。`raw_p90_radius_m` 保留无权口径对照。
+> - **TA 透传 + cell_origin 透传**（2026-04-23 新增）：`timing_advance / freq_channel / cell_origin` 3 字段从 `etl_cleaned` 透传到 7 张下游表，最终 `trusted_cell_library` 新增 6 个 TA 字段：`ta_n_obs / ta_p50 / ta_p90 / ta_dist_p90_m / freq_band / ta_verification`。`ta_verification ∈ {ok, large, xlarge, not_applicable, not_checked, insufficient}`，用于识别合法大覆盖 cell（`xlarge` = TA_p90 > 30 即 >2.3km 郊区/农村）。
 
 ---
 
@@ -28,13 +38,56 @@
 5. **§5 正式验收** — 批次齐、垃圾 cell 为 0、drift/classification 分布合理
 6. **§6 汇报**
 
-### 禁区（贯穿全程）
+### 自主修复授权（2026-04-21 扩展）
 
-- **不改代码业务逻辑**；§3.6 性能优化阶段仅允许：建索引 / SQL 调 `MATERIALIZED` / 补 `ANALYZE`
+为了减少"每次遇到代码问题就停下问用户"的低效循环，以下类型的修复**允许自主进行**（改完必须在 §6 汇报里列明"改了什么+原因+影响面"）：
+
+| 可以自主修 | 示例 |
+|---|---|
+| SQL 类型溢出 / 语法错误 | `::bigint` 被异常大值溢出 → 换 `::numeric` 或加长度兜底 |
+| Python 解析异常 / 空值错误 | 未 guard 的 NoneType / KeyError |
+| 重复 `WHERE` 条件、缺失索引导致单 SQL > 30 分钟 | 按需补索引 / `ANALYZE` / 改 CTE 为 MATERIALIZED |
+| 明显的注释错误、类型注解错位 | 直接修 |
+| 由于数据异常（非代码）产生的兜底条件 | 例如加 `length(x) > 19 → KEEP` 这种保守兜底 |
+| `pg_terminate_backend` 自己当前会话遗留的挂起查询 | 不影响其他会话即可 |
+| `cell_origin` / `timing_advance` / `freq_channel` 透传链路中漏 column / 漏 ALTER / SELECT 少选 | 直接补齐，确保 7 张下游表 + trusted_cell_library 字段一致 |
+| `DEDUP-V2.1` SQL 里 ss1 rid 去重分支 / 5min_bucket 表达式小错 | 补括号 / 类型转换，保持分支语义 |
+| 加权 p50/p90 窗口函数语法错 | 补 `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` 之类 |
+| `build_cell_ta_stats` 聚合函数兼容问题 | `MODE()` / `PERCENTILE_CONT()` 的 FILTER 语法，按 PG 版本调整 |
+| pipeline 状态不一致（如 `etl_parsed` 陈旧于 `etl_cleaned`）| 主 pipeline step1 必须 parse+clean+fill 顺序跑完，不允许单独跳 parse |
+| `raw_gps_full_backup` 缺失但 `raw_gps` 健康（≥ 25M 行）| RENAME `raw_gps` → `raw_gps_full_backup`（详见 §1.4 的状态分支表；是上轮重跑收尾 RENAME 回 raw_gps 的已知副作用）|
+| `raw_gps_full_backup_prod_hold` 残留（上次测试集挂载未收回）| RENAME `_prod_hold` → `raw_gps_full_backup`（详见 §1.4）|
+
+**必须先问用户才能改**：
+
+| 需要授权 | 为什么 |
+|---|---|
+| 调阈值（如 `max_age_sec`、`min_cluster_dev_count`、`dbscan_eps_m`、`max_anomaly_ratio`、`max_anomaly_count`）| 会改变判定结果，影响研究结论 |
+| 改 `DEDUP-V2` 的桶粒度 / 去重键（如 5min → 1min / 加/减维度）| 改变样本密度 / 口径，影响 p50/p90 判定 |
+| 删除或重新定义已有 ODS 规则 / DEDUP-V2 规则 | 改变业务语义 |
+| 修改 `trusted_*_library` / `label_results` 等产出表的 schema | 下游兼容性 |
+| `DELETE` / `UPDATE` 任何持久化表的数据 | 不可逆 |
+| 跳过 §5 验收里任何"硬要求"条目 | 质量门槛 |
+| 修改 `raw_gps_full_backup` 内容 | 原始数据保护 |
+
+**自主修复的流程**：
+
+1. 记录"改之前的报错/异常行" + 你的诊断结论
+2. 最小改动（只改必要处，不顺手重构其他代码）
+3. 语法校验（`python3 -c "import ast; ast.parse(...)"`）
+4. 只跑一次最小验证（例如模拟异常输入看新 SQL 不报错）
+5. 继续执行原流程（重跑 / 验证）
+6. 汇报里加一条：文件 + 行号 + 改动 diff 概述 + 预计影响面
+
+**禁止**：任何"授权清单"外的修改都要先停下问用户。
+
+### 禁区（仍然禁止，任何情况不可突破）
+
 - **不能损坏 `rebuild5.raw_gps_full_backup` 的内容**；允许 RENAME 暂存，但最终必须恢复（§4.1 硬校验）
 - **单条 SQL 单任务**，禁 ≥ 3 层 CTE / 复杂自 JOIN
 - **不追日志文件**；进度监测只用本文档给的短 SQL
-- **卡住 > 30 分钟先停下汇报**，不自行 `pg_terminate_backend` / `kill pid`
+- **卡住 > 30 分钟先停下汇报**，不自行 `pg_terminate_backend` 其他会话 / `kill` 重跑主进程
+- **数据库写操作**（`DELETE/UPDATE/TRUNCATE/DROP` 到非临时表）全部需要用户授权，**自主修复授权不涵盖 DB 写**
 
 ---
 
@@ -75,7 +128,70 @@ print('ODS-019 config ok:', cfg)
 "
 grep -n 'ODS-019' app/etl/parse.py               # WHERE 子句应带该注释
 grep -n '^etl_cell_infos:' ../config/antitoxin_params.yaml
+# ODS-019 timeStamp 单位自动识别（2025-04-21 新增）：长度 <=13 按毫秒 / 10^3，>=14 按纳秒 / 10^9
+grep -n 'ELSE.*timeStamp.*1000000000' app/etl/parse.py    # 应能匹配到新规则
+
+# ODS-024 簇最小设备数（2025-04-21 新增，防单设备跨天伪簇）
+python3 -c "
+from app.profile.logic import load_multi_centroid_v2_params
+cfg = load_multi_centroid_v2_params()
+assert cfg.get('min_cluster_dev_count', 0) >= 1, f'min_cluster_dev_count 异常: {cfg}'
+print('ODS-024 config ok: min_cluster_dev_count =', cfg['min_cluster_dev_count'])
+"
+grep -n 'min_cluster_dev_count' app/maintenance/label_engine.py   # k_eff / valid_clusters 都应引用
+
+# ODS-020/021/022 (ss1 解析清洗) 配置 + SQL 注释
+python3 -c "
+from app.etl.parse import _load_ss1_cfg
+cfg = _load_ss1_cfg()
+assert cfg.get('max_age_from_anchor_sec', 0) >= 1, f'ss1 max_age 异常: {cfg}'
+assert cfg.get('require_sig_cell_tech_match') is True, 'ss1 tech 匹配应开启'
+assert cfg.get('drop_sig_all_minus1') is True, 'ss1 全 -1 过滤应开启'
+print('ODS-020/021/022 config ok:', cfg)
+"
+grep -n 'ODS-020' app/etl/parse.py               # ts_sec 注释
+grep -n 'ODS-021' app/etl/parse.py               # INNER JOIN 注释
+grep -n 'ODS-022' app/etl/parse.py               # sig 全 -1 过滤注释
+grep -n '^etl_ss1:' ../config/antitoxin_params.yaml
+
+# DEDUP-V2（2026-04-22 新增）：新去重键 + cell_origin 透传
+# 1. Step 2 / Step 5 的 DISTINCT ON 都包含 cell_origin + 5min_bucket
+grep -n 'cell_origin' app/profile/pipeline.py | head -5        # _profile_path_b_records / dedup
+grep -n '5 \* INTERVAL' app/profile/pipeline.py                # 5min 桶表达式
+grep -n 'cell_origin' app/maintenance/window.py | head -5      # cell_sliding_window INSERT + dedup
+grep -n '5 \* INTERVAL' app/maintenance/window.py              # 5min 桶表达式
+# 2. 持久表 schema 都包含 cell_origin 列
+grep -n 'cell_origin TEXT' app/enrichment/schema.py            # enriched_records + snapshot_seed_records
+grep -n 'cell_origin TEXT' app/maintenance/schema.py           # cell_sliding_window
+grep -n 'cell_origin TEXT' app/profile/pipeline.py             # candidate_seed_history
+
+# DEDUP-V2.1（2026-04-23 新增）：ss1 按 record_id 去重 + 加权 p90
+# 1. ss1 专用的 rid 去重分支
+grep -n "cell_origin = 'ss1'" app/maintenance/window.py        # 应能 grep 到 CASE WHEN ss1 THEN 'rid:'
+grep -n "'rid:'" app/maintenance/window.py                     # 应 grep 到 record_id 前缀
+# 2. 加权 p50/p90
+grep -n '方案 B' app/maintenance/window.py                      # build_cell_radius_stats 注释
+grep -n 'w_core' app/maintenance/window.py                      # 逆频权重计算
+grep -n 'cum_w >=' app/maintenance/window.py                    # 累积权重判定
+# 3. ODS-020 阈值放到 3h
+grep -n 'max_age_from_anchor_sec: 10800' ../config/antitoxin_params.yaml
+
+# ODS-023 & TA 透传（2026-04-23 新增）
+# 1. clean.py 里的 ODS-023 规则
+grep -n 'ODS-023' app/etl/clean.py                             # 应能 grep 到规则
+grep -n '36000 AND 43589' app/etl/clean.py                     # TDD earfcn 范围
+# 2. timing_advance 列在所有下游表
+grep -n 'timing_advance INTEGER' app/enrichment/schema.py
+grep -n 'timing_advance INTEGER' app/maintenance/schema.py
+grep -n 'timing_advance INTEGER' app/profile/pipeline.py
+# 3. TA 统计聚合和 trusted_cell_library 字段
+grep -n 'cell_ta_stats' app/maintenance/window.py              # 新 build_cell_ta_stats 函数
+grep -n 'build_cell_ta_stats' app/maintenance/pipeline.py      # 被 pipeline 调用
+grep -n 'ta_verification' app/maintenance/publish_cell.py      # INSERT 带上
+grep -n 'ta_n_obs BIGINT' app/maintenance/schema.py            # trusted_cell_library 字段
 ```
+
+**可调参数提示**：`etl_ss1.max_age_from_anchor_sec` 默认 3600（1 小时）。如需放宽到 3 小时，直接改 yaml 为 10800 即可，**不要改代码**。
 
 ### 1.3 下游 SQL 优化到位（fix4 三处）
 
@@ -87,6 +203,29 @@ grep -n 'new_snapshot_cells AS MATERIALIZED' app/enrichment/pipeline.py
 ```
 
 ### 1.4 源头数据规模（MCP PG17）
+
+**先做命名状态兜底修复**（2026-04-22 新增）：上一轮重跑收尾的脚本会把 `raw_gps_full_backup` RENAME 回 `raw_gps`，导致本轮启动时 `raw_gps_full_backup` 缺失。这是**预期的可自动修复状态**，无需停下问用户：
+
+```sql
+-- 探测当前状态
+SELECT to_regclass('rebuild5.raw_gps') AS raw_gps_exists,
+       to_regclass('rebuild5.raw_gps_full_backup') AS backup_exists,
+       to_regclass('rebuild5.raw_gps_full_backup_prod_hold') AS prod_hold_exists;
+```
+
+按下表自动分支（授权范围内的状态修复）：
+
+| 当前状态 | 动作 |
+|---|---|
+| `backup_exists = NULL` AND `raw_gps ≥ 25M 行` AND `prod_hold = NULL` | **自动 RENAME**：`ALTER TABLE rebuild5.raw_gps RENAME TO raw_gps_full_backup`，然后继续 §1.4 的规模校验。这属于"自主修复授权"范围，无需问用户。 |
+| `backup_exists ≠ NULL` | 状态正常，跳过修复直接做下面的规模校验 |
+| `prod_hold_exists ≠ NULL` AND `backup_exists = NULL` | 上次测试集挂载没收回来，先 `ALTER TABLE ..._prod_hold RENAME TO raw_gps_full_backup` 复位（同属自主修复） |
+| `raw_gps_exists ≠ NULL` AND `backup_exists ≠ NULL` | **异常双份状态**，停下汇报（避免误删活跃表）|
+| `raw_gps_exists = NULL` AND `backup_exists = NULL` | 无源头数据，停下汇报 |
+
+自动 RENAME 前必须先跑探测 + 验证 `raw_gps ≥ 25,000,000`，跑完 RENAME 后在 §6 汇报里记一笔"执行了 backup 复名修复"。
+
+**规模校验**：
 
 ```sql
 SELECT COUNT(*) AS rows FROM rebuild5.raw_gps_full_backup;
@@ -117,8 +256,13 @@ WHERE datname='ip_loc2' AND pid != pg_backend_pid() AND state='active';
 -- 若有 UPDATE / INSERT / TRUNCATE / DROP / ALTER 出现，停下汇报
 
 -- 样例挂载保护位必须为空；非空说明上次测试集未恢复干净
+-- （§1.4 的自动修复分支会处理 "backup 缺失+prod_hold 残留" 情形；到这里仍非空说明两份都在，停下）
 SELECT to_regclass('rebuild5.raw_gps_full_backup_prod_hold');
 -- 应返回 NULL；非 NULL 停下汇报
+
+-- full_backup 必须就位（§1.4 修复后应存在）
+SELECT to_regclass('rebuild5.raw_gps_full_backup');
+-- 应返回 rebuild5.raw_gps_full_backup；NULL 说明 §1.4 没跑到或修复失败，停下汇报
 ```
 
 ### 2.1 环境重置
@@ -285,6 +429,33 @@ SELECT run_id,
 FROM rebuild5_meta.step1_run_stats
 ORDER BY started_at;
 -- 每行 dropped > 0；drop_rate 小数据集波动允许（不硬要求区间）
+
+-- ODS-020 / ODS-022 (ss1 解析清洗) drop 量 > 0
+SELECT run_id,
+       (parse_details->'ss1_rules'->'ods_020'->>'dropped_subrec')::bigint AS ods020_drop,
+       (parse_details->'ss1_rules'->'ods_020'->>'drop_rate')::float AS ods020_rate,
+       (parse_details->'ss1_rules'->'ods_022'->>'dropped_sigs')::bigint AS ods022_drop,
+       (parse_details->'ss1_rules'->'ods_022'->>'drop_rate')::float AS ods022_rate
+FROM rebuild5_meta.step1_run_stats
+ORDER BY started_at;
+-- 每行 ods020_drop / ods022_drop 应 > 0（规则生效）；rate 小数据集不硬要求区间
+
+-- DEDUP-V2 校验 1：cell_origin 透传到 cell_sliding_window（非空率应接近 100%）
+SELECT COUNT(*) AS total,
+       COUNT(cell_origin) AS with_origin,
+       ROUND(COUNT(cell_origin)::numeric / NULLIF(COUNT(*), 0) * 100, 2) AS origin_rate_pct
+FROM rebuild5.cell_sliding_window;
+-- origin_rate_pct 应 ≥ 95%（历史 batch 的极少量 snapshot_seed 可能缺失，可接受）
+
+-- DEDUP-V2 校验 2：dedup 后点数远超老策略（按样本量而不是全库对比，只取一个参考 cell）
+-- 选 batch 7 中 gps_valid_count > 50 的任一 cell，看去重结构
+SELECT cell_id, lac, operator_code, gps_valid_count, distinct_dev_id, active_days
+FROM rebuild5.trusted_cell_library
+WHERE batch_id = (SELECT MAX(batch_id) FROM rebuild5.trusted_cell_library)
+  AND gps_valid_count::int > 50
+ORDER BY gps_valid_count::int DESC
+LIMIT 3;
+-- 预期：活跃正常 cell 的 gps_valid_count 相比 DEDUP-V2 前大致翻倍（旧策略下典型值约 20~60，新策略 40~200）
 ```
 
 任一项未通过停下汇报。
@@ -433,9 +604,10 @@ GROUP BY classification ORDER BY cnt DESC;
 
 期望：`normal` ≥ 95%、`insufficient` 3-5%、其他合计数量级百位以内。
 
-### 5.5 ODS-019 过滤量分布
+### 5.5 ODS-019 / ODS-020 / ODS-022 过滤量分布
 
 ```sql
+-- ODS-019: cell_infos 陈旧缓存
 SELECT run_id,
        (parse_details->'ods_019'->>'total_connected_objects')::bigint AS total,
        (parse_details->'ods_019'->>'dropped_stale_count')::bigint AS dropped,
@@ -447,12 +619,126 @@ ORDER BY started_at;
 
 期望：每天 `drop_rate` 在 **10-25%** 之间。若某日 = 0 → 新规则未生效；某日 > 50% → 可能阈值问题。任一异常停下汇报。
 
-**UI 观察**（非必需）：访问前端 `/etl/clean` 页，表格最后一行应是 `ODS-019 / CellInfos 陈旧缓存过滤`，命中/删除数非零。
+```sql
+-- ODS-020: ss1 批内锚点陈旧过滤
+SELECT run_id,
+       (parse_details->'ss1_rules'->'ods_020'->>'total_subrec')::bigint AS total,
+       (parse_details->'ss1_rules'->'ods_020'->>'dropped_subrec')::bigint AS dropped,
+       (parse_details->'ss1_rules'->'ods_020'->>'drop_rate')::float AS drop_rate,
+       (parse_details->'ss1_rules'->>'max_age_from_anchor_sec')::int AS max_age_sec
+FROM rebuild5_meta.step1_run_stats
+ORDER BY started_at;
+```
 
-### 5.6 UI 验收（非必需但推荐）
+期望：`drop_rate` 在 **5-20%** 之间（抽样基线 ~14%）。`dropped = 0` 或 `drop_rate > 40%` 异常。
+
+```sql
+-- ODS-022: ss1 全 -1 sig 条目
+SELECT run_id,
+       (parse_details->'ss1_rules'->'ods_022'->>'total_sigs')::bigint AS total,
+       (parse_details->'ss1_rules'->'ods_022'->>'dropped_sigs')::bigint AS dropped,
+       (parse_details->'ss1_rules'->'ods_022'->>'drop_rate')::float AS drop_rate
+FROM rebuild5_meta.step1_run_stats
+ORDER BY started_at;
+```
+
+期望：`drop_rate` 在 **2-8%** 之间（抽样基线 ~4.6%）。
+
+**UI 观察**（非必需）：访问前端 `/etl/clean` 页，表格末尾应有 `ODS-019 / ODS-020 / ODS-021 / ODS-022` 四行，其中 019 / 020 / 022 命中数非零，021 只是规则说明（无量化统计）。
+
+### 5.6 ODS-024 簇最小设备数门槛（2025-04-21 新增）
+
+```sql
+-- 抽样看 label_results 里 k_eff 分布（应几乎没 dev_count=1 的单设备簇了）
+-- 此查询仅快速估算，不硬要求精确
+SELECT batch_id, label, COUNT(*) AS cnt
+FROM rebuild5.label_results
+WHERE batch_id = 7
+GROUP BY batch_id, label
+ORDER BY cnt DESC;
+```
+
+期望：`insufficient` 比例相比修复前略升（原本由"单设备跨天假簇"支撑的 stable/oversize_single 会回归 insufficient）。
+
+### 5.7 UI 验收（非必需但推荐）
 
 - **维护页**（Cell / BS / LAC 三 Tab）：SummaryCard 有数、表格无空页
 - **评估页**：`/api/evaluation/overview` 返回 `snapshot_version='v7'`，`published_cell_count` 与 §5.1 的 cell batch 7 一致
+
+### 5.8 DEDUP-V2.1 + TA 透传验收（2026-04-23 更新）
+
+```sql
+-- 1) cell_origin / timing_advance / freq_channel 透传到 cell_sliding_window
+SELECT
+  ROUND(COUNT(cell_origin)::numeric / NULLIF(COUNT(*), 0) * 100, 2) AS origin_rate_pct,
+  ROUND(COUNT(timing_advance)::numeric / NULLIF(COUNT(*), 0) * 100, 2) AS ta_rate_pct,
+  ROUND(COUNT(freq_channel)::numeric / NULLIF(COUNT(*), 0) * 100, 2) AS freq_rate_pct
+FROM rebuild5.cell_sliding_window;
+-- origin_rate_pct 硬要求 ≥ 95%
+-- ta_rate_pct 约 15-25%（ss1 本就无 TA，cell_infos 里 TDD 约一半被 ODS-023 置 NULL）
+-- freq_rate_pct 约 80-95%（ss1 行可能为 NULL）
+
+-- 2) 参考异常 cell 修复
+SELECT cell_id, lac, operator_code, batch_id,
+       drift_pattern, p50_radius_m::int AS p50, p90_radius_m::int AS p90,
+       raw_gps_valid_count, gps_valid_count, distinct_dev_id,
+       ta_n_obs, ta_p90, freq_band, ta_verification
+FROM rebuild5.trusted_cell_library
+WHERE cell_id IN (20752955, 17539075, 4855663)
+  AND batch_id = (SELECT MAX(batch_id) FROM rebuild5.trusted_cell_library)
+ORDER BY cell_id;
+-- 期望：p90 显著下降（6478m 级降到百米级或小几千米）；drift_pattern 不再是 insufficient
+
+-- 3) 正常 cell 未误伤
+SELECT cell_id, lac, drift_pattern,
+       p90_radius_m::int AS p90_weighted,
+       gps_valid_count,
+       ta_verification
+FROM rebuild5.trusted_cell_library
+WHERE batch_id = (SELECT MAX(batch_id) FROM rebuild5.trusted_cell_library)
+  AND drift_pattern = 'stable'
+  AND gps_valid_count::int >= 50
+ORDER BY p90_radius_m DESC
+LIMIT 10;
+-- 期望：p90 基本 ≤ 1000m；gps_valid_count 相比 V1 天去重前翻倍左右
+
+-- 4) ODS-023 效果：TDD cell 的 timing_advance 应以 ≤15 为主
+SELECT
+  CASE WHEN timing_advance IS NULL THEN 'null'
+       WHEN timing_advance BETWEEN 0 AND 15 THEN 'tdd_valid (0-15)'
+       WHEN timing_advance >= 16 THEN 'tdd_placeholder (应被清空!)' END AS bucket,
+  COUNT(*) AS n
+FROM rebuild5.cell_sliding_window
+WHERE cell_origin = 'cell_infos' AND tech_norm = '4G'
+  AND freq_channel BETWEEN 36000 AND 43589
+GROUP BY bucket;
+-- 期望：tdd_placeholder 桶为 0 或极少（ODS-023 应把它们清掉）
+
+-- 5) ta_verification 分布
+SELECT ta_verification, COUNT(*) AS n,
+       ROUND(COUNT(*)::numeric / SUM(COUNT(*)) OVER () * 100, 1) AS pct
+FROM rebuild5.trusted_cell_library
+WHERE batch_id = (SELECT MAX(batch_id) FROM rebuild5.trusted_cell_library)
+GROUP BY ta_verification
+ORDER BY n DESC;
+-- 期望：
+--   ok             主体（FDD 小/中覆盖）
+--   not_checked    中等比例（TDD + 5G + unknown）
+--   insufficient   小比例
+--   large / xlarge 少数（识别出郊区大覆盖 cell）
+--   not_applicable 少量（multi_centroid / collision）
+
+-- 6) 加权 p90 vs raw_p90 对比（方案 B 生效证据）
+SELECT
+  COUNT(*) AS cells,
+  COUNT(*) FILTER (WHERE raw_p90_radius_m > p90_radius_m * 1.5) AS weighted_reduced,
+  ROUND(AVG(p90_radius_m)::numeric, 0) AS avg_p90_w,
+  ROUND(AVG(raw_p90_radius_m)::numeric, 0) AS avg_p90_raw
+FROM rebuild5.cell_radius_stats;
+-- 期望：weighted_reduced > 0（至少一些 cell 的加权 p90 显著小于 raw_p90）
+```
+
+任一项未通过停下汇报。
 
 ---
 
@@ -465,7 +751,7 @@ ORDER BY started_at;
 3. **行数**：每批 trusted_cell / trusted_bs / trusted_lac 行数
 4. **drift 分布**：batch 7 的 drift_pattern 分布
 5. **BS classification**：batch 7 分布
-6. **ODS-019 drop 量**：每日 `drop_rate`（§5.5）
+6. **ODS-019 / ODS-020 / ODS-022 drop 量**：每日 `drop_rate`（§5.5）
 7. **异常告警**：任何停下汇报的节点 / 遇到的问题 / 卡死 SQL
 
 ---
@@ -515,5 +801,6 @@ SELECT to_regclass('rebuild5.raw_gps_full_backup_prod_hold');
 | ETL 过滤规则 | `rebuild5/docs/01b_数据源接入_处理规则.md` |
 | ETL clean 主规则列表 | `rebuild5/backend/app/etl/clean.py::ODS_RULES` |
 | ETL parse `ODS-019` | `rebuild5/backend/app/etl/parse.py::_parse_cell_infos` |
+| ETL parse `ODS-020/021/022` | `rebuild5/backend/app/etl/parse.py::_parse_ss1` |
 | 配置 | `rebuild5/config/antitoxin_params.yaml` |
 | fix4 优化 | `rebuild5/docs/fix4/snapshot_seed_sql_optimization.md` |

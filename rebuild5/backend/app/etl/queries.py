@@ -49,7 +49,7 @@ def _latest_stats() -> dict[str, Any] | None:
         return fetchone(
             """
             SELECT *
-            FROM rebuild5_meta.step1_run_stats
+            FROM rb5_meta.step1_run_stats
             WHERE dataset_key = %s
             ORDER BY started_at DESC, run_id DESC
             LIMIT 1
@@ -67,7 +67,7 @@ def _active_sources() -> list[dict[str, Any]]:
         return fetchall(
             """
             SELECT source_id, source_name, source_table, source_type, row_count, status, imported_at
-            FROM rebuild5_meta.source_registry
+            FROM rb5_meta.source_registry
             WHERE dataset_key = %s
             ORDER BY source_id
             """,
@@ -298,6 +298,47 @@ def get_clean_rules_payload() -> dict[str, Any]:
             'hit_count': dropped,
             'drop_count': dropped,
             'pass_rate': round((total - dropped) / total, 4) if total else 1.0,
+        })
+
+    # SS1 解析规则（ODS-020 批内锚点时间过滤 / ODS-021 INNER JOIN tech 匹配 / ODS-022 全 -1 sig 过滤）
+    ss1_rules = parse_details.get('ss1_rules') if isinstance(parse_details, dict) else None
+    if ss1_rules:
+        max_age = ss1_rules.get('max_age_from_anchor_sec', 3600)
+        ods_020 = ss1_rules.get('ods_020') or {}
+        total_sub = int(ods_020.get('total_subrec') or 0)
+        dropped_sub = int(ods_020.get('dropped_subrec') or 0)
+        rows.append({
+            'rule_id': 'ODS-020',
+            'rule_name': 'SS1 批内锚点陈旧过滤',
+            'description': (
+                f'ss1 子记录按批内 max(ts_sec) 为锚点，age > {max_age}s 的子记录视为 SDK 历史残留丢弃'
+            ),
+            'hit_count': dropped_sub,
+            'drop_count': dropped_sub,
+            'pass_rate': round((total_sub - dropped_sub) / total_sub, 4) if total_sub else 1.0,
+        })
+        # ODS-021 走 INNER JOIN，丢 cell 的量级需要对 cells×sigs 联合估算，
+        # 这里只提示规则存在（drop 量在下游 emit 差值里体现）。
+        rows.append({
+            'rule_id': 'ODS-021',
+            'rule_name': 'SS1 无信号 Cell 过滤（tech 匹配）',
+            'description': (
+                'INNER JOIN 要求 sig_tech = cell_tech；无配套信号的 cell（SDK 缓存 cell_id）不 emit'
+            ),
+            'hit_count': 0,
+            'drop_count': 0,
+            'pass_rate': 1.0,
+        })
+        ods_022 = ss1_rules.get('ods_022') or {}
+        total_sigs = int(ods_022.get('total_sigs') or 0)
+        dropped_sigs = int(ods_022.get('dropped_sigs') or 0)
+        rows.append({
+            'rule_id': 'ODS-022',
+            'rule_name': 'SS1 全 -1 Sig 条目过滤',
+            'description': 'ss/rsrp/rsrq/sinr 四个值全为 -1 的 sig 条目视为无效，丢弃整条 sig',
+            'hit_count': dropped_sigs,
+            'drop_count': dropped_sigs,
+            'pass_rate': round((total_sigs - dropped_sigs) / total_sigs, 4) if total_sigs else 1.0,
         })
 
     return {

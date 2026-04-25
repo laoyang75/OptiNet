@@ -386,7 +386,258 @@ SELECT ... FROM per_record;
 
 ---
 
-## 8. 相关文档
+## 8. 案例 2：cell 1353583（SS1 通道缓存污染）
+
+ODS-019（cell_infos 陈旧缓存过滤）在全量重跑里每天 drop 60+ 万对象（15.6%）已生效，但 cell `1353583` 在 batch 7 仍被判 `insufficient` 且 p90=1438 km —— 追源发现污染从**另一条通道 `ss1`** 进来，ODS-019 覆盖不到。
+
+### 8.1 现象
+
+| batch | drift_pattern | p90 (m) | gps_valid | devs | k_eff | label |
+|---|---|---|---|---|---|---|
+| 5 | insufficient | 1,438,278 | 5 | 5 | 0 | insufficient |
+| 6 | insufficient | 1,438,232 | 7 | 6 | 0 | insufficient |
+| 7 | insufficient | 1,438,226 | 9 | 7 | 0 | insufficient |
+
+`independent_obs=217`（所有观察点数）看起来够，但 label 判定用的 `gps_valid_count=9` 很少，且这 9 个 raw_gps 点 p50=248m / p90=1438km 极端分散，DBSCAN eps=250m 聚不出簇。
+
+### 8.2 根因 — `ss1` 的 `cell_block` 混入 SDK 缓存
+
+设备 `A3JS3I8PTCORK0GOB` 实际在重庆，但该设备每条 `ss1` 子记录的 `cell_block` 都携带：
+
+```
+n,13707288577,2490382,46000   ← 卡1 NR 5G，真实连接（重庆）
++ l,1353583,6423,46001          ← 卡2 LTE 4G，cell_id=1353583（北京，SDK 历史缓存）
+```
+
+一台手机的双卡不可能相距 1400 km，但 SDK 在卡2 实际未活跃时仍在 `cell_block` 里保留了"上次卡2 连过的 cell_id"。原 ETL 的 `LEFT JOIN` 把两张卡的 cell 都 emit，卡2 被错误地关联到卡1 的真实 GPS（重庆），污染北京 cell 1353583。
+
+### 8.3 实测数据分布（决策依据）
+
+| 形态 | 占比 | 含义 |
+|---|---|---|
+| 单卡 `(cell=1, sig=1)` | 38.4% | 正常 |
+| 双卡单信号 `(cell=2, sig=1)` | **29.4%** | ★ cell 1353583 类污染 |
+| 双卡双信号 `(cell=2, sig=2)` | **0.31%** | 真 NSA 双连接（罕见）|
+| 其他 | 32% | 空 cell / 空 sig 等 |
+
+真"双卡同时报双信号"只占 0.31% → 绝大多数双卡场景的第二张 cell 是缓存 cell_id。
+
+### 8.4 修复 — ODS-020 / 021 / 022
+
+| 规则 | 动作 |
+|---|---|
+| **ODS-020** | `ss1` 批内以 `max(ts_sec)` 为锚点，age > 3600s 的子记录（SDK 隔夜残留）丢弃 |
+| **ODS-021** | `cells × sigs` `LEFT JOIN` → `INNER JOIN`，无配套 sig 的 cell 不 emit（直接清除卡2 缓存 cell_id 类污染）|
+| **ODS-022** | sig 条目四值全 -1 视为无效，丢整条 sig |
+
+### 8.5 预期效果
+
+- cell 1353583 在 batch 7 的 8 条重庆点（来自卡2 LTE 无配套 sig）在 ODS-021 被直接丢
+- 下次重跑后 cell 1353583 的 `gps_valid_count` 会显著下降（约剩 1-2 个真正来自卡1 的点），结果是 **p90 回归合理范围**
+- `insufficient` 判定可能保留（因真实数据不足），但不再有 p90=1438km 的误导性显示
+
+### 8.6 与 ODS-019 的关系
+
+| 维度 | ODS-019 | ODS-020 / 021 / 022 |
+|---|---|---|
+| 通道 | `cell_infos` | `ss1` |
+| 过滤粒度 | 单对象（JSON 里 `isConnected=1` 的历史缓存）| 子记录（批内锚点外）+ cell（无配套 sig）+ sig（全 -1）|
+| 时间依据 | 设备内部单调计数器（`past_time` - `timeStamp/1000`）| unix 壁钟时间戳（`batch_max_ts_sec` - `ts_sec`）|
+| 互相关系 | 独立，两条通道都要分别治理，下游并存 | 同上 |
+
+两套规则互补，共同治理 SDK 层的 cache 污染问题。
+
+---
+
+## 9. 案例 3：cell 21330987（纳秒 timeStamp + 单设备跨天簇）
+
+ODS-019 + ODS-020/021/022 已修复"cell_infos 对象陈旧缓存"和"ss1 缓存 cell"两类污染，但 cell `21330987` 在 batch 7 仍被判 `oversize_single`（p90=20km），追源发现**两个新的规则缺口**：
+
+### 9.1 现象
+
+| batch | p90 | drift_pattern | 中心 | 说明 |
+|---|---|---|---|---|
+| 5 | 53 m | stable | 海淀 | 假 stable（只有 E781VF 一个设备连续 5 天）|
+| 6 | 52 m | stable | 海淀 | 同上 |
+| 7 | 20,233 m | oversize_single | 亦庄 | 其他 7 个设备显现 + E781VF 12-07 去了大兴 |
+
+### 9.2 根因 A：cell_infos 的 timeStamp 是**纳秒**，ODS-019 原按毫秒处理失效
+
+E781VF 的一条 cell_infos JSON：
+
+```json
+{
+  "1": {
+    "timeStamp": 71904320400064,         // 14 位 → 是纳秒！按毫秒解读得荒谬大数
+    "isConnected": 1,
+    "past_time": "490628.900239044",      // 约 5.7 天
+    "cell_identity": { "Ci": 21330987 }
+  },
+  "2": {
+    "timeStamp": 490512095858853,         // 15 位纳秒（当前真实连接）
+    "cell_identity": { "Ci": 127845763 }  // 设备当前真连的 cell
+  }
+}
+```
+
+按纳秒 `/ 10^9`：
+- 对象 "1" age = 490,628 - 71,904 = **418,724 秒 ≈ 4.85 天** → **应被 ODS-019 丢弃**
+- 对象 "2" age = 490,628 - 490,512 = 116 秒 → KEEP（真实当前连接）
+
+但原 ODS-019 按毫秒 `/ 10^3`：
+- 对象 "1" age = 490628 - 71,904,320,400 = **-71,903,829,772**（巨大负数）→ 负数 ≤ 300 → **漏判 KEEP** ❌
+
+### 9.3 根因 B：单设备跨多天贡献多个 dev-day，DBSCAN 成"假簇"
+
+cell 21330987 batch 7 的 14 个 dev-day 点分布：
+
+| 位置 | dev-day 数 | 不同设备数 | 含义 |
+|---|---|---|---|
+| 海淀主心 | 6 | **1**（全 E781VF）| 单设备跨 6 天反复刷 |
+| 亦庄群 | 7 | **7**（7 个不同 dev）| 多样性真实位置 |
+| 大兴 | 1 | 1（E781VF 12-07 出行）| 离群 |
+
+按旧规则 `dev_day_pts >= 4` 成簇 → 海淀 6 点（全 E781VF）成簇 `dev_day_pts=6` ✓ → **错判为有效簇**
+
+问题本质：**"同一设备多天重复" 不应等同于 "多个独立设备共同确认"**。
+
+### 9.4 全库统计证据
+
+| timeStamp 长度 | 占比 | 单位 |
+|---|---|---|
+| 5-13 位 | 约 91% | 毫秒 |
+| **14-16 位** | **约 9%** | **纳秒** |
+| ≥17 位 | < 0.3% | 纳秒或更大 |
+
+约 9% 的设备使用纳秒级 timeStamp，ODS-019 原实现对这部分完全失效。
+
+### 9.5 修复（2025-04-21）
+
+**修复 1 — ODS-019 timeStamp 单位自动识别**：
+
+```sql
+-- parse.py::_parse_cell_infos WHERE 子句
+CASE
+  WHEN length(e.cell->>'timeStamp') <= 13
+       THEN (e.cell->>'timeStamp')::bigint / 1000         -- 毫秒 → 秒
+  ELSE (e.cell->>'timeStamp')::bigint / 1000000000        -- 纳秒 → 秒
+END
+```
+
+**修复 2 — ODS-024 簇最小设备数门槛**：
+
+```sql
+-- label_engine.py::valid_clusters WHERE + k_eff FILTER
+WHERE c.dev_day_pts >= {min_cluster_dev_day_pts}
+  AND c.dev_count >= {min_cluster_dev_count}   -- ★ 默认 2
+```
+
+配置项：`antitoxin_params.yaml::multi_centroid_v2.min_cluster_dev_count: 2`
+
+**修复 3 — DBSCAN eps 放宽**：`250m → 500m`（应对城市 cell 覆盖实际半径）
+
+### 9.6 修复后对 cell 21330987 batch 7 的预期
+
+- 对象 "1" 纳秒识别生效 → E781VF 海淀 6 个 dev-day 全是陈旧缓存 → ODS-019 在 parse 阶段丢
+- 即使个别缓存漏过，DBSCAN 成簇时也受 `dev_count >= 2` 制约，单设备簇作废
+- 亦庄 7 个不同设备，DBSCAN eps=500 可能聚成簇（之前 250m 聚不到）
+- **结果**：drift_pattern 应回归 `stable`（亦庄成主簇）或 `insufficient`（如果 ODS-019 清除太多）
+
+### 9.7 相关规则总览
+
+| 规则 | 作用 | 位置 |
+|---|---|---|
+| ODS-019 | cell_infos 对象 age 过滤 | `parse.py::_parse_cell_infos` |
+| ODS-020 | ss1 批内锚点陈旧过滤 | `parse.py::_parse_ss1` |
+| ODS-021 | ss1 无信号 cell 过滤 | `parse.py::_parse_ss1` |
+| ODS-022 | ss1 全 -1 sig 过滤 | `parse.py::_parse_ss1` |
+| **ODS-024** | **簇最小设备数门槛** | `label_engine.py::_label_ranked_clusters + _label_cell_kstats` |
+
+---
+
+## 案例 4：cell 20752955（天去重过严 + 10% anomaly_filter 失效）
+
+### 基线
+
+- **业务键**：`operator=46000, lac=4277, bs_id=81066, cell_id=20752955, tech=4G`
+- **batch 7 trusted_cell_library 状态**：`drift_pattern=insufficient`、`gps_valid_count=3`、`p50=3m`、`p90=1,571,955m`（约 1572km）
+- **真实位置**：北京 `(116.520, 39.942)`
+- **污染点**：深圳 `(114.195, 22.330)` 单点
+
+### 数据流追溯
+
+raw_gps 阶段 cell 20752955 共 11 条记录，展开到 `etl_parsed` 后有 21 个子记录（gps_valid=true 18 条），涉及 3 个设备：
+
+| 设备 | 上报次数 | 位置 | cell_infos 字段 age | rsrp |
+|---|---|---|---|---|
+| `AO96U2259IZ3GF4UB` | 17 次（北京）| (116.520, 39.942) | 20~60s 新鲜 | -101~-106 |
+| `N3AKB283DMY0K7FDO` | 2 次（北京，batch 1 历史）| (116.520, 39.942) | 20s 新鲜 | -106 |
+| `2JK1PT:0KAE:IDIH:4P000` | **1 次**（深圳）| (114.195, 22.330) | **11s 新鲜** | -77 |
+
+三设备上报的 `(Ci, Pci, Tac, Earfcn) = (20752955, 252, 4277, 1350)` 完全一致，age 都新鲜、rsrp 都强 —— **不是陈旧缓存、不是 ss1 邻区混入、不是 ODS-024 单设备假簇**。
+
+### 关键洞察：异常占比被 day dedup 人工放大
+
+| 数据层 | 北京点 | 深圳点 | 异常占比 |
+|---|---|---|---|
+| raw_gps (gps_valid) | 19 | 1 | **5%** ✓ 低于 10% 兜底阈值 |
+| `cell_core_gps_day_dedup`（dev+day）| **2** | **1** | **33%** ✗ 远超 10% |
+
+`cell_core_gps_day_dedup` 把 AO96U 的 17 条同日同设备真实点压成 1 点，AO96U+N3AKB 只剩 2 个"北京点"，深圳 1 点占 33% → `gps_anomaly_filter.max_anomaly_ratio=10%` 条件不满足 → **不排除**异常 → DBSCAN 的 3 个千公里互距点全判 noise → `k_raw=0, k_eff=0, label=insufficient`，p90 直接取全部 3 点的 90 分位，被深圳点拉爆到 1572km。
+
+### 20 cell 策略对比评估
+
+设计实验：8 异常 cell + 12 正常 cell，每 cell 从 raw_gps 重新解析拿 cell_origin（规避 etl_parsed 陈旧问题），对比 4 个时间桶 × 2 个 origin 分离模式。
+
+**关键结论**（详见附评估 SQL）：
+
+| 策略 | cell 20752955 保留点 | p90 | 备注 |
+|---|---|---|---|
+| 现状 `(dev, date)` | 3 | 1576km | 异常占比 33%，10% 阈值不生效 |
+| `(dev, 1d, split_origin)` | 3 | 1572km | 仍被 day 压缩 |
+| `(dev, 1h, split_origin)` | 5 | ~ | 样本恢复，但 20% 仍超阈值 |
+| **`(dev, 5min, split_origin)`** | **15** | **104m** | **样本恢复 5x，异常占比 ~5%，10% 阈值生效** |
+| raw 全保留 | 18 | 9m | 单设备主导风险重现 |
+
+**全 20 cell 扩大评估**：
+- 异常组 8 个里 3 个完美修复（20752955 / 17539075 / 4855663）—— 都是"单远点污染 + 样本稀释"模式
+- 其他 5 个异常 cell 没改善（真 collision 或单设备 dev=1）—— 需独立规则（设备观察门槛 / insufficient 兜底 collision）
+- 正常组 12 个样本恢复 1.5~4.4x，p90 波动 ±10~15%，设备数 100% 不变，无误伤
+
+### 修复（`DEDUP-V2` 规则，2026-04-22 合入）
+
+把 Step 2 `_profile_gps_day_dedup` 和 Step 5 `cell_core_gps_day_dedup` 的 DISTINCT ON 键从：
+
+```
+(operator, lac, bs_id, cell_id, tech, dev_id, DATE(event_time_std))
+```
+
+改为：
+
+```
+(operator, lac, bs_id, cell_id, tech, dev_id, cell_origin, 5min_bucket_utc)
+```
+
+其中 `5min_bucket_utc = date_trunc('minute', ts) - ((EXTRACT(MINUTE FROM ts)::int % 5) * INTERVAL '1 minute')`。
+
+为此需要把 `cell_origin TEXT` 字段从 `etl_cleaned` 透传到 7 张下游表（`path_a_records / _profile_path_b_records / profile_obs / profile_base / candidate_seed_history / enriched_records / snapshot_seed_records / cell_sliding_window`）。
+
+其余不变：
+- `gps_anomaly_filter.max_anomaly_ratio=10%` 保持（新语义下分母扩大 2~10x，10% 在真实密度下生效）
+- `ODS-024 min_cluster_dev_count=2` 保持
+- Step 3 `profile_base.p50/p90/center` 自动承接新口径，与 Step 5 精确计算对齐
+- Step 3 准入判定基于 `independent_obs`（per-minute 口径，不受本规则影响）
+
+### 未解决 / 后续方向
+
+本规则只治"单远点污染 + day 去重稀释"这一类问题。其他尚需独立规则处理：
+
+- **方向 A**：一次性 did（`device_total_reports = 1`）的远离主簇点降权 / 剥离 —— 针对 cell 20752955 的深圳那 1 点根治
+- **方向 B**：`insufficient` 分支的 collision 兜底（`k_raw=0` 但点间最大距离 > `collision_min_dist_m` → 直接判 collision）—— 让样本不足的碰撞 cell 也能识别出来
+
+---
+
+## 10. 相关文档
 
 - 案例深度分析：`rebuild5/docs/gps研究/03_Cell5731057665深度分析_修正.md`
 - GPS 噪声过滤综述：`rebuild5/docs/gps研究/02_GPS噪声过滤策略汇总.md`

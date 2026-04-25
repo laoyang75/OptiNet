@@ -12,4 +12,5 @@ apps/phase1_ui/patches_store.json
 
 .omx/
 .playwright-mcp/
+.gemini/
 *.log

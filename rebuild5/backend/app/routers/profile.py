@@ -1,4 +1,4 @@
-"""Routing Step 2 routes for rebuild5."""
+"""Routing Step 2 routes for rb5."""
 from __future__ import annotations
 
 from fastapi import APIRouter

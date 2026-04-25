@@ -5,7 +5,7 @@ from typing import Any
 
 from ..core.database import execute, fetchone
 
-CLEAN_STAGE_TABLE = 'rebuild5.etl_clean_stage'
+CLEAN_STAGE_TABLE = 'rb5.etl_clean_stage'
 FINAL_ROW_FILTER = "cell_id IS NULL OR event_time_std IS NULL"
 
 ODS_RULES = [
@@ -31,16 +31,46 @@ ODS_RULES = [
     {"id": "ODS-016", "name": "纬度越界标记", "field": "gps_valid", "action": "flag_gps", "where": "lat_raw IS NOT NULL AND (lat_raw < 3 OR lat_raw > 54)", "desc": "纬度有效范围 3~54"},
     {"id": "ODS-017", "name": "无效 WiFi 名称置空", "field": "wifi_name", "action": "nullify", "where": "wifi_name IN ('<unknown ssid>', 'unknown', '')", "desc": "占位符 WiFi 名称无价值"},
     {"id": "ODS-018", "name": "无效 WiFi MAC 置空", "field": "wifi_mac", "action": "nullify", "where": "wifi_mac IN ('02:00:00:00:00:00', '00:00:00:00:00:00', '')", "desc": "全零或随机化 MAC 无价值"},
+    {"id": "ODS-023", "name": "LTE TDD 占位 TA 置空", "field": "timing_advance", "action": "nullify", "where": "cell_origin = 'cell_infos' AND tech_norm = '4G' AND freq_channel IS NOT NULL AND freq_channel BETWEEN 36000 AND 43589 AND timing_advance IS NOT NULL AND timing_advance >= 16", "desc": "中国移动 LTE TDD 频段 (Band 38/39/40/41/42) 约 69% 的 TA 上报为 16-23 占位/锁定值，非真实距离测量（协议层非实时或基站禁用精确 TA）。FDD 不受影响，ss1 行 timing_advance 本就 NULL 也不受影响。详见 rebuild5/docs/gps研究/11_TA字段应用可行性研究.md"},
+    {"id": "ODS-023b", "name": "LTE FDD 异常 TA 置空", "field": "timing_advance", "action": "nullify", "where": "cell_origin = 'cell_infos' AND tech_norm = '4G' AND freq_channel IS NOT NULL AND NOT (freq_channel BETWEEN 36000 AND 43589) AND timing_advance IS NOT NULL AND (timing_advance >= 255 OR timing_advance < 0)", "desc": "LTE FDD 频段下 TA ≥ 255 或 < 0 的异常值（含 1282 = 11-bit 理论最大值占位、INT_MAX、-1 等 SDK bug 值）置空。全库分布研究（2026-04-23）：FDD TA p90=13, p95=1282 直跳，TA=1282 占 5.92%，>255 占 5.96%。阈值 255 同时保留远郊大 cell（TA=100-200 对应 ~10-15km 覆盖）。"},
 ]
+
+
+def _ensure_time_helpers() -> None:
+    execute(
+        """
+        CREATE OR REPLACE FUNCTION rb5._immutable_text_to_utc_timestamptz(value text)
+        RETURNS timestamptz
+        LANGUAGE sql
+        IMMUTABLE
+        PARALLEL SAFE
+        AS $$
+            SELECT value::timestamp AT TIME ZONE 'UTC'
+        $$;
+        """
+    )
+    execute(
+        """
+        CREATE OR REPLACE FUNCTION rb5._immutable_epoch_seconds_to_timestamptz(value double precision)
+        RETURNS timestamptz
+        LANGUAGE sql
+        IMMUTABLE
+        PARALLEL SAFE
+        AS $$
+            SELECT TIMESTAMPTZ '1970-01-01 00:00:00+00' + value * INTERVAL '1 second'
+        $$;
+        """
+    )
 
 
 def step1_clean() -> dict[str, Any]:
     """Apply ODS cleaning rules to etl_parsed → etl_clean_stage."""
-    input_count_row = fetchone('SELECT COUNT(*) AS cnt FROM rebuild5.etl_parsed')
+    _ensure_time_helpers()
+    input_count_row = fetchone('SELECT COUNT(*) AS cnt FROM rb5.etl_parsed')
     input_count = int(input_count_row['cnt']) if input_count_row else 0
 
     execute(f'DROP TABLE IF EXISTS {CLEAN_STAGE_TABLE}')
-    execute(f'CREATE TABLE {CLEAN_STAGE_TABLE} AS SELECT * FROM rebuild5.etl_parsed')
+    execute(f'CREATE TABLE {CLEAN_STAGE_TABLE} AS SELECT * FROM rb5.etl_parsed')
     execute(f'ALTER TABLE {CLEAN_STAGE_TABLE} SET (autovacuum_enabled = false)')
 
     rule_stats: list[dict[str, Any]] = []
@@ -69,7 +99,7 @@ def step1_clean() -> dict[str, Any]:
 
     execute(
         """
-        ALTER TABLE rebuild5.etl_clean_stage
+        ALTER TABLE rb5.etl_clean_stage
             ADD COLUMN IF NOT EXISTS bs_id bigint,
             ADD COLUMN IF NOT EXISTS sector_id bigint,
             ADD COLUMN IF NOT EXISTS operator_cn text,
@@ -83,7 +113,7 @@ def step1_clean() -> dict[str, Any]:
     )
     execute(
         """
-        UPDATE rebuild5.etl_clean_stage SET
+        UPDATE rb5.etl_clean_stage SET
             bs_id = CASE
                 WHEN cell_id IS NOT NULL AND tech_norm = '5G' THEN cell_id / 4096
                 WHEN cell_id IS NOT NULL THEN cell_id / 256
@@ -101,12 +131,12 @@ def step1_clean() -> dict[str, Any]:
             has_cell_id = (cell_id IS NOT NULL AND cell_id != 0)
         """
     )
-    execute(f"UPDATE {CLEAN_STAGE_TABLE} SET report_ts = CASE WHEN ts_raw ~ '^\\d{{4}}-' THEN ts_raw::timestamptz END")
-    execute(f"UPDATE {CLEAN_STAGE_TABLE} SET cell_ts_std = CASE WHEN cell_origin = 'ss1' AND cell_ts_raw ~ '^\\d{{10}}$' THEN to_timestamp(cell_ts_raw::bigint) END")
-    execute(f"UPDATE {CLEAN_STAGE_TABLE} SET gps_ts = CASE WHEN gps_ts_raw ~ '^\\d{{13}}$' THEN to_timestamp(gps_ts_raw::bigint / 1000.0) END")
+    execute(f"UPDATE {CLEAN_STAGE_TABLE} SET report_ts = rb5._immutable_text_to_utc_timestamptz(ts_raw) WHERE ts_raw ~ '^\\d{{4}}-'")
+    execute(f"UPDATE {CLEAN_STAGE_TABLE} SET cell_ts_std = rb5._immutable_epoch_seconds_to_timestamptz(cell_ts_raw::double precision) WHERE cell_origin = 'ss1' AND cell_ts_raw ~ '^\\d{{10}}$'")
+    execute(f"UPDATE {CLEAN_STAGE_TABLE} SET gps_ts = rb5._immutable_epoch_seconds_to_timestamptz(gps_ts_raw::double precision / 1000.0) WHERE gps_ts_raw ~ '^\\d{{13}}$'")
     execute(
         """
-        UPDATE rebuild5.etl_clean_stage SET
+        UPDATE rb5.etl_clean_stage SET
             event_time_std = COALESCE(cell_ts_std, report_ts, gps_ts),
             event_time_source = CASE
                 WHEN cell_ts_std IS NOT NULL THEN 'cell_ts'

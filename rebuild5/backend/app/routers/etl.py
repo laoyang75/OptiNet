@@ -1,4 +1,4 @@
-"""ETL routes for rebuild5."""
+"""ETL routes for rb5."""
 from __future__ import annotations
 
 from fastapi import APIRouter

@@ -21,7 +21,7 @@ def _latest_step2() -> dict[str, Any] | None:
     return fetchone(
         """
         SELECT *
-        FROM rebuild5_meta.step2_run_stats
+        FROM rb5_meta.step2_run_stats
         ORDER BY batch_id DESC NULLS LAST, finished_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """
@@ -29,12 +29,12 @@ def _latest_step2() -> dict[str, Any] | None:
 
 
 def _latest_library_version() -> dict[str, Any] | None:
-    if not relation_exists('rebuild5.trusted_cell_library'):
+    if not relation_exists('rb5.trusted_cell_library'):
         return None
     return fetchone(
         """
         SELECT batch_id, snapshot_version
-        FROM rebuild5.trusted_cell_library
+        FROM rb5.trusted_cell_library
         ORDER BY batch_id DESC, cell_id
         LIMIT 1
         """
@@ -74,13 +74,13 @@ def run_enrichment_pipeline() -> dict[str, Any]:
     donor_batch_id = int(donor_snapshot_version.lstrip('v')) if donor_snapshot_version != 'v0' else 0
     anomaly_threshold_m = antitoxin['collision_min_spread_m']
 
-    execute('DELETE FROM rebuild5.enriched_records WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.gps_anomaly_log WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.snapshot_seed_records WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.step4_fill_coverage WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.enriched_records WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.gps_anomaly_log WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.snapshot_seed_records WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.step4_fill_coverage WHERE batch_id = %s', (batch_id,))
 
-    has_library = relation_exists('rebuild5.trusted_cell_library') and donor_batch_id > 0
-    if not step2 or not relation_exists('rebuild5.path_a_records'):
+    has_library = relation_exists('rb5.trusted_cell_library') and donor_batch_id > 0
+    if not step2 or not relation_exists('rb5.path_a_records'):
         stats = _empty_stats(run_id, batch_id, snapshot_version, donor_snapshot_version)
         write_step4_stats(stats)
         write_run_log(run_id=run_id, batch_id=batch_id, snapshot_version=snapshot_version,
@@ -93,35 +93,35 @@ def run_enrichment_pipeline() -> dict[str, Any]:
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_csh_join_batch
-        ON rebuild5.candidate_seed_history (operator_code, lac, cell_id, tech_norm, batch_id)
+        ON rb5.candidate_seed_history (operator_code, lac, cell_id, tech_norm, batch_id)
         """
     )
-    execute('ANALYZE rebuild5.enriched_records')
-    execute('ANALYZE rebuild5.candidate_seed_history')
+    execute('ANALYZE rb5.enriched_records')
+    execute('ANALYZE rb5.candidate_seed_history')
     _insert_snapshot_seed_records(batch_id=batch_id, run_id=run_id)
-    execute('CREATE INDEX IF NOT EXISTS idx_enriched_batch ON rebuild5.enriched_records (batch_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_enriched_batch ON rb5.enriched_records (batch_id)')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_enriched_batch_cell
-        ON rebuild5.enriched_records (batch_id, operator_code, lac, bs_id, cell_id)
+        ON rb5.enriched_records (batch_id, operator_code, lac, bs_id, cell_id)
         """
     )
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_gps_anomaly_batch_cell
-        ON rebuild5.gps_anomaly_log (batch_id, operator_code, lac, cell_id)
+        ON rb5.gps_anomaly_log (batch_id, operator_code, lac, cell_id)
         """
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch ON rebuild5.snapshot_seed_records (batch_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch ON rb5.snapshot_seed_records (batch_id)')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch_cell
-        ON rebuild5.snapshot_seed_records (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5.snapshot_seed_records (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5.enriched_records')
-    execute('ANALYZE rebuild5.gps_anomaly_log')
-    execute('ANALYZE rebuild5.snapshot_seed_records')
+    execute('ANALYZE rb5.enriched_records')
+    execute('ANALYZE rb5.gps_anomaly_log')
+    execute('ANALYZE rb5.snapshot_seed_records')
 
     stats = _collect_step4_stats(
         run_id=run_id, batch_id=batch_id,
@@ -150,10 +150,11 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
     escaped_run_id = run_id.replace("'", "''")
     escaped_dataset_key = DATASET_KEY.replace("'", "''")
     sql_template = f"""
-        INSERT INTO rebuild5.enriched_records (
+        INSERT INTO rb5.enriched_records (
             batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
             event_time_std, dev_id,
-            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
+            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm, cell_origin,
+            timing_advance, freq_channel,
             gps_valid, lon_raw, lat_raw,
             lon_final, lat_final, gps_fill_source_final, gps_fill_confidence,
             rsrp_final, rsrp_fill_source_final,
@@ -176,7 +177,8 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
             '{escaped_dataset_key}'::text  AS dataset_key,
             COALESCE(p.source_tid::text, p.record_id) AS source_row_uid,
             p.record_id, p.source_table, p.event_time_std, p.dev_id,
-            p.operator_code, p.operator_cn, p.lac, p.bs_id, p.cell_id, p.tech_norm,
+            p.operator_code, p.operator_cn, p.lac, p.bs_id, p.cell_id, p.tech_norm, p.cell_origin,
+            p.timing_advance, p.freq_channel,
             p.gps_valid, p.lon_raw, p.lat_raw,
 
             -- GPS: Step1 filled → any matched published donor center → NULL
@@ -279,7 +281,7 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
             p.path_a_is_collision,
             p.donor_anchor_eligible, p.donor_baseline_eligible
 
-        FROM rebuild5.path_a_records p
+        FROM rb5.path_a_records p
         WHERE TRUE
           {{shard_filter}}
         """
@@ -299,8 +301,8 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
         # `df` shows free space. Retrying with fewer workers trades throughput
         # for a more stable append pattern. Keep previous batches' persisted
         # debug data intact and only clear the current batch before retrying.
-        execute('DELETE FROM rebuild5.enriched_records WHERE batch_id = %s', (batch_id,))
-        execute('DELETE FROM rebuild5.gps_anomaly_log WHERE batch_id = %s', (batch_id,))
+        execute('DELETE FROM rb5.enriched_records WHERE batch_id = %s', (batch_id,))
+        execute('DELETE FROM rb5.gps_anomaly_log WHERE batch_id = %s', (batch_id,))
         parallel_execute(
             sql_template,
             shard_table_alias='p.',
@@ -316,7 +318,7 @@ def _insert_enriched_records(batch_id: int, run_id: str) -> None:
 def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_batch_id: int) -> None:
     execute(
         f"""
-        INSERT INTO rebuild5.gps_anomaly_log (
+        INSERT INTO rb5.gps_anomaly_log (
             batch_id, run_id, dataset_key, source_row_uid, record_id,
             operator_code, lac, bs_id, cell_id, tech_norm, dev_id, event_time_std,
             lon_raw, lat_raw,
@@ -341,7 +343,7 @@ def _insert_gps_anomaly_log(batch_id: int, anomaly_threshold_m: float, donor_bat
             %s::double precision,
             'trusted_cell_compare'::text,
             false
-        FROM rebuild5.enriched_records e
+        FROM rb5.enriched_records e
         WHERE e.batch_id = %s
           AND COALESCE(e.gps_valid, FALSE)
           AND e.lon_raw IS NOT NULL AND e.lat_raw IS NOT NULL
@@ -366,53 +368,61 @@ def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
     cumulative candidate evidence.  We materialize that history here for
     Step 5-only consumption.
     """
-    if not relation_exists('rebuild5.candidate_seed_history'):
+    if not relation_exists('rb5.candidate_seed_history'):
         return
+
+    execute('DROP TABLE IF EXISTS rb5._snapshot_seed_new_cells')
+    execute(
+        f"""
+        CREATE UNLOGGED TABLE rb5._snapshot_seed_new_cells AS
+        WITH prev_published AS (
+            SELECT operator_code, lac, cell_id, tech_norm
+            FROM rb5.trusted_cell_library
+            WHERE batch_id = (
+                SELECT COALESCE(MAX(batch_id), 0)
+                FROM rb5.trusted_cell_library
+                WHERE batch_id < {batch_id}
+            )
+        )
+        SELECT
+            s.operator_code,
+            s.operator_cn,
+            s.lac,
+            s.bs_id,
+            s.cell_id,
+            s.tech_norm,
+            s.center_lon,
+            s.center_lat,
+            s.rsrp_avg,
+            s.rsrq_avg,
+            s.sinr_avg
+        FROM rb5.trusted_snapshot_cell s
+        LEFT JOIN prev_published p
+          ON p.operator_code = s.operator_code
+         AND p.lac = s.lac
+         AND p.cell_id = s.cell_id
+         AND p.tech_norm IS NOT DISTINCT FROM s.tech_norm
+        WHERE s.batch_id = {batch_id}
+          AND s.lifecycle_state IN ('qualified', 'excellent')
+          AND p.cell_id IS NULL
+        """
+    )
+    execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_new_cells ON rb5._snapshot_seed_new_cells (operator_code, lac, cell_id, tech_norm)')
+    execute('ANALYZE rb5._snapshot_seed_new_cells')
 
     execute(
         f"""
-        INSERT INTO rebuild5.snapshot_seed_records (
+        INSERT INTO rb5.snapshot_seed_records (
             batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
             event_time_std, dev_id,
-            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
+            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm, cell_origin,
+            timing_advance, freq_channel,
             gps_valid,
             lon_final, lat_final, gps_fill_source_final,
             rsrp_final, rsrq_final, sinr_final, pressure_final,
             seed_source
         )
-        WITH prev_published AS (
-            SELECT operator_code, lac, cell_id, tech_norm
-            FROM rebuild5.trusted_cell_library
-            WHERE batch_id = (
-                SELECT COALESCE(MAX(batch_id), 0)
-                FROM rebuild5.trusted_cell_library
-                WHERE batch_id < {batch_id}
-            )
-        ),
-        new_snapshot_cells AS MATERIALIZED (
-            SELECT
-                s.operator_code,
-                s.operator_cn,
-                s.lac,
-                s.bs_id,
-                s.cell_id,
-                s.tech_norm,
-                s.center_lon,
-                s.center_lat,
-                s.rsrp_avg,
-                s.rsrq_avg,
-                s.sinr_avg
-            FROM rebuild5.trusted_snapshot_cell s
-            LEFT JOIN prev_published p
-              ON p.operator_code = s.operator_code
-             AND p.lac = s.lac
-             AND p.cell_id = s.cell_id
-             AND p.tech_norm IS NOT DISTINCT FROM s.tech_norm
-            WHERE s.batch_id = {batch_id}
-              AND s.lifecycle_state IN ('qualified', 'excellent')
-              AND p.cell_id IS NULL
-        )
-        SELECT
+        SELECT DISTINCT ON (e.record_id, e.cell_id, e.cell_origin)
             {batch_id}::int,
             %s::text,
             %s::text,
@@ -427,6 +437,9 @@ def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
             COALESCE(e.bs_id, s.bs_id),
             e.cell_id,
             e.tech_norm,
+            e.cell_origin,
+            e.timing_advance,
+            e.freq_channel,
             COALESCE(e.gps_valid, FALSE),
             COALESCE(e.lon_filled, s.center_lon),
             COALESCE(e.lat_filled, s.center_lat),
@@ -442,8 +455,8 @@ def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
             COALESCE(e.sinr_filled, s.sinr_avg),
             e.pressure,
             'trusted_snapshot_seed'::text
-        FROM rebuild5.candidate_seed_history e
-        JOIN new_snapshot_cells s
+        FROM rb5.candidate_seed_history e
+        JOIN rb5._snapshot_seed_new_cells s
           ON s.operator_code = e.operator_code
          AND s.lac = e.lac
          AND s.cell_id = e.cell_id
@@ -451,16 +464,27 @@ def _insert_snapshot_seed_records(*, batch_id: int, run_id: str) -> None:
         WHERE e.batch_id <= {batch_id}
           AND NOT EXISTS (
               SELECT 1
-              FROM rebuild5.enriched_records er
+              FROM rb5.enriched_records er
               WHERE er.batch_id = {batch_id}
                 AND er.record_id = e.record_id
-                AND er.cell_id IS NOT DISTINCT FROM e.cell_id
+                AND er.cell_id = e.cell_id
                 AND er.lac IS NOT DISTINCT FROM e.lac
                 AND er.tech_norm IS NOT DISTINCT FROM e.tech_norm
           )
+        ORDER BY
+            e.record_id,
+            e.cell_id,
+            e.cell_origin,
+            e.batch_id DESC,
+            COALESCE(e.gps_valid, FALSE) DESC,
+            (e.lon_filled IS NOT NULL AND e.lat_filled IS NOT NULL) DESC,
+            (e.rsrp_filled IS NOT NULL OR e.rsrq_filled IS NOT NULL OR e.sinr_filled IS NOT NULL) DESC,
+            e.event_time_std DESC NULLS LAST,
+            e.source_row_uid DESC
         """,
         (run_id, DATASET_KEY),
     )
+    execute('DROP TABLE IF EXISTS rb5._snapshot_seed_new_cells')
 
 
 # ---------------------------------------------------------------------------
@@ -497,21 +521,21 @@ def _collect_step4_stats(
             COUNT(*) FILTER (WHERE rsrp_final IS NULL
                                AND rsrq_final IS NULL
                                AND sinr_final IS NULL)                         AS remaining_none_signal
-        FROM rebuild5.enriched_records
+        FROM rb5.enriched_records
         WHERE batch_id = %s
         """,
         (batch_id,),
     )
 
     anomaly_cnt = fetchone(
-        'SELECT COUNT(*) AS cnt FROM rebuild5.gps_anomaly_log WHERE batch_id = %s',
+        'SELECT COUNT(*) AS cnt FROM rb5.gps_anomaly_log WHERE batch_id = %s',
         (batch_id,),
     )
 
     collision_skip_row = fetchone(
         """
         SELECT COUNT(*) AS cnt
-        FROM rebuild5.enriched_records
+        FROM rb5.enriched_records
         WHERE batch_id = %s
           AND COALESCE(gps_valid, FALSE)
           AND lon_raw IS NOT NULL AND lat_raw IS NOT NULL

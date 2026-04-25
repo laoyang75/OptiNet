@@ -42,10 +42,10 @@ def _build_collision_id_list(*, batch_id: int, snapshot_version: str) -> None:
     Output: collision_id_list with is_collision_id=TRUE, dominant_combo by obs count.
     Step 2 uses this to decide whether operator/LAC validation is needed during fill.
     """
-    execute('DELETE FROM rebuild5.collision_id_list WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.collision_id_list WHERE batch_id = %s', (batch_id,))
     execute(
         """
-        INSERT INTO rebuild5.collision_id_list (
+        INSERT INTO rb5.collision_id_list (
             batch_id, snapshot_version, cell_id, is_collision_id,
             collision_combo_count, dominant_combo, combo_keys_json, created_at
         )
@@ -67,7 +67,7 @@ def _build_collision_id_list(*, batch_id: int, snapshot_version: str) -> None:
                 'distinct_dev_id', distinct_dev_id
             ) ORDER BY independent_obs DESC NULLS LAST) AS combo_keys_json,
             NOW()
-        FROM rebuild5.trusted_cell_library
+        FROM rb5.trusted_cell_library
         WHERE batch_id = %s
         GROUP BY cell_id
         HAVING COUNT(DISTINCT (operator_code, lac)) > 1
@@ -105,15 +105,15 @@ def _detect_geographic_collision(
     """
     execute(
         """
-        UPDATE rebuild5.trusted_cell_library c
+        UPDATE rb5.trusted_cell_library c
         SET is_collision = TRUE,
             antitoxin_hit = TRUE,
             baseline_eligible = FALSE
         FROM (
             SELECT DISTINCT
                 a.operator_code, a.lac, a.cell_id, a.tech_norm
-            FROM rebuild5.cell_centroid_detail a
-            JOIN rebuild5.cell_centroid_detail b
+            FROM rb5.cell_centroid_detail a
+            JOIN rb5.cell_centroid_detail b
               ON b.batch_id = a.batch_id
              AND b.operator_code = a.operator_code
              AND b.lac IS NOT DISTINCT FROM a.lac

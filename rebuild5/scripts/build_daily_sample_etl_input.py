@@ -24,7 +24,7 @@ import yaml
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -334,8 +334,8 @@ def build_hybrid_sample_table(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-relation', default='rebuild5.etl_cleaned')
-    parser.add_argument('--target-relation', default='rebuild5.etl_cleaned_daily_sample_1m')
+    parser.add_argument('--source-relation', default='rb5.etl_cleaned')
+    parser.add_argument('--target-relation', default='rb5.etl_cleaned_daily_sample_1m')
     parser.add_argument(
         '--sample-mode',
         choices=('per_day_cap', 'top_lacs', 'hybrid_top_lacs_random'),

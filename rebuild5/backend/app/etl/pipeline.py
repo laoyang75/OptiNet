@@ -1,4 +1,4 @@
-"""Step 1 ETL pipeline orchestrator for rebuild5."""
+"""Step 1 ETL pipeline orchestrator for rb5."""
 from __future__ import annotations
 
 import json
@@ -22,14 +22,14 @@ def run_step1_pipeline() -> dict[str, Any]:
         clean_result = step1_clean()
         before_coverage = calculate_field_coverage(CLEAN_STAGE_TABLE, filled=False)
         fill_result = step1_fill()
-        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rebuild5.etl_cleaned (event_time_std)')
-        execute('ANALYZE rebuild5.etl_cleaned')
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rb5.etl_cleaned (event_time_std)')
+        execute('ANALYZE rb5.etl_cleaned')
         after_coverage = calculate_field_coverage(FINAL_OUTPUT_TABLE, filled=True)
         # Drop intermediate tables no longer needed
-        execute('DROP TABLE IF EXISTS rebuild5.etl_clean_stage')
-        execute('DROP TABLE IF EXISTS rebuild5.etl_ci')
-        execute('DROP TABLE IF EXISTS rebuild5.etl_ss1')
-        source_count = fetchone('SELECT COUNT(*) AS cnt FROM rebuild5_meta.source_registry WHERE dataset_key = %s', (DATASET_KEY,))
+        execute('DROP TABLE IF EXISTS rb5.etl_clean_stage')
+        execute('DROP TABLE IF EXISTS rb5.etl_ci')
+        execute('DROP TABLE IF EXISTS rb5.etl_ss1')
+        source_count = fetchone('SELECT COUNT(*) AS cnt FROM rb5_meta.source_registry WHERE dataset_key = %s', (DATASET_KEY,))
         _save_stats(
             run_id=run_id,
             started_at=started_at,
@@ -105,10 +105,10 @@ def _save_stats(
     before_coverage: dict[str, float],
     after_coverage: dict[str, float],
 ) -> None:
-    execute('DELETE FROM rebuild5_meta.step1_run_stats WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.step1_run_stats WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.step1_run_stats (
+        INSERT INTO rb5_meta.step1_run_stats (
             run_id, dataset_key, status, started_at, finished_at,
             raw_record_count, parsed_record_count, cleaned_record_count, filled_record_count,
             clean_deleted_count, clean_pass_rate, source_count,
@@ -148,10 +148,10 @@ def _write_run_log(
     result_summary: dict[str, Any],
     error: str | None = None,
 ) -> None:
-    execute('DELETE FROM rebuild5_meta.run_log WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.run_log WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.run_log (
+        INSERT INTO rb5_meta.run_log (
             run_id, run_type, dataset_key, snapshot_version, status,
             started_at, finished_at, step_chain, result_summary, error
         ) VALUES (%s, %s, %s, %s, %s, NOW(), NOW(), %s, %s::jsonb, %s)
@@ -169,7 +169,7 @@ def _write_run_log(
     )
     execute(
         """
-        UPDATE rebuild5_meta.dataset_registry
+        UPDATE rb5_meta.dataset_registry
         SET last_run_id = %s,
             last_snapshot_version = %s,
             last_run_status = %s,

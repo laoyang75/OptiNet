@@ -36,29 +36,29 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     drift_patterns_sql = ', '.join(f"'{value}'" for value in trigger_cfg['candidate_drift_patterns'])
 
     stage_tables = (
-        'rebuild5._label_candidates',
-        'rebuild5._label_input_points',
-        'rebuild5._label_cell_stats',
-        'rebuild5._label_clustered_points',
-        'rebuild5._label_clusters',
-        'rebuild5._label_cluster_radius',
-        'rebuild5._label_ranked_clusters',
-        'rebuild5._label_cell_kstats',
-        'rebuild5._label_k2_features',
-        'rebuild5._label_kmany_features',
-        'rebuild5._label_results_stage',
+        'rb5._label_candidates',
+        'rb5._label_input_points',
+        'rb5._label_cell_stats',
+        'rb5._label_clustered_points',
+        'rb5._label_clusters',
+        'rb5._label_cluster_radius',
+        'rb5._label_ranked_clusters',
+        'rb5._label_cell_kstats',
+        'rb5._label_k2_features',
+        'rb5._label_kmany_features',
+        'rb5._label_results_stage',
     )
     for table_name in stage_tables:
         execute(f'DROP TABLE IF EXISTS {table_name}')
 
-    execute('DELETE FROM rebuild5.cell_centroid_detail WHERE batch_id = %s', (batch_id,))
-    execute('DELETE FROM rebuild5.label_results WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.cell_centroid_detail WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.label_results WHERE batch_id = %s', (batch_id,))
 
     # 方案 7.4：候选池 = p90 >= 1300m 的 cell（其余 cell 按 p90<1300m → stable 直接判定）
     # 大幅缩小候选池（原 27 万 → 约 7 千），避免 DBSCAN/聚类阶段对紧凑小 cell 白跑
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_candidates AS
+        CREATE UNLOGGED TABLE rb5._label_candidates AS
         SELECT
             t.batch_id,
             t.operator_code,
@@ -66,7 +66,7 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             t.bs_id,
             t.cell_id,
             t.tech_norm
-        FROM rebuild5.trusted_cell_library t
+        FROM rb5.trusted_cell_library t
         WHERE t.batch_id = %s
           AND COALESCE(t.p90_radius_m, 0) >= {cluster_cfg['multi_centroid_entry_p90_m']}
         """,
@@ -75,21 +75,39 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_candidates_key
-        ON rebuild5._label_candidates (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._label_candidates (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._label_candidates')
+    execute('ANALYZE rb5._label_candidates')
 
     raw_gps_filter = "AND e.gps_fill_source_final = 'raw_gps'" if cluster_cfg['only_raw_gps'] else ''
+    execute('DROP TABLE IF EXISTS rb5._label_input_points')
     execute(
-        f"""
-        CREATE UNLOGGED TABLE rebuild5._label_input_points AS
+        """
+        CREATE UNLOGGED TABLE IF NOT EXISTS rb5._label_input_points (
+            batch_id INTEGER NOT NULL,
+            operator_code TEXT,
+            lac BIGINT,
+            bs_id BIGINT,
+            cell_id BIGINT NOT NULL,
+            tech_norm TEXT,
+            dedup_dev_id TEXT,
+            source_row_uid TEXT,
+            obs_date DATE,
+            event_time_std TIMESTAMPTZ,
+            lon_final DOUBLE PRECISION,
+            lat_final DOUBLE PRECISION
+        )
+        """
+    )
+    label_input_sql = f"""
+        INSERT INTO rb5._label_input_points
         WITH source_meta AS (
             SELECT batch_id, source_row_uid, gps_fill_source_final
-            FROM rebuild5.enriched_records
+            FROM rb5.enriched_records
             UNION ALL
             SELECT batch_id, source_row_uid, gps_fill_source_final
-            FROM rebuild5.snapshot_seed_records
+            FROM rb5.snapshot_seed_records
         )
         SELECT DISTINCT ON (
             c.operator_code,
@@ -112,8 +130,8 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             w.event_time_std,
             w.lon_final,
             w.lat_final
-        FROM rebuild5._label_candidates c
-        JOIN rebuild5.cell_sliding_window w
+        FROM rb5._label_candidates c
+        JOIN rb5.cell_sliding_window w
           ON w.operator_code = c.operator_code
          AND w.lac IS NOT DISTINCT FROM c.lac
          AND w.bs_id IS NOT DISTINCT FROM c.bs_id
@@ -138,39 +156,39 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             w.event_time_std,
             w.record_id
         """
-    )
+    execute(label_input_sql)
     execute(
         """
         CREATE INDEX idx_label_input_points_key
-        ON rebuild5._label_input_points (operator_code, lac, bs_id, cell_id, tech_norm, obs_date)
+        ON rb5._label_input_points (operator_code, lac, bs_id, cell_id, tech_norm, obs_date)
         """
     )
-    execute('ANALYZE rebuild5._label_input_points')
+    execute('ANALYZE rb5._label_input_points')
 
     # 方案 7.4：计算 cell 级 dedup 统计，用于多质心层的稀疏保护
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._label_cell_stats AS
+        CREATE UNLOGGED TABLE rb5._label_cell_stats AS
         SELECT
             operator_code, lac, bs_id, cell_id, tech_norm,
             COUNT(*) AS total_dedup_pts,
             COUNT(DISTINCT dedup_dev_id) AS dedup_dev_count,
             COUNT(DISTINCT obs_date) AS dedup_day_count
-        FROM rebuild5._label_input_points
+        FROM rb5._label_input_points
         GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
         """
     )
     execute(
         """
         CREATE INDEX idx_label_cell_stats_key
-        ON rebuild5._label_cell_stats (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._label_cell_stats (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._label_cell_stats')
+    execute('ANALYZE rb5._label_cell_stats')
 
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_clustered_points AS
+        CREATE UNLOGGED TABLE rb5._label_clustered_points AS
         SELECT
             p.batch_id,
             p.operator_code,
@@ -197,20 +215,20 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             ) OVER (
                 PARTITION BY p.operator_code, p.lac, p.bs_id, p.cell_id, p.tech_norm
             ) AS cluster_id
-        FROM rebuild5._label_input_points p
+        FROM rb5._label_input_points p
         """
     )
     execute(
         """
         CREATE INDEX idx_label_clustered_points_key
-        ON rebuild5._label_clustered_points (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id, obs_date)
+        ON rb5._label_clustered_points (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id, obs_date)
         """
     )
-    execute('ANALYZE rebuild5._label_clustered_points')
+    execute('ANALYZE rb5._label_clustered_points')
 
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._label_clusters AS
+        CREATE UNLOGGED TABLE rb5._label_clusters AS
         SELECT
             batch_id,
             operator_code,
@@ -228,7 +246,7 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon_final) AS center_lon,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat_final) AS center_lat,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM event_time_std)) AS mid_time_epoch
-        FROM rebuild5._label_clustered_points
+        FROM rb5._label_clustered_points
         WHERE cluster_id IS NOT NULL
         GROUP BY batch_id, operator_code, lac, bs_id, cell_id, tech_norm, cluster_id
         """
@@ -236,14 +254,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_clusters_key
-        ON rebuild5._label_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._label_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._label_clusters')
+    execute('ANALYZE rb5._label_clusters')
 
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_cluster_radius AS
+        CREATE UNLOGGED TABLE rb5._label_cluster_radius AS
         SELECT
             p.operator_code,
             p.lac,
@@ -257,8 +275,8 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
                   + POWER((p.lat_final - c.center_lat) * {cluster_cfg['coord_scale_lat']}, 2)
                 )
             ) AS radius_m
-        FROM rebuild5._label_clustered_points p
-        JOIN rebuild5._label_clusters c
+        FROM rb5._label_clustered_points p
+        JOIN rb5._label_clusters c
           ON c.operator_code = p.operator_code
          AND c.lac IS NOT DISTINCT FROM p.lac
          AND c.bs_id IS NOT DISTINCT FROM p.bs_id
@@ -272,14 +290,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_cluster_radius_key
-        ON rebuild5._label_cluster_radius (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._label_cluster_radius (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._label_cluster_radius')
+    execute('ANALYZE rb5._label_cluster_radius')
 
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_ranked_clusters AS
+        CREATE UNLOGGED TABLE rb5._label_ranked_clusters AS
         WITH valid_clusters AS (
             SELECT
                 c.batch_id,
@@ -299,8 +317,8 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
                 c.center_lat,
                 c.mid_time_epoch,
                 r.radius_m
-            FROM rebuild5._label_clusters c
-            LEFT JOIN rebuild5._label_cluster_radius r
+            FROM rb5._label_clusters c
+            LEFT JOIN rb5._label_cluster_radius r
               ON r.operator_code = c.operator_code
              AND r.lac IS NOT DISTINCT FROM c.lac
              AND r.bs_id IS NOT DISTINCT FROM c.bs_id
@@ -333,14 +351,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_ranked_clusters_key
-        ON rebuild5._label_ranked_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._label_ranked_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._label_ranked_clusters')
+    execute('ANALYZE rb5._label_ranked_clusters')
 
     execute(
         """
-        INSERT INTO rebuild5.cell_centroid_detail (
+        INSERT INTO rb5.cell_centroid_detail (
             batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, tech_norm,
             cluster_id, is_primary, center_lon, center_lat, obs_count, dev_count, radius_m, share_ratio
         )
@@ -360,16 +378,16 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             dev_count,
             radius_m,
             share_ratio
-        FROM rebuild5._label_ranked_clusters
+        FROM rb5._label_ranked_clusters
         WHERE valid_cluster_count > 1
         """,
         (batch_id, snapshot_version),
     )
-    execute('ANALYZE rebuild5.cell_centroid_detail')
+    execute('ANALYZE rb5.cell_centroid_detail')
 
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._label_cell_kstats AS
+        CREATE UNLOGGED TABLE rb5._label_cell_kstats AS
         SELECT
             c.operator_code,
             c.lac,
@@ -379,7 +397,7 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             COUNT(*) AS k_raw,
             COUNT(*) FILTER (WHERE c.dev_day_pts >= %s) AS k_eff,
             COALESCE(SUM(c.dev_day_pts) FILTER (WHERE c.dev_day_pts >= %s), 0) AS total_valid_pts
-        FROM rebuild5._label_clusters c
+        FROM rb5._label_clusters c
         GROUP BY c.operator_code, c.lac, c.bs_id, c.cell_id, c.tech_norm
         """,
         (cluster_cfg['min_cluster_dev_day_pts'], cluster_cfg['min_cluster_dev_day_pts']),
@@ -387,18 +405,18 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_cell_kstats_key
-        ON rebuild5._label_cell_kstats (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._label_cell_kstats (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._label_cell_kstats')
+    execute('ANALYZE rb5._label_cell_kstats')
 
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_k2_features AS
+        CREATE UNLOGGED TABLE rb5._label_k2_features AS
         WITH vc AS (
             SELECT c.*
-            FROM rebuild5._label_ranked_clusters c
-            JOIN rebuild5._label_cell_kstats k
+            FROM rb5._label_ranked_clusters c
+            JOIN rb5._label_cell_kstats k
               ON k.operator_code = c.operator_code
              AND k.lac IS NOT DISTINCT FROM c.lac
              AND k.bs_id IS NOT DISTINCT FROM c.bs_id
@@ -452,14 +470,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_k2_features_key
-        ON rebuild5._label_k2_features (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._label_k2_features (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._label_k2_features')
+    execute('ANALYZE rb5._label_k2_features')
 
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_kmany_features AS
+        CREATE UNLOGGED TABLE rb5._label_kmany_features AS
         WITH vc AS (
             SELECT
                 c.operator_code,
@@ -476,8 +494,8 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
                     PARTITION BY c.operator_code, c.lac, c.bs_id, c.cell_id, c.tech_norm
                     ORDER BY c.mid_time_epoch, c.cluster_id
                 ) AS time_rank
-            FROM rebuild5._label_ranked_clusters c
-            JOIN rebuild5._label_cell_kstats k
+            FROM rb5._label_ranked_clusters c
+            JOIN rb5._label_cell_kstats k
               ON k.operator_code = c.operator_code
              AND k.lac IS NOT DISTINCT FROM c.lac
              AND k.bs_id IS NOT DISTINCT FROM c.bs_id
@@ -584,14 +602,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_kmany_features_key
-        ON rebuild5._label_kmany_features (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._label_kmany_features (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._label_kmany_features')
+    execute('ANALYZE rb5._label_kmany_features')
 
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._label_results_stage AS
+        CREATE UNLOGGED TABLE rb5._label_results_stage AS
         SELECT
             %s::int AS batch_id,
             %s::text AS snapshot_version,
@@ -668,32 +686,32 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
                 WHEN k.k_eff >= 3 THEN 'uncertain'
                 ELSE 'insufficient'
             END AS label
-        FROM rebuild5.trusted_cell_library t
-        LEFT JOIN rebuild5._label_candidates c
+        FROM rb5.trusted_cell_library t
+        LEFT JOIN rb5._label_candidates c
           ON c.operator_code = t.operator_code
          AND c.lac IS NOT DISTINCT FROM t.lac
          AND c.bs_id IS NOT DISTINCT FROM t.bs_id
          AND c.cell_id = t.cell_id
          AND c.tech_norm IS NOT DISTINCT FROM t.tech_norm
-        LEFT JOIN rebuild5._label_cell_stats cs
+        LEFT JOIN rb5._label_cell_stats cs
           ON cs.operator_code = t.operator_code
          AND cs.lac IS NOT DISTINCT FROM t.lac
          AND cs.bs_id IS NOT DISTINCT FROM t.bs_id
          AND cs.cell_id = t.cell_id
          AND cs.tech_norm IS NOT DISTINCT FROM t.tech_norm
-        LEFT JOIN rebuild5._label_cell_kstats k
+        LEFT JOIN rb5._label_cell_kstats k
           ON k.operator_code = t.operator_code
          AND k.lac IS NOT DISTINCT FROM t.lac
          AND k.bs_id IS NOT DISTINCT FROM t.bs_id
          AND k.cell_id = t.cell_id
          AND k.tech_norm IS NOT DISTINCT FROM t.tech_norm
-        LEFT JOIN rebuild5._label_k2_features k2
+        LEFT JOIN rb5._label_k2_features k2
           ON k2.operator_code = t.operator_code
          AND k2.lac IS NOT DISTINCT FROM t.lac
          AND k2.bs_id IS NOT DISTINCT FROM t.bs_id
          AND k2.cell_id = t.cell_id
          AND k2.tech_norm IS NOT DISTINCT FROM t.tech_norm
-        LEFT JOIN rebuild5._label_kmany_features km
+        LEFT JOIN rb5._label_kmany_features km
           ON km.operator_code = t.operator_code
          AND km.lac IS NOT DISTINCT FROM t.lac
          AND km.bs_id IS NOT DISTINCT FROM t.bs_id
@@ -706,14 +724,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
     execute(
         """
         CREATE INDEX idx_label_results_stage_key
-        ON rebuild5._label_results_stage (batch_id, operator_code, lac, cell_id, tech_norm)
+        ON rb5._label_results_stage (batch_id, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._label_results_stage')
+    execute('ANALYZE rb5._label_results_stage')
 
     execute(
         """
-        INSERT INTO rebuild5.label_results (
+        INSERT INTO rb5.label_results (
             batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, tech_norm,
             candidate_hit, k_raw, k_eff, total_valid_pts, p90_radius_m,
             pair_dist_m, pair_overlap_ratio, pair_no_comeback,
@@ -726,14 +744,14 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             pair_dist_m, pair_overlap_ratio, pair_no_comeback,
             max_span_m, total_path_m, line_ratio, distance_cv, avg_dwell_days,
             label
-        FROM rebuild5._label_results_stage
+        FROM rb5._label_results_stage
         """
     )
-    execute('ANALYZE rebuild5.label_results')
+    execute('ANALYZE rb5.label_results')
 
     execute(
         """
-        UPDATE rebuild5.trusted_cell_library AS t
+        UPDATE rb5.trusted_cell_library AS t
         SET drift_pattern = l.label,
             centroid_pattern = CASE
                 WHEN l.label IN ('dual_cluster', 'migration') THEN l.label
@@ -745,7 +763,7 @@ def run_label_engine(*, batch_id: int, snapshot_version: str) -> None:
             is_dynamic = (l.label = 'dynamic'),
             -- collision 与标签联动：label_engine 判定优先于旧 collision.py 的 max_spread 口径
             is_collision = (l.label = 'collision')
-        FROM rebuild5.label_results l
+        FROM rb5.label_results l
         WHERE t.batch_id = %s
           AND l.batch_id = %s
           AND l.operator_code = t.operator_code

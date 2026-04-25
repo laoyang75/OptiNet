@@ -42,7 +42,7 @@ def build_schema_sql() -> str:
 CREATE SCHEMA IF NOT EXISTS rebuild5;
 CREATE SCHEMA IF NOT EXISTS rebuild5_meta;
 
-CREATE TABLE IF NOT EXISTS rebuild5_meta.dataset_registry (
+CREATE TABLE IF NOT EXISTS rb5_meta.dataset_registry (
     dataset_key TEXT PRIMARY KEY,
     source_desc TEXT NOT NULL,
     imported_at TIMESTAMPTZ,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS rebuild5_meta.dataset_registry (
     last_updated_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS rebuild5_meta.source_registry (
+CREATE TABLE IF NOT EXISTS rb5_meta.source_registry (
     source_id TEXT PRIMARY KEY,
     dataset_key TEXT NOT NULL,
     source_name TEXT NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS rebuild5_meta.source_registry (
     imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS rebuild5_meta.run_log (
+CREATE TABLE IF NOT EXISTS rb5_meta.run_log (
     run_id TEXT PRIMARY KEY,
     run_type TEXT NOT NULL,
     dataset_key TEXT NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS rebuild5_meta.run_log (
     error TEXT
 );
 
-CREATE TABLE IF NOT EXISTS rebuild5_meta.step1_run_stats (
+CREATE TABLE IF NOT EXISTS rb5_meta.step1_run_stats (
     run_id TEXT PRIMARY KEY,
     dataset_key TEXT NOT NULL,
     status TEXT NOT NULL,
@@ -116,7 +116,7 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
         datasets side by side for UI switching.
 
     Merges GPS and LAC legacy tables, deduplicates by 记录数唯一标识,
-    and populates rebuild5.raw_gps (main input) and rebuild5.raw_lac (empty).
+    and populates rb5.raw_gps (main input) and rb5.raw_lac (empty).
     """
     cfg = _get_config()
     run_id = f"prepare_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -137,10 +137,10 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
         '''
 
         # Merge and deduplicate
-        execute_fn('DROP TABLE IF EXISTS rebuild5.raw_gps')
+        execute_fn('DROP TABLE IF EXISTS rb5.raw_gps')
         execute_fn(
             f"""
-            CREATE TABLE rebuild5.raw_gps AS
+            CREATE TABLE rb5.raw_gps AS
             SELECT DISTINCT ON ("记录数唯一标识") {common_cols}
             FROM (
                 SELECT {common_cols} FROM {gps_table}
@@ -150,21 +150,21 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
             ORDER BY "记录数唯一标识"
             """
         )
-        execute_fn('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rebuild5.raw_gps ("记录数唯一标识")')
-        execute_fn('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rebuild5.raw_gps (ts)')
-        execute_fn('DROP TABLE IF EXISTS rebuild5.raw_lac')
+        execute_fn('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rb5.raw_gps ("记录数唯一标识")')
+        execute_fn('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rb5.raw_gps (ts)')
+        execute_fn('DROP TABLE IF EXISTS rb5.raw_lac')
 
         counts = fetchone_fn(
-            "SELECT COUNT(*) AS raw_gps_count FROM rebuild5.raw_gps"
+            "SELECT COUNT(*) AS raw_gps_count FROM rb5.raw_gps"
         ) or {'raw_gps_count': 0}
         raw_record_count = int(counts['raw_gps_count'])
 
         # Registry
-        execute_fn('UPDATE rebuild5_meta.dataset_registry SET is_current = FALSE')
-        execute_fn('DELETE FROM rebuild5_meta.dataset_registry WHERE dataset_key = %s', (dataset_key,))
+        execute_fn('UPDATE rb5_meta.dataset_registry SET is_current = FALSE')
+        execute_fn('DELETE FROM rb5_meta.dataset_registry WHERE dataset_key = %s', (dataset_key,))
         execute_fn(
             """
-            INSERT INTO rebuild5_meta.dataset_registry (
+            INSERT INTO rb5_meta.dataset_registry (
                 dataset_key, source_desc, imported_at, record_count, lac_scope, time_range,
                 status, is_current, last_run_id, last_snapshot_version, last_run_status, last_updated_at
             ) VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -176,16 +176,16 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
             ),
         )
 
-        execute_fn('DELETE FROM rebuild5_meta.source_registry WHERE dataset_key = %s', (dataset_key,))
+        execute_fn('DELETE FROM rb5_meta.source_registry WHERE dataset_key = %s', (dataset_key,))
         execute_fn(
             """
-            INSERT INTO rebuild5_meta.source_registry (
+            INSERT INTO rb5_meta.source_registry (
                 source_id, dataset_key, source_name, source_table, source_type, row_count, status, imported_at
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
             """,
             (
                 f'{dataset_key}_merged', dataset_key,
-                f'{cfg["source_desc"]} - 合并去重', 'rebuild5.raw_gps',
+                f'{cfg["source_desc"]} - 合并去重', 'rb5.raw_gps',
                 'merged', int(counts['raw_gps_count']), 'active',
             ),
         )
@@ -196,10 +196,10 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
             'raw_record_count': raw_record_count,
         }
 
-        execute_fn('DELETE FROM rebuild5_meta.run_log WHERE run_id = %s', (run_id,))
+        execute_fn('DELETE FROM rb5_meta.run_log WHERE run_id = %s', (run_id,))
         execute_fn(
             """
-            INSERT INTO rebuild5_meta.run_log (
+            INSERT INTO rb5_meta.run_log (
                 run_id, run_type, dataset_key, snapshot_version, status,
                 started_at, finished_at, step_chain, result_summary, error
             ) VALUES (%s, %s, %s, %s, %s, NOW(), NOW(), %s, %s::jsonb, %s)
@@ -209,10 +209,10 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
         )
         return {'run_id': run_id, **summary}
     except Exception as exc:
-        execute_fn('DELETE FROM rebuild5_meta.run_log WHERE run_id = %s', (run_id,))
+        execute_fn('DELETE FROM rb5_meta.run_log WHERE run_id = %s', (run_id,))
         execute_fn(
             """
-            INSERT INTO rebuild5_meta.run_log (
+            INSERT INTO rb5_meta.run_log (
                 run_id, run_type, dataset_key, snapshot_version, status,
                 started_at, finished_at, step_chain, result_summary, error
             ) VALUES (%s, %s, %s, %s, %s, NOW(), NOW(), %s, %s::jsonb, %s)

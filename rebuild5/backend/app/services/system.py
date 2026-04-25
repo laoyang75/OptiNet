@@ -1,4 +1,4 @@
-"""System metadata services for rebuild5."""
+"""System metadata services for rb5."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -75,7 +75,7 @@ def list_datasets(fetchall_fn: FetchAll = fetchall) -> list[dict[str, Any]]:
                 last_snapshot_version,
                 last_run_status,
                 last_updated_at
-            FROM rebuild5_meta.dataset_registry
+            FROM rb5_meta.dataset_registry
             ORDER BY is_current DESC, imported_at DESC NULLS LAST, dataset_key
             """,
             None,
@@ -100,7 +100,7 @@ def list_run_logs(fetchall_fn: FetchAll = fetchall) -> list[dict[str, Any]]:
                 finished_at,
                 step_chain,
                 result_summary
-            FROM rebuild5_meta.run_log
+            FROM rb5_meta.run_log
             ORDER BY started_at DESC NULLS LAST, run_id DESC
             """,
             None,

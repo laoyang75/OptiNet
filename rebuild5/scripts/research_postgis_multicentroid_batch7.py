@@ -15,7 +15,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 
-DEFAULT_DSN = 'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2'
+DEFAULT_DSN = 'postgresql://postgres:123456@192.168.200.217:5488/yangca'
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_JSON = REPO_ROOT / 'rebuild5/docs/fix3/postgis_multicentroid_batch7_results.json'
 DEFAULT_MD = REPO_ROOT / 'rebuild5/docs/fix3/postgis_multicentroid_batch7_report.md'
@@ -216,7 +216,7 @@ def _strata_sql(args: argparse.Namespace) -> str:
             gps_anomaly_type,
             is_multi_centroid,
             is_dynamic
-        FROM rebuild5.trusted_cell_library
+        FROM rb5.trusted_cell_library
         WHERE batch_id = {args.batch_id}
           AND p90_radius_m IS NOT NULL
     ),
@@ -277,7 +277,7 @@ SELECT
     ST_SetSRID(ST_MakePoint(w.lon_final, w.lat_final), 4326) AS geom_4326,
     ST_Transform(ST_SetSRID(ST_MakePoint(w.lon_final, w.lat_final), 4326), 3857) AS geom_m
 FROM postgis_research_candidates c
-JOIN rebuild5.cell_sliding_window w
+JOIN rb5.cell_sliding_window w
   ON w.batch_id BETWEEN GREATEST(c.batch_id - 4, 0) AND c.batch_id
  AND w.operator_code = c.operator_code
  AND w.lac = c.lac

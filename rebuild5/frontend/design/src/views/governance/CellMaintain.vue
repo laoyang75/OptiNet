@@ -18,7 +18,7 @@ const driftKeys: DriftPattern[] = [
   'stable', 'large_coverage', 'dual_cluster', 'migration',
   'collision', 'dynamic', 'uncertain', 'oversize_single', 'insufficient',
 ]
-type FilterKind = 'all' | 'anomaly' | DriftPattern | 'multi_centroid'
+type FilterKind = 'all' | 'anomaly' | DriftPattern | 'multi_centroid' | 'has_ta' | 'ta_reliable'
 const selectedKind = ref<FilterKind>('all')
 const cells = ref<MaintenanceCellItem[]>([])
 const expandedIdx = ref<number | null>(null)
@@ -76,6 +76,8 @@ const filterKinds = [
   { key: 'oversize_single', label: '单簇超大' },
   { key: 'insufficient', label: '证据不足' },
   { key: 'anomaly', label: '全部异常' },
+  { key: 'has_ta', label: '有 TA' },
+  { key: 'ta_reliable', label: 'TA 可信 (n≥10)' },
 ]
 
 function densityLabel(days: number): { label: string; style: string } {
@@ -87,6 +89,81 @@ function densityLabel(days: number): { label: string; style: string } {
 function fmtRsrp(v: any): string {
   if (v == null) return '-'
   return Number(v).toFixed(2)
+}
+
+// ==================== TA 覆盖评估辅助 ====================
+// 源：trusted_cell_library.ta_verification（maintenance/publish_cell.py 判定）
+const TA_VERIFY_LABEL: Record<string, string> = {
+  ok: 'ok',
+  insufficient: '样本不足',
+  xlarge: '超大覆盖',
+  large: '大覆盖',
+  not_checked: '未校验',
+  not_applicable: '不适用',
+}
+const TA_VERIFY_HINT: Record<string, string> = {
+  ok: 'TA 估距与 lib p90 在合理区间',
+  insufficient: '有效 TA 样本不足，估距不可信',
+  xlarge: 'TA 估距 > 2.3 km，疑似或合法郊区大 cell',
+  large: 'TA 估距 1.5–2.3 km，边界情况',
+  not_checked: 'TDD 或频段未知，跳过校验',
+  not_applicable: 'multi_centroid / collision cell，不参与 TA 校验',
+}
+function taVerifyLabel(v: string | null | undefined): string {
+  if (!v) return '-'
+  return TA_VERIFY_LABEL[v] ?? v
+}
+function taVerifyHint(v: string | null | undefined): string {
+  if (!v) return ''
+  return TA_VERIFY_HINT[v] ?? ''
+}
+function freqBandLabel(v: string | null | undefined): string {
+  if (!v) return '-'
+  if (v === 'fdd') return 'FDD'
+  if (v === 'tdd') return 'TDD'
+  return v
+}
+/** lib p90 ÷ TA 估距 */
+function taRatio(item: MaintenanceCellItem): number | null {
+  const lib = item.p90_radius_m
+  const ta = item.ta_dist_p90_m
+  if (lib == null || ta == null || !ta) return null
+  if ((item.ta_n_obs ?? 0) < 10) return null  // 样本过少不做比率
+  return lib / ta
+}
+function ratioClass(r: number | null): string {
+  if (r == null) return ''
+  if (r >= 5) return 'ratio-danger'      // lib 远大于 TA → GPS 漂移污染嫌疑
+  if (r <= 0.3) return 'ratio-warn'      // lib 远小于 TA → stable 但 TA 说大，漏判嫌疑
+  return 'ratio-ok'
+}
+function ratioHint(r: number | null): string {
+  if (r == null) return ''
+  if (r >= 5) return 'lib >> TA，GPS 漂移污染嫌疑'
+  if (r <= 0.3) return 'lib << TA，stable 漏判嫌疑'
+  if (r >= 2) return 'lib 偏大，边界样本'
+  if (r <= 0.5) return 'lib 偏小'
+  return '吻合'
+}
+const P90_HARD_THRESHOLD_M = 1300  // antitoxin_params.yaml::multi_centroid_entry_p90_m
+function p90Over1300(item: MaintenanceCellItem): boolean {
+  return (item.p90_radius_m ?? 0) >= P90_HARD_THRESHOLD_M
+}
+function taOver1300(item: MaintenanceCellItem): boolean {
+  return (item.ta_dist_p90_m ?? 0) >= P90_HARD_THRESHOLD_M
+}
+function taOver1300Label(item: MaintenanceCellItem): string {
+  if (item.ta_dist_p90_m == null) return '无数据'
+  return taOver1300(item) ? '≥1300m' : '<1300m'
+}
+/** 返回不一致说明，若一致返回空字符串 */
+function thresholdConflict(item: MaintenanceCellItem): string {
+  if (item.ta_dist_p90_m == null || (item.ta_n_obs ?? 0) < 10) return ''
+  const libOver = p90Over1300(item)
+  const taOver = taOver1300(item)
+  if (libOver === taOver) return ''
+  if (libOver && !taOver) return 'lib 超限但 TA 说小，漂移嫌疑'
+  return 'lib 未超但 TA 说大，漏判嫌疑'
 }
 
 function fmtTime(v: string | null): string {
@@ -194,7 +271,7 @@ onMounted(async () => {
           <th>运营商</th><th>制式</th><th>LAC</th><th>BS</th><th>Cell ID</th>
           <th>质量</th><th>规模</th><th>分类</th>
           <th>独立观测</th><th title="方案 B（MAD + 设备-天去重）后计算的 p90 覆盖半径">质心覆盖(m)</th>
-          <th>RSRP</th><th>位置</th>
+          <th title="基于 timing_advance p90 估算的覆盖距离（m），下标 n=有效 TA 数">TA 估距(m)</th><th>位置</th>
         </tr>
       </thead>
       <tbody>
@@ -211,7 +288,15 @@ onMounted(async () => {
             <td><span v-if="item.drift_pattern" class="tag" :class="`drift-tag-${item.drift_pattern}`">{{ DRIFT_LABELS[item.drift_pattern as DriftPattern] ?? item.drift_pattern }}</span><span v-else class="text-muted">-</span></td>
             <td class="font-mono">{{ item.independent_obs ?? '-' }}</td>
             <td class="font-mono coverage-cell" :class="coverageClass(item.p90_radius_m)">{{ item.p90_radius_m ? Math.round(item.p90_radius_m) : '-' }}</td>
-            <td class="font-mono">{{ fmtRsrp((item as any).rsrp_avg) }}</td>
+            <td class="ta-cell">
+              <div class="ta-dist font-mono">
+                <span>{{ item.ta_dist_p90_m != null ? item.ta_dist_p90_m : '-' }}</span>
+                <span v-if="item.ta_verification" class="ta-badge" :class="`tv-${item.ta_verification}`">{{ taVerifyLabel(item.ta_verification) }}</span>
+              </div>
+              <div class="ta-nobs text-xs" :class="{ 'ta-nobs-low': (item.ta_n_obs ?? 0) > 0 && (item.ta_n_obs ?? 0) < 10 }">
+                n={{ item.ta_n_obs ?? 0 }}
+              </div>
+            </td>
             <td class="text-xs loc-td">{{ (item as any).district_name || (item as any).city_name || '-' }}</td>
           </tr>
           <!-- Expanded detail -->
@@ -260,10 +345,52 @@ onMounted(async () => {
                 <div class="detail-section">
                   <div class="section-title">信号与状态</div>
                   <div class="detail-grid">
-                    <div class="detail-item"><span class="dl">RSRP 均值</span><span class="dv">{{ fmtRsrp((item as any).rsrp_avg) }} dBm</span></div>
+                    <div class="detail-item"><span class="dl">频段</span><span class="dv">{{ freqBandLabel(item.freq_band) }}</span></div>
                     <div class="detail-item"><span class="dl">气压均值</span><span class="dv font-mono">{{ item.pressure_avg != null ? Number(item.pressure_avg).toFixed(1) + ' hPa' : '-' }}</span></div>
                     <div class="detail-item"><span class="dl">防毒化命中</span><span class="dv" :style="item.antitoxin_hit ? 'color:var(--c-danger);font-weight:600' : ''">{{ item.antitoxin_hit ? '是 (阻断)' : '否' }}</span></div>
                     <div class="detail-item"><span class="dl">最后观测</span><span class="dv">{{ fmtTime(item.last_observed_at) }}</span></div>
+                  </div>
+                </div>
+                <div class="detail-section ta-section">
+                  <div class="section-title">TA 覆盖评估 <span class="section-hint">（用 timing_advance 估算覆盖距离，辅助判定 1300m 硬门槛）</span></div>
+                  <div class="detail-grid">
+                    <div class="detail-item">
+                      <span class="dl">有效 TA 数</span>
+                      <span class="dv font-mono" :class="{ 'ta-weak': (item.ta_n_obs ?? 0) > 0 && (item.ta_n_obs ?? 0) < 10, 'ta-none': (item.ta_n_obs ?? 0) === 0 }">
+                        <strong>{{ item.ta_n_obs ?? 0 }}</strong>
+                        <span v-if="(item.ta_n_obs ?? 0) === 0" class="text-muted ml-sm text-xs">无</span>
+                        <span v-else-if="(item.ta_n_obs ?? 0) < 10" class="text-muted ml-sm text-xs">样本偏少</span>
+                      </span>
+                    </div>
+                    <div class="detail-item"><span class="dl">TA P50 / P90</span><span class="dv font-mono">{{ item.ta_p50 ?? '-' }} / {{ item.ta_p90 ?? '-' }}</span></div>
+                    <div class="detail-item"><span class="dl">TA 估算距离</span><span class="dv font-mono"><strong>{{ item.ta_dist_p90_m != null ? `${item.ta_dist_p90_m} m` : '-' }}</strong></span></div>
+                    <div class="detail-item"><span class="dl">频段</span><span class="dv">{{ freqBandLabel(item.freq_band) }}</span></div>
+                    <div class="detail-item">
+                      <span class="dl">TA 校验</span>
+                      <span class="dv">
+                        <span v-if="item.ta_verification" class="tag ta-badge" :class="`tv-${item.ta_verification}`">{{ taVerifyLabel(item.ta_verification) }}</span>
+                        <span v-else class="text-muted">-</span>
+                        <span v-if="item.ta_verification" class="text-muted ml-sm text-xs">{{ taVerifyHint(item.ta_verification) }}</span>
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="dl">lib p90 ÷ TA 估距</span>
+                      <span class="dv font-mono">
+                        <template v-if="taRatio(item) != null">
+                          <strong :class="ratioClass(taRatio(item))">{{ taRatio(item)!.toFixed(2) }}×</strong>
+                          <span class="text-muted ml-sm text-xs">{{ ratioHint(taRatio(item)) }}</span>
+                        </template>
+                        <span v-else class="text-muted">缺数据</span>
+                      </span>
+                    </div>
+                    <div class="detail-item" style="grid-column: span 2">
+                      <span class="dl">1300m 门槛对照</span>
+                      <span class="dv">
+                        <span class="tag" :class="p90Over1300(item) ? 'threshold-over' : 'threshold-under'">lib p90: {{ p90Over1300(item) ? '≥1300m（进候选池）' : '<1300m（stable）' }}</span>
+                        <span class="tag ml-sm" :class="taOver1300(item) ? 'threshold-over' : 'threshold-under'">TA 估距: {{ taOver1300Label(item) }}</span>
+                        <span v-if="thresholdConflict(item)" class="tag ml-sm threshold-conflict">不一致：{{ thresholdConflict(item) }}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div class="detail-section">
@@ -405,4 +532,38 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .drift-ratio-val { font-size: 11px; }
+
+/* ==================== TA 覆盖评估 ==================== */
+.ta-cell { padding: 4px 8px; }
+.ta-dist { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ta-nobs { color: var(--c-text-muted); margin-top: 2px; }
+.ta-nobs-low { color: #b45309; }
+
+/* ta_verification 色标 badge */
+.ta-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.tv-ok              { background: #dcfce7; color: #166534; }
+.tv-insufficient    { background: #f3f4f6; color: #6b7280; font-style: italic; }
+.tv-xlarge          { background: #fee2e2; color: #991b1b; }
+.tv-large           { background: #ffedd5; color: #9a3412; }
+.tv-not_checked     { background: #dbeafe; color: #1e40af; }
+.tv-not_applicable  { background: #f3f4f6; color: #6b7280; }
+
+/* 详情区 TA section 强调样式 */
+.ta-section { background: #fafbfc; }
+.section-hint { font-weight: 400; color: var(--c-text-muted); font-size: 12px; margin-left: 6px; }
+.ta-weak strong { color: #b45309; }
+.ta-none { color: var(--c-text-muted); }
+
+/* lib/TA 比值色彩 */
+.ratio-danger { color: var(--c-danger); }
+.ratio-warn   { color: #b45309; }
+.ratio-ok     { color: #166534; }
+
+/* 1300m 门槛 tag */
+.threshold-over    { background: #fee2e2; color: #991b1b; }
+.threshold-under   { background: #dcfce7; color: #166534; }
+.threshold-conflict{ background: #fef3c7; color: #92400e; font-weight: 600; }
 </style>

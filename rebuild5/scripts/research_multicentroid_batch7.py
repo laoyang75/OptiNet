@@ -30,7 +30,7 @@ import numpy as np
 import psycopg
 
 
-DEFAULT_DSN = 'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2'
+DEFAULT_DSN = 'postgresql://postgres:123456@192.168.200.217:5488/yangca'
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_JSON = REPO_ROOT / 'rebuild5/docs/fix2/multicentroid_batch7_top100_results.json'
 DEFAULT_MD = REPO_ROOT / 'rebuild5/docs/fix2/multicentroid_batch7_top100_report.md'
@@ -97,7 +97,7 @@ def _fetch_candidates(conn: psycopg.Connection, *, batch_id: int, limit: int, mi
                                  active_days DESC,
                                  cell_id
                     ) AS rn
-                FROM rebuild5.trusted_cell_library
+                FROM rb5.trusted_cell_library
                 WHERE batch_id = %s
                   AND COALESCE(p90_radius_m, 0) >= %s
             )
@@ -170,7 +170,7 @@ def _fetch_observations(
             lon_final,
             lat_final,
             gps_valid
-        FROM rebuild5.cell_sliding_window
+        FROM rb5.cell_sliding_window
         WHERE lon_final IS NOT NULL
           AND lat_final IS NOT NULL
           AND ({' OR '.join(where_parts)})

@@ -5,9 +5,9 @@ from typing import Any
 
 from ..core.database import execute, fetchone
 
-CLEAN_STAGE_TABLE = 'rebuild5.etl_clean_stage'
-FINAL_OUTPUT_TABLE = 'rebuild5.etl_cleaned'
-COMPAT_FILLED_VIEW = 'rebuild5.etl_filled'
+CLEAN_STAGE_TABLE = 'rb5.etl_clean_stage'
+FINAL_OUTPUT_TABLE = 'rb5.etl_cleaned'
+COMPAT_FILLED_VIEW = 'rb5.etl_filled'
 
 
 def step1_fill() -> dict[str, Any]:
@@ -20,7 +20,7 @@ def step1_fill() -> dict[str, Any]:
             COUNT(*) FILTER (WHERE rsrp IS NOT NULL) AS has_rsrp,
             COUNT(*) FILTER (WHERE operator_code IS NOT NULL) AS has_operator,
             COUNT(*) FILTER (WHERE lac IS NOT NULL) AS has_lac
-        FROM rebuild5.etl_clean_stage
+        FROM rb5.etl_clean_stage
         """
     )
     input_count = int(before['total']) if before else 0
@@ -28,70 +28,120 @@ def step1_fill() -> dict[str, Any]:
     execute(f'DROP VIEW IF EXISTS {COMPAT_FILLED_VIEW}')
     execute(f'DROP TABLE IF EXISTS {COMPAT_FILLED_VIEW}')
     execute(f'DROP TABLE IF EXISTS {FINAL_OUTPUT_TABLE}')
+    execute('DROP TABLE IF EXISTS rb5.etl_fill_stable_pool')
+    execute('DROP TABLE IF EXISTS rb5.etl_fill_ci_pool')
+    execute('DROP TABLE IF EXISTS rb5.etl_fill_ss1_pool')
+    execute(
+        """
+        CREATE TABLE rb5.etl_fill_stable_pool AS
+        SELECT
+            dev_id,
+            record_id,
+            cell_id,
+            (array_agg(operator_code ORDER BY CASE cell_origin WHEN 'cell_infos' THEN 1 ELSE 2 END)
+                FILTER (WHERE operator_code IS NOT NULL))[1] AS p_operator,
+            (array_agg(lac ORDER BY CASE cell_origin WHEN 'cell_infos' THEN 1 ELSE 2 END)
+                FILTER (WHERE lac IS NOT NULL))[1] AS p_lac
+        FROM rb5.etl_clean_stage
+        WHERE cell_id IS NOT NULL
+        GROUP BY dev_id, record_id, cell_id
+        """
+    )
+    execute(
+        """
+        CREATE TABLE rb5.etl_fill_ci_pool AS
+        SELECT
+            dev_id,
+            record_id,
+            cell_id,
+            (array_agg(lon_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
+                FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS ci_lon,
+            (array_agg(lat_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
+                FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS ci_lat,
+            (array_agg(rsrp ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE rsrp IS NOT NULL))[1] AS ci_rsrp,
+            (array_agg(rsrq ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE rsrq IS NOT NULL))[1] AS ci_rsrq,
+            (array_agg(sinr ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE sinr IS NOT NULL))[1] AS ci_sinr,
+            (array_agg(wifi_name) FILTER (WHERE wifi_name IS NOT NULL))[1] AS ci_wifi_name,
+            (array_agg(wifi_mac) FILTER (WHERE wifi_mac IS NOT NULL))[1] AS ci_wifi_mac
+        FROM rb5.etl_clean_stage
+        WHERE cell_id IS NOT NULL AND cell_origin = 'cell_infos'
+        GROUP BY dev_id, record_id, cell_id
+        """
+    )
+    execute(
+        """
+        CREATE TABLE rb5.etl_fill_ss1_pool AS
+        SELECT
+            dev_id,
+            record_id,
+            cell_id,
+            (array_agg(lon_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
+                FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_lon,
+            (array_agg(lat_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
+                FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_lat,
+            (array_agg(cell_ts_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
+                FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_gps_ts,
+            (array_agg(rsrp ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp,
+            (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp_ts,
+            (array_agg(rsrq ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq,
+            (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq_ts,
+            (array_agg(sinr ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr,
+            (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
+                FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr_ts,
+            (array_agg(wifi_name) FILTER (WHERE wifi_name IS NOT NULL))[1] AS s_wifi_name,
+            (array_agg(wifi_mac) FILTER (WHERE wifi_mac IS NOT NULL))[1] AS s_wifi_mac,
+            (array_agg(cell_ts_raw) FILTER (WHERE wifi_name IS NOT NULL))[1] AS s_wifi_ts
+        FROM rb5.etl_clean_stage
+        WHERE cell_id IS NOT NULL AND cell_origin = 'ss1'
+        GROUP BY dev_id, record_id, cell_id
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_etl_fill_stable_pool_lookup
+        ON rb5.etl_fill_stable_pool (dev_id, record_id, cell_id)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_etl_fill_ci_pool_lookup
+        ON rb5.etl_fill_ci_pool (dev_id, record_id, cell_id)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX idx_etl_fill_ss1_pool_lookup
+        ON rb5.etl_fill_ss1_pool (dev_id, record_id, cell_id)
+        """
+    )
+    execute('ANALYZE rb5.etl_fill_stable_pool')
+    execute('ANALYZE rb5.etl_fill_ci_pool')
+    execute('ANALYZE rb5.etl_fill_ss1_pool')
     execute(
         r"""
-        CREATE TABLE rebuild5.etl_cleaned AS
-        WITH
-        -- Pool A: stable fields — any source, no time limit, prefer cell_infos
-        stable_pool AS (
-            SELECT record_id, cell_id,
-                (array_agg(operator_code ORDER BY CASE cell_origin WHEN 'cell_infos' THEN 1 ELSE 2 END)
-                    FILTER (WHERE operator_code IS NOT NULL))[1] AS p_operator,
-                (array_agg(lac ORDER BY CASE cell_origin WHEN 'cell_infos' THEN 1 ELSE 2 END)
-                    FILTER (WHERE lac IS NOT NULL))[1] AS p_lac
-            FROM rebuild5.etl_clean_stage
-            WHERE cell_id IS NOT NULL
-            GROUP BY record_id, cell_id
-        ),
-        -- Pool B: full-fill fields from cell_infos — no time limit
-        ci_pool AS (
-            SELECT record_id, cell_id,
-                (array_agg(lon_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
-                    FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS ci_lon,
-                (array_agg(lat_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
-                    FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS ci_lat,
-                (array_agg(rsrp ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE rsrp IS NOT NULL))[1] AS ci_rsrp,
-                (array_agg(rsrq ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE rsrq IS NOT NULL))[1] AS ci_rsrq,
-                (array_agg(sinr ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE sinr IS NOT NULL))[1] AS ci_sinr,
-                (array_agg(wifi_name) FILTER (WHERE wifi_name IS NOT NULL))[1] AS ci_wifi_name,
-                (array_agg(wifi_mac) FILTER (WHERE wifi_mac IS NOT NULL))[1] AS ci_wifi_mac
-            FROM rebuild5.etl_clean_stage
-            WHERE cell_id IS NOT NULL AND cell_origin = 'cell_infos'
-            GROUP BY record_id, cell_id
-        ),
-        -- Pool C: time-sensitive fields from ss1 — strongest donor row wins, still gated by 60s
-        ss1_pool AS (
-            SELECT record_id, cell_id,
-                (array_agg(lon_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
-                    FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_lon,
-                (array_agg(lat_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
-                    FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_lat,
-                (array_agg(cell_ts_raw ORDER BY CASE WHEN lon_raw IS NOT NULL AND gps_valid THEN 0 ELSE 1 END)
-                    FILTER (WHERE lon_raw IS NOT NULL AND gps_valid))[1] AS s_gps_ts,
-                (array_agg(rsrp ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp,
-                (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE rsrp IS NOT NULL))[1] AS s_rsrp_ts,
-                (array_agg(rsrq ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq,
-                (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE rsrq IS NOT NULL))[1] AS s_rsrq_ts,
-                (array_agg(sinr ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr,
-                (array_agg(cell_ts_raw ORDER BY rsrp DESC NULLS LAST)
-                    FILTER (WHERE sinr IS NOT NULL))[1] AS s_sinr_ts,
-                (array_agg(wifi_name) FILTER (WHERE wifi_name IS NOT NULL))[1] AS s_wifi_name,
-                (array_agg(wifi_mac) FILTER (WHERE wifi_mac IS NOT NULL))[1] AS s_wifi_mac,
-                (array_agg(cell_ts_raw) FILTER (WHERE wifi_name IS NOT NULL))[1] AS s_wifi_ts
-            FROM rebuild5.etl_clean_stage
-            WHERE cell_id IS NOT NULL AND cell_origin = 'ss1'
-            GROUP BY record_id, cell_id
-        )
+        CREATE TABLE rb5.etl_cleaned AS
         SELECT
-            c.dataset_key, c.source_table, c.record_id, c.data_source, c.data_source_detail, c.cell_origin,
+            c.dataset_key, c.source_table,
+            md5(concat_ws(
+                '|',
+                c.dataset_key,
+                c.source_table,
+                COALESCE(c.dev_id, ''),
+                c.ctid::text,
+                c.record_id,
+                COALESCE(c.cell_id::text, ''),
+                COALESCE(c.cell_origin, ''),
+                COALESCE(c.tech_norm, '')
+            )) AS source_row_uid,
+            c.record_id, c.data_source, c.data_source_detail, c.cell_origin,
             c.tech_raw, c.tech_norm, c.operator_code, c.lac, c.cell_id,
             c.pci, c.freq_channel, c.bandwidth,
             c.rsrp, c.rsrq, c.sinr, c.rssi, c.dbm, c.asu_level, c.sig_level, c.sig_ss,
@@ -177,14 +227,26 @@ def step1_fill() -> dict[str, Any]:
                 CASE WHEN c.cell_ts_raw ~ '^\d{10}$' AND s.s_wifi_ts ~ '^\d{10}$'
                           AND ABS(c.cell_ts_raw::bigint - s.s_wifi_ts::bigint) <= 60 THEN s.s_wifi_mac END
             ) AS wifi_mac_filled
-        FROM rebuild5.etl_clean_stage c
-        LEFT JOIN stable_pool sp ON sp.record_id = c.record_id AND sp.cell_id = c.cell_id
-        LEFT JOIN ci_pool ci ON ci.record_id = c.record_id AND ci.cell_id = c.cell_id
-        LEFT JOIN ss1_pool s ON s.record_id = c.record_id AND s.cell_id = c.cell_id
+        FROM rb5.etl_clean_stage c
+        LEFT JOIN rb5.etl_fill_stable_pool sp
+          ON sp.dev_id = c.dev_id
+         AND sp.record_id = c.record_id
+         AND sp.cell_id = c.cell_id
+        LEFT JOIN rb5.etl_fill_ci_pool ci
+          ON ci.dev_id = c.dev_id
+         AND ci.record_id = c.record_id
+         AND ci.cell_id = c.cell_id
+        LEFT JOIN rb5.etl_fill_ss1_pool s
+          ON s.dev_id = c.dev_id
+         AND s.record_id = c.record_id
+         AND s.cell_id = c.cell_id
         """
     )
     execute(f'ALTER TABLE {FINAL_OUTPUT_TABLE} SET (autovacuum_enabled = false)')
     execute(f'CREATE VIEW {COMPAT_FILLED_VIEW} AS SELECT * FROM {FINAL_OUTPUT_TABLE}')
+    execute('DROP TABLE IF EXISTS rb5.etl_fill_stable_pool')
+    execute('DROP TABLE IF EXISTS rb5.etl_fill_ci_pool')
+    execute('DROP TABLE IF EXISTS rb5.etl_fill_ss1_pool')
 
     after = fetchone(
         """
@@ -199,7 +261,7 @@ def step1_fill() -> dict[str, Any]:
             COUNT(*) FILTER (WHERE rsrp_fill_source = 'none') AS rsrp_none,
             COUNT(*) FILTER (WHERE operator_fill_source = 'same_cell') AS operator_filled_cnt,
             COUNT(*) FILTER (WHERE lac_fill_source = 'same_cell') AS lac_filled_cnt
-        FROM rebuild5.etl_cleaned
+        FROM rb5.etl_cleaned
         """
     )
     total = int(after['total']) if after else 0

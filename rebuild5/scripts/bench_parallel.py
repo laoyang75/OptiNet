@@ -27,7 +27,7 @@ from typing import Callable
 import psycopg
 
 # DB 连接参数
-DSN = "postgresql://postgres:123456@192.168.200.217:5433/ip_loc2"
+DSN = "postgresql://postgres:123456@192.168.200.217:5488/yangca"
 
 BENCH = "rebuild5_bench"
 PROD  = "rebuild5"
@@ -279,10 +279,10 @@ FROM {bench}.path_a_records p
 
 
 def _get_enriched_schema() -> str:
-    """从 rebuild5.enriched_records 获取列定义，建空表"""
+    """从 rb5.enriched_records 获取列定义，建空表"""
     return f"""
     CREATE TABLE IF NOT EXISTS {BENCH}.enriched_records_target
-        (LIKE rebuild5.enriched_records INCLUDING DEFAULTS)
+        (LIKE rb5.enriched_records INCLUDING DEFAULTS)
     """
 
 
@@ -335,7 +335,7 @@ def bench_op4a_enriched() -> dict:
     reset()
     execute(f"""
         CREATE UNLOGGED TABLE {BENCH}.enriched_records_target
-            (LIKE rebuild5.enriched_records INCLUDING DEFAULTS)
+            (LIKE rb5.enriched_records INCLUDING DEFAULTS)
     """)
     t_unlog = benchmark("策略 C: UNLOGGED + 单线程", lambda: execute(
         ENRICHED_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="")
@@ -362,7 +362,7 @@ def bench_op4a_enriched() -> dict:
     reset()
     execute(f"""
         CREATE UNLOGGED TABLE {BENCH}.enriched_records_target
-            (LIKE rebuild5.enriched_records INCLUDING DEFAULTS)
+            (LIKE rb5.enriched_records INCLUDING DEFAULTS)
     """)
     t_mp8_ul = benchmark("策略 B+C: UNLOGGED+8进程", lambda: parallel_execute_mp(
         sql_template=ENRICHED_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="{shard_filter}"),
@@ -434,7 +434,7 @@ def bench_op5a_sliding() -> dict:
     reset()
     execute(f"""
         CREATE TABLE {BENCH}.cell_sliding_window_target
-            (LIKE rebuild5.cell_sliding_window INCLUDING DEFAULTS)
+            (LIKE rb5.cell_sliding_window INCLUDING DEFAULTS)
     """)
     t_base = benchmark("基线（单线程 INSERT）", lambda: execute(
         SLIDING_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="")
@@ -458,7 +458,7 @@ def bench_op5a_sliding() -> dict:
     reset()
     execute(f"""
         CREATE UNLOGGED TABLE {BENCH}.cell_sliding_window_target
-            (LIKE rebuild5.cell_sliding_window INCLUDING DEFAULTS)
+            (LIKE rb5.cell_sliding_window INCLUDING DEFAULTS)
     """)
     t_unlog = benchmark("策略 C: UNLOGGED + 单线程", lambda: execute(
         SLIDING_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="")
@@ -472,7 +472,7 @@ def bench_op5a_sliding() -> dict:
     reset()
     execute(f"""
         CREATE TABLE {BENCH}.cell_sliding_window_target
-            (LIKE rebuild5.cell_sliding_window INCLUDING DEFAULTS)
+            (LIKE rb5.cell_sliding_window INCLUDING DEFAULTS)
     """)
     t_mp8 = benchmark("策略 B: 8进程分片", lambda: parallel_execute_mp(
         sql_template=SLIDING_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="{shard_filter}"),
@@ -490,7 +490,7 @@ def bench_op5a_sliding() -> dict:
     reset()
     execute(f"""
         CREATE UNLOGGED TABLE {BENCH}.cell_sliding_window_target
-            (LIKE rebuild5.cell_sliding_window INCLUDING DEFAULTS)
+            (LIKE rb5.cell_sliding_window INCLUDING DEFAULTS)
     """)
     t_mp8_ul = benchmark("策略 B+C: UNLOGGED+8进程", lambda: parallel_execute_mp(
         sql_template=SLIDING_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="{shard_filter}"),
@@ -565,7 +565,7 @@ def bench_op5b_daily_centroids() -> dict:
     reset()
     execute(f"""
         CREATE TABLE {BENCH}.cell_daily_centroid_target
-            (LIKE rebuild5.cell_daily_centroid INCLUDING DEFAULTS)
+            (LIKE rb5.cell_daily_centroid INCLUDING DEFAULTS)
     """)
     t_base = benchmark("基线（单线程 INSERT）", lambda: execute(
         DAILY_CENTROID_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="")
@@ -590,7 +590,7 @@ def bench_op5b_daily_centroids() -> dict:
     reset()
     execute(f"""
         CREATE TABLE {BENCH}.cell_daily_centroid_target
-            (LIKE rebuild5.cell_daily_centroid INCLUDING DEFAULTS)
+            (LIKE rb5.cell_daily_centroid INCLUDING DEFAULTS)
     """)
     t_mp8 = benchmark("策略 B: 8进程分片", lambda: parallel_execute_mp(
         sql_template=DAILY_CENTROID_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="{shard_filter}"),
@@ -608,7 +608,7 @@ def bench_op5b_daily_centroids() -> dict:
     reset()
     execute(f"""
         CREATE UNLOGGED TABLE {BENCH}.cell_daily_centroid_target
-            (LIKE rebuild5.cell_daily_centroid INCLUDING DEFAULTS)
+            (LIKE rb5.cell_daily_centroid INCLUDING DEFAULTS)
     """)
     t_mp8_ul = benchmark("策略 B+C: UNLOGGED+8进程", lambda: parallel_execute_mp(
         sql_template=DAILY_CENTROID_INSERT_SQL.format(schema=BENCH, bench=BENCH, batch_id=batch_id, shard_filter="{shard_filter}"),
@@ -936,7 +936,7 @@ def main() -> None:
     def _enriched_create():
         execute(f"""
             CREATE UNLOGGED TABLE {BENCH}.enriched_records_target
-                (LIKE rebuild5.enriched_records INCLUDING DEFAULTS)
+                (LIKE rb5.enriched_records INCLUDING DEFAULTS)
         """)
 
     ref_cnt_4a = int(fetchone(f"SELECT COUNT(*) AS cnt FROM {BENCH}.enriched_records")['cnt'])

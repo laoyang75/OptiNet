@@ -14,7 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 from rebuild5.backend.app.etl.pipeline import run_step1_pipeline
@@ -36,7 +36,7 @@ def main() -> None:
 
     _log({'event': 'resume_batch6_step4_start'})
     step25_loop.run_daily_batches(
-        input_relation='rebuild5.etl_cleaned',
+        input_relation='rb5.etl_cleaned',
         start_day=day6,
         end_day=day6,
         plan_only=False,
@@ -59,7 +59,7 @@ def main() -> None:
     })
 
     step25_loop.run_daily_batches(
-        input_relation='rebuild5.etl_cleaned',
+        input_relation='rb5.etl_cleaned',
         start_day=day7,
         end_day=day7,
         plan_only=False,

@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from psycopg import ClientCursor
+
 from ..core.database import execute, get_conn
 from ..etl.source_prep import DATASET_KEY
 from ..profile.logic import (
@@ -96,28 +98,28 @@ def publish_cell_centroid_detail(
     recalc_p90_delta_m = centroid_cfg['recalc_min_p90_delta_m']
     recalc_window_obs_delta = centroid_cfg['recalc_min_window_obs_delta']
     stage_tables = (
-        'rebuild5._cell_centroid_candidates',
-        'rebuild5._cell_centroid_points',
-        'rebuild5._cell_centroid_grid_points',
-        'rebuild5._cell_centroid_clustered_grid',
-        'rebuild5._cell_centroid_labelled_points',
-        'rebuild5._cell_centroid_cell_totals',
-        'rebuild5._cell_centroid_cluster_base',
-        'rebuild5._cell_centroid_cluster_centers',
-        'rebuild5._cell_centroid_cluster_radius',
-        'rebuild5._cell_centroid_cluster_stats',
-        'rebuild5._cell_centroid_filtered_clusters',
-        'rebuild5._cell_centroid_ranked_clusters',
-        'rebuild5._cell_centroid_valid_clusters',
-        'rebuild5._cell_centroid_daily_presence',
-        'rebuild5._cell_centroid_classification',
+        'rb5._cell_centroid_candidates',
+        'rb5._cell_centroid_points',
+        'rb5._cell_centroid_grid_points',
+        'rb5._cell_centroid_clustered_grid',
+        'rb5._cell_centroid_labelled_points',
+        'rb5._cell_centroid_cell_totals',
+        'rb5._cell_centroid_cluster_base',
+        'rb5._cell_centroid_cluster_centers',
+        'rb5._cell_centroid_cluster_radius',
+        'rb5._cell_centroid_cluster_stats',
+        'rb5._cell_centroid_filtered_clusters',
+        'rb5._cell_centroid_ranked_clusters',
+        'rb5._cell_centroid_valid_clusters',
+        'rb5._cell_centroid_daily_presence',
+        'rb5._cell_centroid_classification',
     )
     for table_name in stage_tables:
         execute(f'DROP TABLE IF EXISTS {table_name}')
-    execute('DELETE FROM rebuild5.cell_centroid_detail WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.cell_centroid_detail WHERE batch_id = %s', (batch_id,))
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_candidates AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_candidates AS
         WITH prev AS (
             SELECT
                 operator_code,
@@ -132,10 +134,10 @@ def publish_cell_centroid_detail(
                 is_dynamic,
                 is_multi_centroid,
                 centroid_pattern
-            FROM rebuild5.trusted_cell_library
+            FROM rb5.trusted_cell_library
             WHERE batch_id = (
                 SELECT COALESCE(MAX(batch_id), 0)
-                FROM rebuild5.trusted_cell_library
+                FROM rb5.trusted_cell_library
                 WHERE batch_id < {batch_id}
             )
         )
@@ -146,8 +148,8 @@ def publish_cell_centroid_detail(
             t.bs_id,
             t.cell_id,
             t.tech_norm
-        FROM rebuild5.trusted_cell_library t
-        LEFT JOIN rebuild5.cell_metrics_window m
+        FROM rb5.trusted_cell_library t
+        LEFT JOIN rb5.cell_metrics_window m
           ON m.batch_id = t.batch_id
          AND m.operator_code = t.operator_code
          AND m.lac IS NOT DISTINCT FROM t.lac
@@ -201,13 +203,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_candidates_key
-        ON rebuild5._cell_centroid_candidates (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._cell_centroid_candidates (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_candidates')
+    execute('ANALYZE rb5._cell_centroid_candidates')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_points AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_points AS
         SELECT
             c.operator_code,
             c.lac,
@@ -222,8 +224,8 @@ def publish_cell_centroid_detail(
                 ST_Transform(ST_SetSRID(ST_MakePoint(w.lon_final, w.lat_final), 4326), 3857),
                 {snap_grid_m}
             ) AS snap_geom_3857
-        FROM rebuild5._cell_centroid_candidates c
-        JOIN rebuild5.cell_sliding_window w
+        FROM rb5._cell_centroid_candidates c
+        JOIN rb5.cell_sliding_window w
           ON w.batch_id BETWEEN {window_batch_start} AND {batch_id}
          AND w.operator_code = c.operator_code
          AND w.lac IS NOT DISTINCT FROM c.lac
@@ -238,13 +240,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_points_key
-        ON rebuild5._cell_centroid_points (operator_code, lac, bs_id, cell_id, tech_norm, obs_date)
+        ON rb5._cell_centroid_points (operator_code, lac, bs_id, cell_id, tech_norm, obs_date)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_points')
+    execute('ANALYZE rb5._cell_centroid_points')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_grid_points AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_grid_points AS
         SELECT
             operator_code,
             lac,
@@ -253,21 +255,21 @@ def publish_cell_centroid_detail(
             tech_norm,
             snap_geom_3857,
             COUNT(*) AS snap_obs_count
-        FROM rebuild5._cell_centroid_points
+        FROM rb5._cell_centroid_points
         GROUP BY operator_code, lac, bs_id, cell_id, tech_norm, snap_geom_3857
         """
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_grid_key
-        ON rebuild5._cell_centroid_grid_points (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._cell_centroid_grid_points (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_grid_points')
+    execute('ANALYZE rb5._cell_centroid_grid_points')
     _execute_with_session_settings(
         session_setup_sqls=['SET enable_nestloop = off'],
         sql=f"""
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_clustered_grid AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_clustered_grid AS
         SELECT
             operator_code,
             lac,
@@ -285,19 +287,19 @@ def publish_cell_centroid_detail(
                 ),
                 -1
             ) AS cluster_id
-        FROM rebuild5._cell_centroid_grid_points
+        FROM rb5._cell_centroid_grid_points
         """,
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_clustered_grid_key
-        ON rebuild5._cell_centroid_clustered_grid (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_clustered_grid (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_clustered_grid')
+    execute('ANALYZE rb5._cell_centroid_clustered_grid')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_labelled_points AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_labelled_points AS
         SELECT
             p.operator_code,
             p.lac,
@@ -309,8 +311,8 @@ def publish_cell_centroid_detail(
             p.obs_date,
             p.geom_3857,
             g.cluster_id
-        FROM rebuild5._cell_centroid_points p
-        JOIN rebuild5._cell_centroid_clustered_grid g
+        FROM rb5._cell_centroid_points p
+        JOIN rb5._cell_centroid_clustered_grid g
           ON g.operator_code = p.operator_code
          AND g.lac IS NOT DISTINCT FROM p.lac
          AND g.bs_id IS NOT DISTINCT FROM p.bs_id
@@ -322,13 +324,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_labelled_key
-        ON rebuild5._cell_centroid_labelled_points (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id, obs_date)
+        ON rb5._cell_centroid_labelled_points (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id, obs_date)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_labelled_points')
+    execute('ANALYZE rb5._cell_centroid_labelled_points')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_cell_totals AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_cell_totals AS
         SELECT
             operator_code,
             lac,
@@ -337,20 +339,20 @@ def publish_cell_centroid_detail(
             tech_norm,
             COUNT(*) AS total_obs,
             COUNT(DISTINCT dev_id) FILTER (WHERE dev_id IS NOT NULL) AS total_dev_count
-        FROM rebuild5._cell_centroid_points
+        FROM rb5._cell_centroid_points
         GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
         """
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_cell_totals_key
-        ON rebuild5._cell_centroid_cell_totals (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._cell_centroid_cell_totals (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_cell_totals')
+    execute('ANALYZE rb5._cell_centroid_cell_totals')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_cluster_base AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_cluster_base AS
         SELECT
             operator_code,
             lac,
@@ -363,7 +365,7 @@ def publish_cell_centroid_detail(
             COUNT(DISTINCT obs_date) AS active_days,
             AVG(ST_X(geom_3857)) AS center_x,
             AVG(ST_Y(geom_3857)) AS center_y
-        FROM rebuild5._cell_centroid_labelled_points
+        FROM rb5._cell_centroid_labelled_points
         WHERE cluster_id >= 0
         GROUP BY operator_code, lac, bs_id, cell_id, tech_norm, cluster_id
         """
@@ -371,13 +373,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_cluster_base_key
-        ON rebuild5._cell_centroid_cluster_base (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_cluster_base (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_cluster_base')
+    execute('ANALYZE rb5._cell_centroid_cluster_base')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_cluster_centers AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_cluster_centers AS
         SELECT
             operator_code,
             lac,
@@ -391,19 +393,19 @@ def publish_cell_centroid_detail(
             obs_count,
             dev_count,
             active_days
-        FROM rebuild5._cell_centroid_cluster_base
+        FROM rb5._cell_centroid_cluster_base
         """
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_cluster_centers_key
-        ON rebuild5._cell_centroid_cluster_centers (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_cluster_centers (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_cluster_centers')
+    execute('ANALYZE rb5._cell_centroid_cluster_centers')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_cluster_radius AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_cluster_radius AS
         SELECT
             p.operator_code,
             p.lac,
@@ -417,8 +419,8 @@ def publish_cell_centroid_detail(
                   + POWER(ST_Y(p.geom_3857) - c.center_y, 2)
                 )
             ) AS radius_m
-        FROM rebuild5._cell_centroid_labelled_points p
-        JOIN rebuild5._cell_centroid_cluster_centers c
+        FROM rb5._cell_centroid_labelled_points p
+        JOIN rb5._cell_centroid_cluster_centers c
           ON c.operator_code = p.operator_code
          AND c.lac IS NOT DISTINCT FROM p.lac
          AND c.bs_id IS NOT DISTINCT FROM p.bs_id
@@ -432,13 +434,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_cluster_radius_key
-        ON rebuild5._cell_centroid_cluster_radius (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_cluster_radius (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_cluster_radius')
+    execute('ANALYZE rb5._cell_centroid_cluster_radius')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_cluster_stats AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_cluster_stats AS
         SELECT
             cc.operator_code,
             cc.lac,
@@ -456,14 +458,14 @@ def publish_cell_centroid_detail(
             t.total_obs,
             t.total_dev_count,
             cc.obs_count::double precision / NULLIF(t.total_obs, 0) AS share_ratio
-        FROM rebuild5._cell_centroid_cluster_centers cc
-        JOIN rebuild5._cell_centroid_cell_totals t
+        FROM rb5._cell_centroid_cluster_centers cc
+        JOIN rb5._cell_centroid_cell_totals t
           ON t.operator_code = cc.operator_code
          AND t.lac IS NOT DISTINCT FROM cc.lac
          AND t.bs_id IS NOT DISTINCT FROM cc.bs_id
          AND t.cell_id = cc.cell_id
          AND t.tech_norm IS NOT DISTINCT FROM cc.tech_norm
-        LEFT JOIN rebuild5._cell_centroid_cluster_radius r
+        LEFT JOIN rb5._cell_centroid_cluster_radius r
           ON r.operator_code = cc.operator_code
          AND r.lac IS NOT DISTINCT FROM cc.lac
          AND r.bs_id IS NOT DISTINCT FROM cc.bs_id
@@ -475,13 +477,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_cluster_stats_key
-        ON rebuild5._cell_centroid_cluster_stats (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_cluster_stats (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_cluster_stats')
+    execute('ANALYZE rb5._cell_centroid_cluster_stats')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_filtered_clusters AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_filtered_clusters AS
         SELECT
             *,
             (
@@ -493,19 +495,19 @@ def publish_cell_centroid_detail(
                 END
                 AND active_days >= {min_cluster_days}
             ) AS is_valid
-        FROM rebuild5._cell_centroid_cluster_stats
+        FROM rb5._cell_centroid_cluster_stats
         """
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_filtered_clusters_key
-        ON rebuild5._cell_centroid_filtered_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_filtered_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_filtered_clusters')
+    execute('ANALYZE rb5._cell_centroid_filtered_clusters')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_ranked_clusters AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_ranked_clusters AS
         SELECT
             *,
             COUNT(*) FILTER (WHERE is_valid) OVER (
@@ -515,34 +517,34 @@ def publish_cell_centroid_detail(
                 PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm
                 ORDER BY obs_count DESC, dev_count DESC, cluster_id
             ) AS cluster_rank
-        FROM rebuild5._cell_centroid_filtered_clusters
+        FROM rb5._cell_centroid_filtered_clusters
         WHERE is_valid
         """
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_ranked_clusters_key
-        ON rebuild5._cell_centroid_ranked_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_ranked_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_ranked_clusters')
+    execute('ANALYZE rb5._cell_centroid_ranked_clusters')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_valid_clusters AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_valid_clusters AS
         SELECT *
-        FROM rebuild5._cell_centroid_ranked_clusters
+        FROM rb5._cell_centroid_ranked_clusters
         """
     )
     execute(
         """
         CREATE INDEX idx_cell_centroid_valid_clusters_key
-        ON rebuild5._cell_centroid_valid_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
+        ON rb5._cell_centroid_valid_clusters (operator_code, lac, bs_id, cell_id, tech_norm, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_valid_clusters')
+    execute('ANALYZE rb5._cell_centroid_valid_clusters')
     execute(
         """
-        INSERT INTO rebuild5.cell_centroid_detail (
+        INSERT INTO rb5.cell_centroid_detail (
             batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, tech_norm, cluster_id,
             is_primary, center_lon, center_lat, obs_count, dev_count, radius_m, share_ratio
         )
@@ -562,14 +564,14 @@ def publish_cell_centroid_detail(
             dev_count,
             radius_m,
             share_ratio
-        FROM rebuild5._cell_centroid_valid_clusters
+        FROM rb5._cell_centroid_valid_clusters
         WHERE valid_cluster_count > 1
         """,
         (batch_id, snapshot_version),
     )
     execute(
         f"""
-        INSERT INTO rebuild5.cell_centroid_detail (
+        INSERT INTO rb5.cell_centroid_detail (
             batch_id, snapshot_version, operator_code, lac, bs_id, cell_id, tech_norm, cluster_id,
             is_primary, center_lon, center_lat, obs_count, dev_count, radius_m, share_ratio
         )
@@ -589,15 +591,15 @@ def publish_cell_centroid_detail(
             d.dev_count,
             d.radius_m,
             d.share_ratio
-        FROM rebuild5.cell_centroid_detail d
-        JOIN rebuild5.trusted_cell_library t
+        FROM rb5.cell_centroid_detail d
+        JOIN rb5.trusted_cell_library t
           ON t.batch_id = {batch_id}
          AND t.operator_code = d.operator_code
          AND t.lac IS NOT DISTINCT FROM d.lac
          AND t.bs_id IS NOT DISTINCT FROM d.bs_id
          AND t.cell_id = d.cell_id
          AND t.tech_norm IS NOT DISTINCT FROM d.tech_norm
-        LEFT JOIN rebuild5._cell_centroid_candidates c
+        LEFT JOIN rb5._cell_centroid_candidates c
           ON c.operator_code = d.operator_code
          AND c.lac IS NOT DISTINCT FROM d.lac
          AND c.bs_id IS NOT DISTINCT FROM d.bs_id
@@ -605,13 +607,13 @@ def publish_cell_centroid_detail(
          AND c.tech_norm IS NOT DISTINCT FROM d.tech_norm
         WHERE d.batch_id = (
             SELECT COALESCE(MAX(batch_id), 0)
-            FROM rebuild5.cell_centroid_detail
+            FROM rb5.cell_centroid_detail
             WHERE batch_id < {batch_id}
         )
           AND c.cell_id IS NULL
           AND NOT EXISTS (
               SELECT 1
-              FROM rebuild5.cell_centroid_detail curr
+              FROM rb5.cell_centroid_detail curr
               WHERE curr.batch_id = {batch_id}
                 AND curr.operator_code = d.operator_code
                 AND curr.lac IS NOT DISTINCT FROM d.lac
@@ -623,13 +625,13 @@ def publish_cell_centroid_detail(
         """,
         (snapshot_version,),
     )
-    execute('ANALYZE rebuild5.cell_centroid_detail')
+    execute('ANALYZE rb5.cell_centroid_detail')
     execute(
         """
-        UPDATE rebuild5.trusted_cell_library AS t
+        UPDATE rb5.trusted_cell_library AS t
         SET center_lon = d.center_lon,
             center_lat = d.center_lat
-        FROM rebuild5._cell_centroid_valid_clusters d
+        FROM rb5._cell_centroid_valid_clusters d
         WHERE t.batch_id = %s
           AND d.cluster_rank = 1
           AND d.operator_code = t.operator_code
@@ -642,7 +644,7 @@ def publish_cell_centroid_detail(
     )
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_daily_presence AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_daily_presence AS
         SELECT
             p.operator_code,
             p.lac,
@@ -652,8 +654,8 @@ def publish_cell_centroid_detail(
             p.obs_date,
             p.cluster_id,
             COUNT(*) AS obs_count
-        FROM rebuild5._cell_centroid_labelled_points p
-        JOIN rebuild5._cell_centroid_valid_clusters v
+        FROM rb5._cell_centroid_labelled_points p
+        JOIN rb5._cell_centroid_valid_clusters v
           ON v.operator_code = p.operator_code
          AND v.lac IS NOT DISTINCT FROM p.lac
          AND v.bs_id IS NOT DISTINCT FROM p.bs_id
@@ -666,13 +668,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_daily_presence_key
-        ON rebuild5._cell_centroid_daily_presence (operator_code, lac, bs_id, cell_id, tech_norm, obs_date, cluster_id)
+        ON rb5._cell_centroid_daily_presence (operator_code, lac, bs_id, cell_id, tech_norm, obs_date, cluster_id)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_daily_presence')
+    execute('ANALYZE rb5._cell_centroid_daily_presence')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._cell_centroid_classification AS
+        CREATE UNLOGGED TABLE rb5._cell_centroid_classification AS
         WITH cluster_counts AS (
             SELECT
                 operator_code,
@@ -681,7 +683,7 @@ def publish_cell_centroid_detail(
                 cell_id,
                 tech_norm,
                 COUNT(*) AS stable_cluster_count
-            FROM rebuild5._cell_centroid_valid_clusters
+            FROM rb5._cell_centroid_valid_clusters
             GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
         ),
         cluster_share_summary AS (
@@ -693,7 +695,7 @@ def publish_cell_centroid_detail(
                 tech_norm,
                 MAX(share_ratio) FILTER (WHERE cluster_rank = 1) AS primary_share_ratio,
                 MAX(share_ratio) FILTER (WHERE cluster_rank > 1) AS secondary_share_ratio
-            FROM rebuild5._cell_centroid_valid_clusters
+            FROM rb5._cell_centroid_valid_clusters
             GROUP BY operator_code, lac, bs_id, cell_id, tech_norm
         ),
         pair_distance AS (
@@ -704,8 +706,8 @@ def publish_cell_centroid_detail(
                 a.cell_id,
                 a.tech_norm,
                 MAX(ST_Distance(a.center_3857, b.center_3857)) AS max_pair_distance_m
-            FROM rebuild5._cell_centroid_valid_clusters a
-            JOIN rebuild5._cell_centroid_valid_clusters b
+            FROM rb5._cell_centroid_valid_clusters a
+            JOIN rb5._cell_centroid_valid_clusters b
               ON b.operator_code = a.operator_code
              AND b.lac IS NOT DISTINCT FROM a.lac
              AND b.bs_id IS NOT DISTINCT FROM a.bs_id
@@ -732,8 +734,8 @@ def publish_cell_centroid_detail(
                     a.cluster_id AS cluster_a,
                     b.cluster_id AS cluster_b,
                     COUNT(*) AS overlap_days
-                FROM rebuild5._cell_centroid_daily_presence a
-                JOIN rebuild5._cell_centroid_daily_presence b
+                FROM rb5._cell_centroid_daily_presence a
+                JOIN rb5._cell_centroid_daily_presence b
                   ON b.operator_code = a.operator_code
                  AND b.lac IS NOT DISTINCT FROM a.lac
                  AND b.bs_id IS NOT DISTINCT FROM a.bs_id
@@ -758,7 +760,7 @@ def publish_cell_centroid_detail(
                     PARTITION BY operator_code, lac, bs_id, cell_id, tech_norm, obs_date
                     ORDER BY obs_count DESC, cluster_id
                 ) AS day_rank
-            FROM rebuild5._cell_centroid_daily_presence
+            FROM rb5._cell_centroid_daily_presence
         ),
         switch_summary AS (
             SELECT
@@ -820,7 +822,7 @@ def publish_cell_centroid_detail(
                     THEN 'dual_cluster'
                 ELSE NULL
             END AS centroid_pattern
-        FROM rebuild5._cell_centroid_candidates c
+        FROM rb5._cell_centroid_candidates c
         LEFT JOIN cluster_counts cc
           ON cc.operator_code = c.operator_code
          AND cc.lac IS NOT DISTINCT FROM c.lac
@@ -856,13 +858,13 @@ def publish_cell_centroid_detail(
     execute(
         """
         CREATE INDEX idx_cell_centroid_classification_key
-        ON rebuild5._cell_centroid_classification (operator_code, lac, bs_id, cell_id, tech_norm)
+        ON rb5._cell_centroid_classification (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._cell_centroid_classification')
+    execute('ANALYZE rb5._cell_centroid_classification')
     execute(
         """
-        UPDATE rebuild5.trusted_cell_library AS t
+        UPDATE rb5.trusted_cell_library AS t
         SET is_multi_centroid = COALESCE(c.centroid_pattern IS NOT NULL, FALSE),
             is_dynamic = COALESCE(c.centroid_pattern = 'moving', FALSE),
             centroid_pattern = c.centroid_pattern,
@@ -870,7 +872,7 @@ def publish_cell_centroid_detail(
                 WHEN c.centroid_pattern = 'migration' THEN 'migration'
                 ELSE t.drift_pattern
             END
-        FROM rebuild5._cell_centroid_classification c
+        FROM rb5._cell_centroid_classification c
         WHERE t.batch_id = %s
           AND c.operator_code = t.operator_code
           AND c.lac IS NOT DISTINCT FROM t.lac
@@ -896,10 +898,15 @@ def _execute_with_session_settings(
     params: tuple[Any, ...] | None = None,
 ) -> None:
     with get_conn() as conn:
-        with conn.cursor() as cur:
+        with ClientCursor(conn) as cur:
             for stmt in session_setup_sqls:
                 cur.execute(stmt)
-            cur.execute(sql, params)
+            if params:
+                # Citus distributed planner rejects parameterized INSERT...SELECT
+                # with CTEs at scale; inline params client-side before execution.
+                cur.execute(cur.mogrify(sql, params))
+            else:
+                cur.execute(sql)
             for stmt in reversed(session_setup_sqls):
                 if stmt.upper().startswith('SET '):
                     cur.execute(f"RESET {stmt.split()[1]}")
@@ -929,11 +936,11 @@ def publish_bs_library(
          * 全异常多类 → 'anomaly'
     """
     thresholds = flatten_profile_thresholds(load_profile_params())
-    execute('DELETE FROM rebuild5.trusted_bs_library WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.trusted_bs_library WHERE batch_id = %s', (batch_id,))
     _execute_with_session_settings(
         session_setup_sqls=['SET enable_nestloop = off'],
         sql=f"""
-        INSERT INTO rebuild5.trusted_bs_library (
+        INSERT INTO rb5.trusted_bs_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
             operator_code, operator_cn, lac, bs_id, lifecycle_state,
             anchor_eligible, baseline_eligible,
@@ -967,7 +974,7 @@ def publish_bs_library(
                 BOOL_OR(anchor_eligible) AS anchor_eligible,
                 BOOL_OR(baseline_eligible) AS baseline_eligible,
                 COUNT(*) FILTER (WHERE window_obs_count > 0) AS active_cell_count
-            FROM rebuild5.trusted_cell_library
+            FROM rb5.trusted_cell_library
             WHERE batch_id = %s
             GROUP BY operator_code, lac, bs_id
         ),
@@ -988,7 +995,7 @@ def publish_bs_library(
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY center_lat)
                     FILTER (WHERE drift_pattern IS NOT NULL AND drift_pattern != 'insufficient')
                     AS center_lat_any
-            FROM rebuild5.trusted_cell_library
+            FROM rb5.trusted_cell_library
             WHERE batch_id = %s
               AND center_lon IS NOT NULL AND center_lat IS NOT NULL
             GROUP BY operator_code, lac, bs_id
@@ -1005,7 +1012,7 @@ def publish_bs_library(
                     SQRT(POWER((t.center_lon - COALESCE(b.center_lon_normal, b.center_lon_any)) * 85300, 2)
                        + POWER((t.center_lat - COALESCE(b.center_lat_normal, b.center_lat_any)) * 111000, 2))
                 ) AS gps_p90_dist_m
-            FROM rebuild5.trusted_cell_library t
+            FROM rb5.trusted_cell_library t
             JOIN bs_center b
               ON b.operator_code = t.operator_code AND b.lac = t.lac AND b.bs_id = t.bs_id
             WHERE t.batch_id = %s
@@ -1090,7 +1097,7 @@ def publish_bs_centroid_detail(
         if large_spread_threshold_m is not None
         else thresholds['bs_max_cell_to_bs_distance_m']
     )
-    execute('DELETE FROM rebuild5.bs_centroid_detail WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.bs_centroid_detail WHERE batch_id = %s', (batch_id,))
     execute(
         f"""
         WITH candidates AS (
@@ -1101,7 +1108,7 @@ def publish_bs_centroid_detail(
                 bs_id,
                 center_lon AS ref_lon,
                 center_lat AS ref_lat
-            FROM rebuild5.trusted_bs_library
+            FROM rb5.trusted_bs_library
             WHERE batch_id = %s
               AND center_lon IS NOT NULL
               AND center_lat IS NOT NULL
@@ -1120,7 +1127,7 @@ def publish_bs_centroid_detail(
                   + POWER((t.center_lat - c.ref_lat) * 111000, 2)
                 ) AS dist_to_ref_m
             FROM candidates c
-            JOIN rebuild5.trusted_cell_library t
+            JOIN rb5.trusted_cell_library t
               ON t.batch_id = c.batch_id
              AND t.operator_code = c.operator_code
              AND t.lac = c.lac
@@ -1166,7 +1173,7 @@ def publish_bs_centroid_detail(
                 ) AS cluster_rank
             FROM agg
         )
-        INSERT INTO rebuild5.bs_centroid_detail (
+        INSERT INTO rb5.bs_centroid_detail (
             batch_id, snapshot_version, operator_code, lac, bs_id, cluster_id,
             is_primary, center_lon, center_lat, cell_count, share_ratio
         )
@@ -1189,12 +1196,12 @@ def publish_bs_centroid_detail(
     )
     execute(
         """
-        UPDATE rebuild5.trusted_bs_library AS b
+        UPDATE rb5.trusted_bs_library AS b
         SET is_multi_centroid = TRUE,
             classification = 'multi_centroid'
         FROM (
             SELECT DISTINCT operator_code, lac, bs_id
-            FROM rebuild5.bs_centroid_detail
+            FROM rb5.bs_centroid_detail
             WHERE batch_id = %s
         ) d
         WHERE b.batch_id = %s
@@ -1229,10 +1236,10 @@ def publish_lac_library(
     向后兼容：仍计算并填入，但不再参与 lifecycle 判定。
     """
     thresholds = flatten_profile_thresholds(load_profile_params())
-    execute('DELETE FROM rebuild5.trusted_lac_library WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.trusted_lac_library WHERE batch_id = %s', (batch_id,))
     execute(
         f"""
-        INSERT INTO rebuild5.trusted_lac_library (
+        INSERT INTO rb5.trusted_lac_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
             operator_code, operator_cn, lac, lifecycle_state,
             anchor_eligible, baseline_eligible,
@@ -1258,7 +1265,7 @@ def publish_lac_library(
                 BOOL_OR(anchor_eligible) AS anchor_eligible,
                 BOOL_OR(baseline_eligible) AS baseline_eligible,
                 COUNT(*) FILTER (WHERE window_active_cell_count > 0) AS active_bs
-            FROM rebuild5.trusted_bs_library
+            FROM rb5.trusted_bs_library
             WHERE batch_id = %s
             GROUP BY operator_code, lac
         ),
@@ -1268,7 +1275,7 @@ def publish_lac_library(
             FROM (
                 SELECT operator_code, lac, bs_id, center_lon, center_lat,
                        ROW_NUMBER() OVER (PARTITION BY operator_code, lac ORDER BY random()) AS rn
-                FROM rebuild5.trusted_bs_library
+                FROM rb5.trusted_bs_library
                 WHERE batch_id = %s
                   AND classification = 'normal'
                   AND center_lon IS NOT NULL AND center_lat IS NOT NULL
@@ -1290,9 +1297,9 @@ def publish_lac_library(
         ),
         prev_lac AS (
             SELECT operator_code, lac, qualified_bs_ratio, area_km2 AS prev_area_km2
-            FROM rebuild5.trusted_lac_library
+            FROM rb5.trusted_lac_library
             WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0)
-                              FROM rebuild5.trusted_lac_library
+                              FROM rb5.trusted_lac_library
                               WHERE batch_id < %s)
         )
         SELECT

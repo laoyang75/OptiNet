@@ -38,22 +38,24 @@ def publish_cell_library(
     snapshot_version_prev: str,
     antitoxin: dict[str, float],
 ) -> None:
-    execute('DELETE FROM rebuild5.trusted_cell_library WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.trusted_cell_library WHERE batch_id = %s', (batch_id,))
 
-    has_metrics = relation_exists('rebuild5.cell_metrics_window')
-    has_anomaly = relation_exists('rebuild5.cell_anomaly_summary')
-    has_prev = relation_exists('rebuild5.trusted_cell_library')
+    has_metrics = relation_exists('rb5.cell_metrics_window')
+    has_anomaly = relation_exists('rb5.cell_anomaly_summary')
+    has_prev = relation_exists('rb5.trusted_cell_library')
+    has_ta = relation_exists('rb5.cell_ta_stats')
 
     # Build optional JOIN flags — only used to gate LEFT JOINs
     metrics_join = 'TRUE' if has_metrics else 'FALSE'
     anomaly_join = 'TRUE' if has_anomaly else 'FALSE'
+    ta_join = 'TRUE' if has_ta else 'FALSE'
 
     # Previous library for anti-toxification
     prev_join = 'TRUE' if has_prev else 'FALSE'
 
     execute(
         f"""
-        INSERT INTO rebuild5.trusted_cell_library (
+        INSERT INTO rb5.trusted_cell_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
             operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
             lifecycle_state, anchor_eligible, baseline_eligible,
@@ -65,7 +67,8 @@ def publish_cell_library(
             gps_anomaly_type,
             is_collision, is_dynamic, is_multi_centroid, centroid_pattern, antitoxin_hit,
             cell_scale, last_maintained_at, last_observed_at, window_obs_count,
-            active_days_30d, consecutive_inactive_days
+            active_days_30d, consecutive_inactive_days,
+            ta_n_obs, ta_p50, ta_p90, ta_dist_p90_m, freq_band, ta_verification
         )
         WITH merged AS (
             SELECT
@@ -108,20 +111,32 @@ def publish_cell_library(
                 prev.distinct_dev_id AS prev_distinct_dev_id,
                 COALESCE(prev.is_dynamic, FALSE) AS prev_is_dynamic,
                 COALESCE(prev.is_multi_centroid, FALSE) AS prev_is_multi_centroid,
-                prev.centroid_pattern AS prev_centroid_pattern
-            FROM rebuild5.trusted_snapshot_cell s
-            LEFT JOIN rebuild5.cell_metrics_window cw
+                prev.centroid_pattern AS prev_centroid_pattern,
+                -- TA stats (from cell_ta_stats; NULL 视为无 TA 数据)
+                COALESCE(ta.ta_n_obs, 0) AS ta_n_obs,
+                ta.ta_p50,
+                ta.ta_p90,
+                ta.ta_dist_p90_m,
+                ta.freq_band
+            FROM rb5.trusted_snapshot_cell s
+            LEFT JOIN rb5.cell_metrics_window cw
               ON {metrics_join}
              AND cw.batch_id = %s
              AND cw.operator_code = s.operator_code AND cw.lac = s.lac
              AND cw.bs_id = s.bs_id AND cw.cell_id = s.cell_id
              AND cw.tech_norm IS NOT DISTINCT FROM s.tech_norm
-            LEFT JOIN rebuild5.cell_anomaly_summary a
+            LEFT JOIN rb5.cell_anomaly_summary a
               ON {anomaly_join}
              AND a.batch_id = %s
              AND a.operator_code = s.operator_code AND a.lac = s.lac
              AND a.cell_id = s.cell_id
              AND a.tech_norm IS NOT DISTINCT FROM s.tech_norm
+            LEFT JOIN rb5.cell_ta_stats ta
+              ON {ta_join}
+             AND ta.operator_code = s.operator_code AND ta.lac = s.lac
+             AND ta.bs_id IS NOT DISTINCT FROM s.bs_id
+             AND ta.cell_id = s.cell_id
+             AND ta.tech_norm IS NOT DISTINCT FROM s.tech_norm
             LEFT JOIN (
                 SELECT
                     operator_code,
@@ -135,10 +150,10 @@ def publish_cell_library(
                     is_dynamic,
                     is_multi_centroid,
                     centroid_pattern
-                FROM rebuild5.trusted_cell_library
+                FROM rb5.trusted_cell_library
                 WHERE batch_id = (
                     SELECT COALESCE(MAX(batch_id), 0)
-                    FROM rebuild5.trusted_cell_library
+                    FROM rb5.trusted_cell_library
                     WHERE batch_id < %s)
             ) prev
               ON {prev_join}
@@ -246,7 +261,25 @@ def publish_cell_library(
             COALESCE(m.max_event_time, m.last_anomaly_at),
             m.window_obs_count,
             m.active_days_30d,
-            m.consecutive_inactive_days
+            m.consecutive_inactive_days,
+
+            -- TA 统计字段透传
+            m.ta_n_obs,
+            m.ta_p50,
+            m.ta_p90,
+            m.ta_dist_p90_m,
+            m.freq_band,
+
+            -- ta_verification（基于 is_multi_centroid / is_collision / freq_band / ta_p90 计算）
+            -- 参考 docs/gps研究/11_TA字段应用可行性研究.md §6
+            CASE
+                WHEN COALESCE(m.prev_is_multi_centroid, FALSE) THEN 'not_applicable'
+                WHEN m.freq_band IS NULL OR m.freq_band != 'fdd' THEN 'not_checked'
+                WHEN COALESCE(m.ta_n_obs, 0) < 5 THEN 'insufficient'
+                WHEN m.ta_p90 > 30 THEN 'xlarge'      -- TA 估算 >2.3km，郊区/农村
+                WHEN m.ta_p90 > 20 THEN 'large'       -- TA 估算 1.5-2.3km
+                ELSE 'ok'                              -- 小/中覆盖
+            END
         FROM merged m
         """,
         (
@@ -329,15 +362,17 @@ def _carry_forward_previous_cells(
 
     Returns the number of cells carried forward.
     """
-    has_metrics = relation_exists('rebuild5.cell_metrics_window')
-    has_anomaly = relation_exists('rebuild5.cell_anomaly_summary')
+    has_metrics = relation_exists('rb5.cell_metrics_window')
+    has_anomaly = relation_exists('rb5.cell_anomaly_summary')
+    has_ta = relation_exists('rb5.cell_ta_stats')
 
     metrics_join = 'TRUE' if has_metrics else 'FALSE'
     anomaly_join = 'TRUE' if has_anomaly else 'FALSE'
+    ta_join = 'TRUE' if has_ta else 'FALSE'
 
     execute(
         f"""
-        INSERT INTO rebuild5.trusted_cell_library (
+        INSERT INTO rb5.trusted_cell_library (
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, published_at,
             operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
             lifecycle_state, anchor_eligible, baseline_eligible,
@@ -349,20 +384,21 @@ def _carry_forward_previous_cells(
             gps_anomaly_type,
             is_collision, is_dynamic, is_multi_centroid, centroid_pattern, antitoxin_hit,
             cell_scale, last_maintained_at, last_observed_at, window_obs_count,
-            active_days_30d, consecutive_inactive_days
+            active_days_30d, consecutive_inactive_days,
+            ta_n_obs, ta_p50, ta_p90, ta_dist_p90_m, freq_band, ta_verification
         )
         WITH prev_cells AS (
             SELECT prev.*
-            FROM rebuild5.trusted_cell_library prev
+            FROM rb5.trusted_cell_library prev
             WHERE prev.batch_id = (
                 SELECT COALESCE(MAX(batch_id), 0)
-                FROM rebuild5.trusted_cell_library
+                FROM rb5.trusted_cell_library
                 WHERE batch_id < %s
             )
             AND prev.lifecycle_state != 'retired'
             -- Exclude cells already published from the current snapshot
             AND NOT EXISTS (
-                SELECT 1 FROM rebuild5.trusted_cell_library curr
+                SELECT 1 FROM rb5.trusted_cell_library curr
                 WHERE curr.batch_id = %s
                   AND curr.operator_code = prev.operator_code
                   AND curr.lac = prev.lac
@@ -413,20 +449,32 @@ def _carry_forward_previous_cells(
                 p.distinct_dev_id AS prev_distinct_dev_id,
                 COALESCE(p.is_dynamic, FALSE) AS prev_is_dynamic,
                 COALESCE(p.is_multi_centroid, FALSE) AS prev_is_multi_centroid,
-                p.centroid_pattern AS prev_centroid_pattern
+                p.centroid_pattern AS prev_centroid_pattern,
+                -- TA stats: prefer fresh from cell_ta_stats, fallback to prev
+                COALESCE(ta.ta_n_obs, p.ta_n_obs, 0) AS ta_n_obs,
+                COALESCE(ta.ta_p50, p.ta_p50) AS ta_p50,
+                COALESCE(ta.ta_p90, p.ta_p90) AS ta_p90,
+                COALESCE(ta.ta_dist_p90_m, p.ta_dist_p90_m) AS ta_dist_p90_m,
+                COALESCE(ta.freq_band, p.freq_band) AS freq_band
             FROM prev_cells p
-            LEFT JOIN rebuild5.cell_metrics_window cw
+            LEFT JOIN rb5.cell_metrics_window cw
               ON {metrics_join}
              AND cw.batch_id = %s
              AND cw.operator_code = p.operator_code AND cw.lac = p.lac
              AND cw.bs_id = p.bs_id AND cw.cell_id = p.cell_id
              AND cw.tech_norm IS NOT DISTINCT FROM p.tech_norm
-            LEFT JOIN rebuild5.cell_anomaly_summary a
+            LEFT JOIN rb5.cell_anomaly_summary a
               ON {anomaly_join}
              AND a.batch_id = %s
              AND a.operator_code = p.operator_code AND a.lac = p.lac
              AND a.cell_id = p.cell_id
              AND a.tech_norm IS NOT DISTINCT FROM p.tech_norm
+            LEFT JOIN rb5.cell_ta_stats ta
+              ON {ta_join}
+             AND ta.operator_code = p.operator_code AND ta.lac = p.lac
+             AND ta.bs_id IS NOT DISTINCT FROM p.bs_id
+             AND ta.cell_id = p.cell_id
+             AND ta.tech_norm IS NOT DISTINCT FROM p.tech_norm
         )
         SELECT
             %s::int, %s::text, %s::text, %s::text, %s::text, NOW(),
@@ -517,7 +565,24 @@ def _carry_forward_previous_cells(
             COALESCE(m.max_event_time, m.last_anomaly_at, p_last_obs.last_observed_at),
             m.window_obs_count,
             m.active_days_30d,
-            m.consecutive_inactive_days
+            m.consecutive_inactive_days,
+
+            -- TA 字段透传（carry-forward 也带）
+            m.ta_n_obs,
+            m.ta_p50,
+            m.ta_p90,
+            m.ta_dist_p90_m,
+            m.freq_band,
+
+            -- ta_verification（同主 INSERT 的规则）
+            CASE
+                WHEN COALESCE(m.prev_is_multi_centroid, FALSE) THEN 'not_applicable'
+                WHEN m.freq_band IS NULL OR m.freq_band != 'fdd' THEN 'not_checked'
+                WHEN COALESCE(m.ta_n_obs, 0) < 5 THEN 'insufficient'
+                WHEN m.ta_p90 > 30 THEN 'xlarge'
+                WHEN m.ta_p90 > 20 THEN 'large'
+                ELSE 'ok'
+            END
         FROM merged m
         LEFT JOIN prev_cells p_last_obs
           ON p_last_obs.operator_code = m.operator_code
@@ -572,14 +637,19 @@ def _carry_forward_previous_cells(
         ),
     )
 
+    # Step 3 writes a large fresh snapshot immediately before Step 5.
+    # Refresh stats before the anti-join count so early batches do not wait for autovacuum.
+    execute('ANALYZE rb5.trusted_cell_library')
+    execute('ANALYZE rb5.trusted_snapshot_cell')
+
     # Count how many were actually carried forward
     row = fetchone(
         """
         SELECT COUNT(*) AS cnt
-        FROM rebuild5.trusted_cell_library c
+        FROM rb5.trusted_cell_library c
         WHERE c.batch_id = %s
           AND NOT EXISTS (
-              SELECT 1 FROM rebuild5.trusted_snapshot_cell s
+              SELECT 1 FROM rb5.trusted_snapshot_cell s
               WHERE s.batch_id = %s
                 AND s.operator_code = c.operator_code
                 AND s.lac = c.lac

@@ -29,7 +29,7 @@ if str(REPO_ROOT) not in sys.path:
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 from rebuild5.backend.app.core.database import execute, fetchone
@@ -42,7 +42,7 @@ from rebuild5.scripts.run_daily_increment_batch_loop import _iter_days, _load_da
 from rebuild5.scripts.run_step1_to_step5_daily_loop import FULL_RAW_BACKUP, _materialize_raw_gps_day
 
 
-STAGING_SCHEMA = 'rebuild5_tmp'
+STAGING_SCHEMA = 'rb5_tmp'
 LOG_DIR = REPO_ROOT / 'rebuild5' / 'runtime' / 'logs'
 RESET_SQL_PATH = Path(__file__).with_name('reset_step1_to_step5_for_full_rerun_v3.sql')
 
@@ -79,7 +79,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--skip-prepare',
         action='store_true',
-        help='reuse existing rebuild5.raw_gps_full_backup instead of running prepare_current_dataset',
+        help='reuse existing rb5.raw_gps_full_backup instead of running prepare_current_dataset',
     )
     parser.add_argument(
         '--skip-reset-step2-5',
@@ -132,8 +132,8 @@ def _reset_full_rerun_state() -> None:
 def _prepare_or_reuse_full_raw(*, skip_prepare: bool) -> dict[str, object]:
     if skip_prepare:
         if not relation_exists(FULL_RAW_BACKUP):
-            if relation_exists('rebuild5.raw_gps'):
-                execute(f'ALTER TABLE rebuild5.raw_gps RENAME TO raw_gps_full_backup')
+            if relation_exists('rb5.raw_gps'):
+                execute(f'ALTER TABLE rb5.raw_gps RENAME TO raw_gps_full_backup')
             else:
                 raise RuntimeError(f'{FULL_RAW_BACKUP} does not exist; cannot skip prepare')
         row = fetchone(f'SELECT COUNT(*) AS cnt FROM {FULL_RAW_BACKUP}')
@@ -144,7 +144,7 @@ def _prepare_or_reuse_full_raw(*, skip_prepare: bool) -> dict[str, object]:
     _log({'event': 'prepare_dataset_done', 'result': prepare_result})
     if relation_exists(FULL_RAW_BACKUP):
         execute(f'DROP TABLE IF EXISTS {FULL_RAW_BACKUP}')
-    execute(f'ALTER TABLE rebuild5.raw_gps RENAME TO raw_gps_full_backup')
+    execute(f'ALTER TABLE rb5.raw_gps RENAME TO raw_gps_full_backup')
     return prepare_result
 
 
@@ -160,7 +160,7 @@ def _snapshot_step1_stage(day: date) -> tuple[str, int]:
     suffix = _sanitize_day(day)
     table_name = _step1_stage_table(day)
     execute(f'DROP TABLE IF EXISTS {table_name}')
-    execute(f'CREATE UNLOGGED TABLE {table_name} AS SELECT * FROM rebuild5.etl_cleaned')
+    execute(f'CREATE UNLOGGED TABLE {table_name} AS SELECT * FROM rb5.etl_cleaned')
     execute(f'ALTER TABLE {table_name} SET (autovacuum_enabled = false)')
     execute(f'CREATE INDEX idx_tmp_{suffix}_evt ON {table_name} (event_time_std)')
     execute(f'CREATE INDEX idx_tmp_{suffix}_rec ON {table_name} (record_id)')
@@ -190,30 +190,30 @@ def _build_cumulative_view(day: date, staged_days: list[date], *, base_relation:
 
 def _materialize_final_etl(final_relation: str, *, cleanup_partial_base: str | None) -> None:
     execute(f'DROP VIEW IF EXISTS {COMPAT_FILLED_VIEW}')
-    execute('DROP TABLE IF EXISTS rebuild5.etl_cleaned')
-    execute(f'CREATE TABLE rebuild5.etl_cleaned AS SELECT * FROM {final_relation}')
-    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rebuild5.etl_cleaned (event_time_std)')
-    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rebuild5.etl_cleaned (record_id)')
+    execute('DROP TABLE IF EXISTS rb5.etl_cleaned')
+    execute(f'CREATE TABLE rb5.etl_cleaned AS SELECT * FROM {final_relation}')
+    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rb5.etl_cleaned (event_time_std)')
+    execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rb5.etl_cleaned (record_id)')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_etl_cleaned_path_lookup
-        ON rebuild5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+        ON rb5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
         """
     )
-    execute(f'CREATE VIEW {COMPAT_FILLED_VIEW} AS SELECT * FROM rebuild5.etl_cleaned')
-    execute('ANALYZE rebuild5.etl_cleaned')
+    execute(f'CREATE VIEW {COMPAT_FILLED_VIEW} AS SELECT * FROM rb5.etl_cleaned')
+    execute('ANALYZE rb5.etl_cleaned')
     if cleanup_partial_base and relation_exists(cleanup_partial_base):
         execute(f'DROP TABLE IF EXISTS {cleanup_partial_base}')
 
 
 def _restore_raw_gps() -> None:
-    if relation_exists('rebuild5.raw_gps'):
-        execute('DROP TABLE IF EXISTS rebuild5.raw_gps')
+    if relation_exists('rb5.raw_gps'):
+        execute('DROP TABLE IF EXISTS rb5.raw_gps')
     if relation_exists(FULL_RAW_BACKUP):
         execute(f'ALTER TABLE {FULL_RAW_BACKUP} RENAME TO raw_gps')
-        execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rebuild5.raw_gps ("记录数唯一标识")')
-        execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rebuild5.raw_gps (ts)')
-        execute('ANALYZE rebuild5.raw_gps')
+        execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_record_id ON rb5.raw_gps ("记录数唯一标识")')
+        execute('CREATE INDEX IF NOT EXISTS idx_rebuild5_raw_gps_ts ON rb5.raw_gps (ts)')
+        execute('ANALYZE rb5.raw_gps')
 
 
 def _relation_kind(relation_name: str) -> str | None:

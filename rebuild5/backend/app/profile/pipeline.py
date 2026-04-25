@@ -1,4 +1,4 @@
-"""Step 2 routing pipeline for rebuild5."""
+"""Step 2 routing pipeline for rb5."""
 from __future__ import annotations
 
 import json
@@ -90,7 +90,7 @@ def run_profile_pipeline() -> dict[str, Any]:
 def ensure_profile_schema() -> None:
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5_meta.step2_run_stats (
+        CREATE TABLE IF NOT EXISTS rb5_meta.step2_run_stats (
             run_id TEXT PRIMARY KEY,
             batch_id INTEGER,
             dataset_key TEXT NOT NULL,
@@ -124,10 +124,10 @@ def ensure_profile_schema() -> None:
         )
         """
     )
-    execute('ALTER TABLE rebuild5_meta.step2_run_stats ADD COLUMN IF NOT EXISTS batch_id INTEGER')
+    execute('ALTER TABLE rb5_meta.step2_run_stats ADD COLUMN IF NOT EXISTS batch_id INTEGER')
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5_meta.step3_run_stats (
+        CREATE TABLE IF NOT EXISTS rb5_meta.step3_run_stats (
             run_id TEXT PRIMARY KEY,
             dataset_key TEXT NOT NULL,
             batch_id INTEGER NOT NULL,
@@ -166,11 +166,11 @@ def ensure_profile_schema() -> None:
         )
         """
     )
-    execute('ALTER TABLE rebuild5_meta.step3_run_stats ADD COLUMN IF NOT EXISTS bs_excellent_count BIGINT NOT NULL DEFAULT 0')
-    execute('ALTER TABLE rebuild5_meta.step3_run_stats ADD COLUMN IF NOT EXISTS lac_excellent_count BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5_meta.step3_run_stats ADD COLUMN IF NOT EXISTS bs_excellent_count BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5_meta.step3_run_stats ADD COLUMN IF NOT EXISTS lac_excellent_count BIGINT NOT NULL DEFAULT 0')
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.trusted_snapshot_cell (
+        CREATE TABLE IF NOT EXISTS rb5.trusted_snapshot_cell (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -209,20 +209,20 @@ def ensure_profile_schema() -> None:
     )
     execute(
         """
-        ALTER TABLE rebuild5.trusted_snapshot_cell
+        ALTER TABLE rb5.trusted_snapshot_cell
         DROP CONSTRAINT IF EXISTS trusted_snapshot_cell_pkey
         """
     )
     execute(
         """
-        ALTER TABLE rebuild5.trusted_snapshot_cell
+        ALTER TABLE rb5.trusted_snapshot_cell
         ADD CONSTRAINT trusted_snapshot_cell_pkey
         PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
         """
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.trusted_snapshot_bs (
+        CREATE TABLE IF NOT EXISTS rb5.trusted_snapshot_bs (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -253,7 +253,7 @@ def ensure_profile_schema() -> None:
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.trusted_snapshot_lac (
+        CREATE TABLE IF NOT EXISTS rb5.trusted_snapshot_lac (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -281,10 +281,10 @@ def ensure_profile_schema() -> None:
         )
         """
     )
-    execute('ALTER TABLE rebuild5.trusted_snapshot_lac ADD COLUMN IF NOT EXISTS excellent_bs_count BIGINT NOT NULL DEFAULT 0')
+    execute('ALTER TABLE rb5.trusted_snapshot_lac ADD COLUMN IF NOT EXISTS excellent_bs_count BIGINT NOT NULL DEFAULT 0')
     execute(
         """
-        CREATE UNLOGGED TABLE IF NOT EXISTS rebuild5.candidate_seed_history (
+        CREATE UNLOGGED TABLE IF NOT EXISTS rb5.candidate_seed_history (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
             dataset_key TEXT NOT NULL,
@@ -297,8 +297,11 @@ def ensure_profile_schema() -> None:
             operator_cn TEXT,
             lac BIGINT,
             bs_id BIGINT,
-            cell_id BIGINT,
+            cell_id BIGINT NOT NULL,
             tech_norm TEXT,
+            cell_origin TEXT,
+            timing_advance INTEGER,
+            freq_channel INTEGER,
             gps_valid BOOLEAN,
             lon_filled DOUBLE PRECISION,
             lat_filled DOUBLE PRECISION,
@@ -307,26 +310,29 @@ def ensure_profile_schema() -> None:
             rsrq_filled DOUBLE PRECISION,
             sinr_filled DOUBLE PRECISION,
             pressure DOUBLE PRECISION,
-            PRIMARY KEY (batch_id, source_row_uid)
+            PRIMARY KEY (batch_id, source_row_uid, cell_id)
         )
         """
     )
-    execute("ALTER TABLE rebuild5.candidate_seed_history SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.candidate_seed_history SET (autovacuum_enabled = false)")
+    execute("ALTER TABLE rb5.candidate_seed_history ADD COLUMN IF NOT EXISTS cell_origin TEXT")
+    execute("ALTER TABLE rb5.candidate_seed_history ADD COLUMN IF NOT EXISTS timing_advance INTEGER")
+    execute("ALTER TABLE rb5.candidate_seed_history ADD COLUMN IF NOT EXISTS freq_channel INTEGER")
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_candidate_seed_history_cell
-        ON rebuild5.candidate_seed_history (operator_code, lac, bs_id, cell_id, tech_norm, batch_id)
+        ON rb5.candidate_seed_history (operator_code, lac, bs_id, cell_id, tech_norm, batch_id)
         """
     )
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_candidate_seed_history_event_time
-        ON rebuild5.candidate_seed_history (batch_id, event_time_std)
+        ON rb5.candidate_seed_history (batch_id, event_time_std)
         """
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.snapshot_diff_cell (
+        CREATE TABLE IF NOT EXISTS rb5.snapshot_diff_cell (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -352,23 +358,23 @@ def ensure_profile_schema() -> None:
         )
         """
     )
-    execute('ALTER TABLE rebuild5.snapshot_diff_cell ADD COLUMN IF NOT EXISTS tech_norm TEXT')
+    execute('ALTER TABLE rb5.snapshot_diff_cell ADD COLUMN IF NOT EXISTS tech_norm TEXT')
     execute(
         """
-        ALTER TABLE rebuild5.snapshot_diff_cell
+        ALTER TABLE rb5.snapshot_diff_cell
         DROP CONSTRAINT IF EXISTS snapshot_diff_cell_pkey
         """
     )
     execute(
         """
-        ALTER TABLE rebuild5.snapshot_diff_cell
+        ALTER TABLE rb5.snapshot_diff_cell
         ADD CONSTRAINT snapshot_diff_cell_pkey
         PRIMARY KEY (batch_id, operator_code, lac, cell_id, tech_norm)
         """
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.snapshot_diff_bs (
+        CREATE TABLE IF NOT EXISTS rb5.snapshot_diff_bs (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -390,7 +396,7 @@ def ensure_profile_schema() -> None:
     )
     execute(
         """
-        CREATE TABLE IF NOT EXISTS rebuild5.snapshot_diff_lac (
+        CREATE TABLE IF NOT EXISTS rb5.snapshot_diff_lac (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
             snapshot_version_prev TEXT NOT NULL,
@@ -410,14 +416,14 @@ def ensure_profile_schema() -> None:
         )
         """
     )
-    execute('CREATE INDEX IF NOT EXISTS idx_profile_base_run ON rebuild5.profile_base (run_id)') if relation_exists('rebuild5.profile_base') else None
+    execute('CREATE INDEX IF NOT EXISTS idx_profile_base_run ON rb5.profile_base (run_id)') if relation_exists('rb5.profile_base') else None
     create_snapshot_views()
 
 
 def create_snapshot_views() -> None:
     execute(
         """
-        CREATE OR REPLACE VIEW rebuild5.trusted_snapshot AS
+        CREATE OR REPLACE VIEW rb5.trusted_snapshot AS
         SELECT
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             'cell'::text AS level,
@@ -433,7 +439,7 @@ def create_snapshot_views() -> None:
             NULL::bigint AS bs_count,
             NULL::bigint AS qualified_bs_count,
             NULL::double precision AS area_km2
-        FROM rebuild5.trusted_snapshot_cell
+        FROM rb5.trusted_snapshot_cell
         UNION ALL
         SELECT
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
@@ -450,7 +456,7 @@ def create_snapshot_views() -> None:
             NULL::bigint AS bs_count,
             NULL::bigint AS qualified_bs_count,
             NULL::double precision AS area_km2
-        FROM rebuild5.trusted_snapshot_bs
+        FROM rb5.trusted_snapshot_bs
         UNION ALL
         SELECT
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
@@ -467,12 +473,12 @@ def create_snapshot_views() -> None:
             bs_count,
             qualified_bs_count,
             area_km2
-        FROM rebuild5.trusted_snapshot_lac
+        FROM rb5.trusted_snapshot_lac
         """
     )
     execute(
         """
-        CREATE OR REPLACE VIEW rebuild5.snapshot_diff AS
+        CREATE OR REPLACE VIEW rb5.snapshot_diff AS
         SELECT
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
             'cell'::text AS level,
@@ -487,7 +493,7 @@ def create_snapshot_views() -> None:
             NULL::bigint AS curr_count,
             NULL::double precision AS prev_area_km2,
             NULL::double precision AS curr_area_km2
-        FROM rebuild5.snapshot_diff_cell
+        FROM rb5.snapshot_diff_cell
         UNION ALL
         SELECT
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
@@ -503,7 +509,7 @@ def create_snapshot_views() -> None:
             curr_cell_count,
             NULL::double precision AS prev_area_km2,
             NULL::double precision AS curr_area_km2
-        FROM rebuild5.snapshot_diff_bs
+        FROM rb5.snapshot_diff_bs
         UNION ALL
         SELECT
             batch_id, snapshot_version, snapshot_version_prev, dataset_key, run_id, created_at,
@@ -519,7 +525,7 @@ def create_snapshot_views() -> None:
             curr_bs_count,
             prev_area_km2,
             curr_area_km2
-        FROM rebuild5.snapshot_diff_lac
+        FROM rb5.snapshot_diff_lac
         """
     )
 
@@ -529,54 +535,71 @@ def relation_exists(relation_name: str) -> bool:
     return bool(row['exists']) if row else False
 
 
-STEP2_INPUT_SCOPE_RELATION = 'rebuild5.step2_batch_input'
+STEP2_INPUT_SCOPE_RELATION = 'rb5.step2_batch_input'
+STEP2_FALLBACK_CELL_RELATION = 'rb5._step2_cell_input'
 
 
 def get_step2_input_relation() -> str:
     """Return the relation Step 2 should consume for the current batch.
 
     Default behavior keeps backward compatibility with the historical full-table
-    rerun flow by reading ``rebuild5.etl_cleaned``. Daily rebaseline / daily
-    increment scripts can materialize ``rebuild5.step2_batch_input`` to scope
+    rerun flow by reading ``rb5.etl_cleaned``. Daily rebaseline / daily
+    increment scripts can materialize ``rb5.step2_batch_input`` to scope
     Step 2 to a single day without touching downstream logic.
     """
     if relation_exists(STEP2_INPUT_SCOPE_RELATION):
         return STEP2_INPUT_SCOPE_RELATION
-    return 'rebuild5.etl_cleaned'
+    if relation_exists(STEP2_FALLBACK_CELL_RELATION):
+        return STEP2_FALLBACK_CELL_RELATION
+    if relation_exists('rb5.etl_cleaned'):
+        execute(f'DROP TABLE IF EXISTS {STEP2_FALLBACK_CELL_RELATION}')
+        execute(f'CREATE UNLOGGED TABLE {STEP2_FALLBACK_CELL_RELATION} AS SELECT * FROM rb5.etl_cleaned')
+        _disable_autovacuum(STEP2_FALLBACK_CELL_RELATION)
+        execute(f'CREATE INDEX IF NOT EXISTS idx_step2_cell_input_cell ON {STEP2_FALLBACK_CELL_RELATION} (cell_id)')
+        execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_step2_cell_input_lookup
+            ON {STEP2_FALLBACK_CELL_RELATION} (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+            """
+        )
+        execute(f'CREATE INDEX IF NOT EXISTS idx_step2_cell_input_source_uid ON {STEP2_FALLBACK_CELL_RELATION} (source_row_uid)')
+        execute(f'ANALYZE {STEP2_FALLBACK_CELL_RELATION}')
+        return STEP2_FALLBACK_CELL_RELATION
+    return 'rb5.etl_cleaned'
 
 
 def get_latest_batch_id() -> int:
-    if not relation_exists('rebuild5.trusted_snapshot_cell'):
+    if not relation_exists('rb5.trusted_snapshot_cell'):
         return 0
-    row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5.trusted_snapshot_cell')
+    row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5.trusted_snapshot_cell')
     return int(row['batch_id']) if row else 0
 
 
 def get_latest_published_batch_id() -> int:
-    if not relation_exists('rebuild5.trusted_cell_library'):
+    if not relation_exists('rb5.trusted_cell_library'):
         return 0
-    row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rebuild5.trusted_cell_library')
+    row = fetchone('SELECT COALESCE(MAX(batch_id), 0) AS batch_id FROM rb5.trusted_cell_library')
     return int(row['batch_id']) if row else 0
 
 
 def ensure_step2_indexes() -> None:
-    if relation_exists('rebuild5.etl_cleaned'):
+    if relation_exists('rb5.etl_cleaned'):
         execute(
             """
             CREATE INDEX IF NOT EXISTS idx_etl_cleaned_path_lookup
-            ON rebuild5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+            ON rb5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
             """
         )
-        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rebuild5.etl_cleaned (record_id)')
-    if relation_exists('rebuild5.trusted_cell_library'):
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rb5.etl_cleaned (record_id)')
+    if relation_exists('rb5.trusted_cell_library'):
         execute(
             """
             CREATE INDEX IF NOT EXISTS idx_trusted_cell_library_lookup
-            ON rebuild5.trusted_cell_library (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+            ON rb5.trusted_cell_library (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
             """
         )
-    if relation_exists('rebuild5.collision_id_list'):
-        execute('CREATE INDEX IF NOT EXISTS idx_collision_id_list_cell_id ON rebuild5.collision_id_list (cell_id)')
+    if relation_exists('rb5.collision_id_list'):
+        execute('CREATE INDEX IF NOT EXISTS idx_collision_id_list_cell_id ON rb5.collision_id_list (cell_id)')
 
 
 
@@ -602,55 +625,56 @@ def run_step2_pipeline(
 
 def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float]) -> None:
     input_relation = get_step2_input_relation()
-    execute('DROP TABLE IF EXISTS rebuild5.path_a_records')
-    execute('DROP TABLE IF EXISTS rebuild5._profile_path_a_candidates')
+    execute('DROP TABLE IF EXISTS rb5.path_a_records')
+    execute('DROP TABLE IF EXISTS rb5._profile_path_a_candidates')
     for table_name in (
-        'rebuild5._path_a_latest_library',
-        'rebuild5._path_a_collision_cells',
-        'rebuild5._path_a_latest_unique_cell',
-        'rebuild5._path_a_layer1',
-        'rebuild5._path_a_layer2',
-        'rebuild5._path_a_layer3_all',
-        'rebuild5._path_a_layer3',
+        'rb5._path_a_latest_library',
+        'rb5._path_a_collision_cells',
+        'rb5._path_a_latest_unique_cell',
+        'rb5._path_a_layer1',
+        'rb5._path_a_layer2',
+        'rb5._path_a_layer3_all',
+        'rb5._path_a_layer3',
     ):
         execute(f'DROP TABLE IF EXISTS {table_name}')
-    if not relation_exists('rebuild5.trusted_cell_library'):
+    if not relation_exists('rb5.trusted_cell_library'):
         execute(
             """
-            CREATE UNLOGGED TABLE rebuild5._profile_path_a_candidates AS
+            CREATE UNLOGGED TABLE rb5._profile_path_a_candidates AS
             SELECT
                 NULL::text AS run_id,
-                NULL::tid AS source_tid,
+                NULL::text AS source_tid,
                 NULL::varchar AS record_id,
                 NULL::text AS match_status,
                 NULL::boolean AS is_collision_id,
                 NULL::double precision AS distance_to_ref_m,
-                NULL::text AS match_layer
+                NULL::text AS match_layer,
+                NULL::bigint AS donor_cell_id
             WHERE false
             """
         )
-        _disable_autovacuum('rebuild5._profile_path_a_candidates')
+        _disable_autovacuum('rb5._profile_path_a_candidates')
         execute(
             f"""
-            CREATE UNLOGGED TABLE rebuild5.path_a_records AS
-            SELECT NULL::tid AS source_tid, e.*, %s::text AS run_id
+            CREATE UNLOGGED TABLE rb5.path_a_records AS
+            SELECT NULL::text AS source_tid, e.*, %s::text AS run_id
             FROM {input_relation} e
             WHERE false
             """,
             (run_id,),
         )
-        _disable_autovacuum('rebuild5.path_a_records')
+        _disable_autovacuum('rb5.path_a_records')
         return
 
     # Three-layer Path A matching:
     # Layer 1: exact match (operator + lac + cell_id all present and match)
     # Layer 2: relaxed match for non-collision cell_ids (operator/lac may be NULL)
     # Layer 3: collision cell_id with missing operator → GPS proximity fallback
-    _lib_batch_sql = "(SELECT COALESCE(MAX(batch_id), 0) FROM rebuild5.trusted_cell_library)"
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_latest_library')
+    _lib_batch_sql = "(SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)"
+    execute('DROP TABLE IF EXISTS rb5._path_a_latest_library')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._path_a_latest_library AS
+        CREATE UNLOGGED TABLE rb5._path_a_latest_library AS
         SELECT
             batch_id,
             snapshot_version,
@@ -671,45 +695,45 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             anchor_eligible,
             baseline_eligible,
             independent_obs
-        FROM rebuild5.trusted_cell_library
+        FROM rb5.trusted_cell_library
         WHERE batch_id = {_lib_batch_sql}
         """
     )
-    _disable_autovacuum('rebuild5._path_a_latest_library')
+    _disable_autovacuum('rb5._path_a_latest_library')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_path_a_latest_exact
-        ON rebuild5._path_a_latest_library (operator_code, lac, cell_id, tech_norm)
+        ON rb5._path_a_latest_library (operator_code, lac, cell_id, tech_norm)
         """
     )
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_path_a_latest_cell
-        ON rebuild5._path_a_latest_library (cell_id)
+        ON rb5._path_a_latest_library (cell_id)
         """
     )
 
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_collision_cells')
+    execute('DROP TABLE IF EXISTS rb5._path_a_collision_cells')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._path_a_collision_cells AS
+        CREATE UNLOGGED TABLE rb5._path_a_collision_cells AS
         SELECT DISTINCT cell_id
-        FROM rebuild5.collision_id_list
+        FROM rb5.collision_id_list
         WHERE batch_id = {_lib_batch_sql}
         """
     )
-    _disable_autovacuum('rebuild5._path_a_collision_cells')
+    _disable_autovacuum('rb5._path_a_collision_cells')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_path_a_collision_cells_cell_id
-        ON rebuild5._path_a_collision_cells (cell_id)
+        ON rb5._path_a_collision_cells (cell_id)
         """
     )
 
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_latest_unique_cell')
+    execute('DROP TABLE IF EXISTS rb5._path_a_latest_unique_cell')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._path_a_latest_unique_cell AS
+        CREATE UNLOGGED TABLE rb5._path_a_latest_unique_cell AS
         SELECT DISTINCT ON (cell_id)
             batch_id,
             snapshot_version,
@@ -717,24 +741,24 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             lac,
             cell_id,
             tech_norm
-        FROM rebuild5._path_a_latest_library
+        FROM rb5._path_a_latest_library
         ORDER BY cell_id, independent_obs DESC NULLS LAST
         """
     )
-    _disable_autovacuum('rebuild5._path_a_latest_unique_cell')
+    _disable_autovacuum('rb5._path_a_latest_unique_cell')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_path_a_latest_unique_cell
-        ON rebuild5._path_a_latest_unique_cell (cell_id)
+        ON rb5._path_a_latest_unique_cell (cell_id)
         """
     )
 
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_layer1')
+    execute('DROP TABLE IF EXISTS rb5._path_a_layer1')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._path_a_layer1 AS
+        CREATE UNLOGGED TABLE rb5._path_a_layer1 AS
         SELECT
-            e.ctid AS source_tid,
+            e.source_row_uid AS source_tid,
             e.record_id,
             'direct_match'::text AS match_status,
             FALSE AS is_collision_id,
@@ -747,7 +771,7 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             l.lac AS donor_lac,
             l.tech_norm AS donor_tech_norm
         FROM {input_relation} e
-        JOIN rebuild5._path_a_latest_library l
+        JOIN rb5._path_a_latest_library l
           ON l.cell_id = e.cell_id
          AND l.operator_code = e.operator_filled
          AND l.lac = e.lac_filled
@@ -757,20 +781,20 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
           AND e.lac_filled IS NOT NULL
         """
     )
-    _disable_autovacuum('rebuild5._path_a_layer1')
+    _disable_autovacuum('rb5._path_a_layer1')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_path_a_layer1_source_tid
-        ON rebuild5._path_a_layer1 (source_tid)
+        ON rb5._path_a_layer1 (source_tid)
         """
     )
 
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_layer2')
+    execute('DROP TABLE IF EXISTS rb5._path_a_layer2')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._path_a_layer2 AS
+        CREATE UNLOGGED TABLE rb5._path_a_layer2 AS
         SELECT
-            e.ctid AS source_tid,
+            e.source_row_uid AS source_tid,
             e.record_id,
             'relaxed_match'::text AS match_status,
             FALSE AS is_collision_id,
@@ -783,31 +807,32 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             l.lac AS donor_lac,
             l.tech_norm AS donor_tech_norm
         FROM {input_relation} e
-        JOIN rebuild5._path_a_latest_unique_cell l
+        JOIN rb5._path_a_latest_unique_cell l
           ON l.cell_id = e.cell_id
-        LEFT JOIN rebuild5._path_a_collision_cells c
+        LEFT JOIN rb5._path_a_collision_cells c
           ON c.cell_id = e.cell_id
-        LEFT JOIN rebuild5._path_a_layer1 x
-          ON x.source_tid = e.ctid
+        LEFT JOIN rb5._path_a_layer1 x
+          ON x.source_tid = e.source_row_uid
+         AND x.donor_cell_id = e.cell_id
         WHERE e.cell_id IS NOT NULL
           AND c.cell_id IS NULL
           AND x.source_tid IS NULL
         """
     )
-    _disable_autovacuum('rebuild5._path_a_layer2')
+    _disable_autovacuum('rb5._path_a_layer2')
     execute(
         """
         CREATE INDEX idx_path_a_layer2_source_tid
-        ON rebuild5._path_a_layer2 (source_tid)
+        ON rb5._path_a_layer2 (source_tid)
         """
     )
 
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_layer3_all')
+    execute('DROP TABLE IF EXISTS rb5._path_a_layer3_all')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._path_a_layer3_all AS
+        CREATE UNLOGGED TABLE rb5._path_a_layer3_all AS
         SELECT
-            e.ctid AS source_tid,
+            e.source_row_uid AS source_tid,
             e.record_id,
             CASE
                 WHEN NOT (e.lon_raw IS NOT NULL AND e.lat_raw IS NOT NULL AND e.gps_valid)
@@ -831,24 +856,25 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             l.lac AS donor_lac,
             l.tech_norm AS donor_tech_norm
         FROM {input_relation} e
-        JOIN rebuild5._path_a_collision_cells c
+        JOIN rb5._path_a_collision_cells c
           ON c.cell_id = e.cell_id
-        JOIN rebuild5._path_a_latest_library l
+        JOIN rb5._path_a_latest_library l
           ON l.cell_id = e.cell_id
          AND (e.operator_filled IS NULL OR l.operator_code = e.operator_filled)
          AND (e.lac_filled IS NULL OR l.lac = e.lac_filled)
-        LEFT JOIN rebuild5._path_a_layer1 x
-          ON x.source_tid = e.ctid
+        LEFT JOIN rb5._path_a_layer1 x
+          ON x.source_tid = e.source_row_uid
+         AND x.donor_cell_id = e.cell_id
         WHERE e.cell_id IS NOT NULL
           AND x.source_tid IS NULL
         """
     )
-    _disable_autovacuum('rebuild5._path_a_layer3_all')
+    _disable_autovacuum('rb5._path_a_layer3_all')
 
-    execute('DROP TABLE IF EXISTS rebuild5._path_a_layer3')
+    execute('DROP TABLE IF EXISTS rb5._path_a_layer3')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._path_a_layer3 AS
+        CREATE UNLOGGED TABLE rb5._path_a_layer3 AS
         SELECT DISTINCT ON (source_tid)
             source_tid,
             record_id,
@@ -862,17 +888,17 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             donor_operator_code,
             donor_lac,
             donor_tech_norm
-        FROM rebuild5._path_a_layer3_all
+        FROM rb5._path_a_layer3_all
         ORDER BY source_tid,
             CASE match_status WHEN 'collision_matched' THEN 0 WHEN 'pending_no_gps' THEN 1 ELSE 2 END,
             distance_to_ref_m NULLS LAST
         """
     )
-    _disable_autovacuum('rebuild5._path_a_layer3')
+    _disable_autovacuum('rb5._path_a_layer3')
 
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_path_a_candidates AS
+        CREATE UNLOGGED TABLE rb5._profile_path_a_candidates AS
         SELECT
             source_tid,
             record_id,
@@ -886,7 +912,7 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             donor_operator_code,
             donor_lac,
             donor_tech_norm
-        FROM rebuild5._path_a_layer1
+        FROM rb5._path_a_layer1
         UNION ALL
         SELECT
             source_tid,
@@ -901,7 +927,7 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             donor_operator_code,
             donor_lac,
             donor_tech_norm
-        FROM rebuild5._path_a_layer2
+        FROM rb5._path_a_layer2
         UNION ALL
         SELECT
             source_tid,
@@ -916,22 +942,22 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
             donor_operator_code,
             donor_lac,
             donor_tech_norm
-        FROM rebuild5._path_a_layer3
+        FROM rb5._path_a_layer3
         """
     )
-    _disable_autovacuum('rebuild5._profile_path_a_candidates')
+    _disable_autovacuum('rb5._profile_path_a_candidates')
     execute(
         """
         CREATE INDEX IF NOT EXISTS idx_profile_path_a_candidates_source_tid
-        ON rebuild5._profile_path_a_candidates (source_tid)
+        ON rb5._profile_path_a_candidates (source_tid)
         """
     )
     # Carry the Step-2-selected donor directly into path_a_records so Step 4
     # never needs to re-match against trusted_cell_library.
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5.path_a_records AS
-        SELECT e.ctid AS source_tid, e.*, %s::text AS run_id,
+        CREATE UNLOGGED TABLE rb5.path_a_records AS
+        SELECT e.source_row_uid AS source_tid, e.*, %s::text AS run_id,
                c.match_layer, c.is_collision_id AS path_a_is_collision,
                c.donor_batch_id,
                c.donor_snapshot_version,
@@ -952,9 +978,10 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
                d.anchor_eligible AS donor_anchor_eligible,
                d.baseline_eligible AS donor_baseline_eligible
         FROM {input_relation} e
-        JOIN rebuild5._profile_path_a_candidates c
-          ON c.source_tid = e.ctid
-        LEFT JOIN rebuild5._path_a_latest_library d
+        JOIN rb5._profile_path_a_candidates c
+          ON c.source_tid = e.source_row_uid
+         AND c.donor_cell_id = e.cell_id
+        LEFT JOIN rb5._path_a_latest_library d
           ON d.batch_id = c.donor_batch_id
          AND d.operator_code = c.donor_operator_code
          AND d.lac = c.donor_lac
@@ -964,19 +991,19 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
         """,
         (run_id,),
     )
-    _disable_autovacuum('rebuild5.path_a_records')
-    execute('CREATE INDEX IF NOT EXISTS idx_path_a_records_record_id ON rebuild5.path_a_records (record_id)')
-    execute('CREATE INDEX IF NOT EXISTS idx_path_a_records_source_tid ON rebuild5.path_a_records (source_tid)')
+    _disable_autovacuum('rb5.path_a_records')
+    execute('CREATE INDEX IF NOT EXISTS idx_path_a_records_record_id ON rb5.path_a_records (record_id)')
+    execute('CREATE INDEX IF NOT EXISTS idx_path_a_records_source_tid ON rb5.path_a_records (source_tid)')
 
 
 def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) -> None:
     input_relation = get_step2_input_relation()
     allowed_techs = tech_whitelist or ['4G', '5G']
     tech_in = ','.join(f"'{t}'" for t in allowed_techs)
-    execute('DROP TABLE IF EXISTS rebuild5._profile_path_b_cells')
+    execute('DROP TABLE IF EXISTS rb5._profile_path_b_cells')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._profile_path_b_cells AS
+        CREATE UNLOGGED TABLE rb5._profile_path_b_cells AS
         SELECT
             %s::text AS run_id,
             %s::text AS dataset_key,
@@ -991,8 +1018,9 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
             COUNT(*) FILTER (WHERE e.lon_raw IS NOT NULL AND e.lat_raw IS NOT NULL AND e.gps_valid) AS raw_gps_record_count,
             COUNT(*) FILTER (WHERE e.rsrp IS NOT NULL) AS signal_original_count
         FROM {input_relation} e
-        LEFT JOIN rebuild5.path_a_records a
-          ON a.source_tid = e.ctid
+        LEFT JOIN rb5.path_a_records a
+          ON a.source_tid = e.source_row_uid
+         AND a.cell_id = e.cell_id
         WHERE e.cell_id IS NOT NULL
           AND e.operator_filled IS NOT NULL
           AND e.lac_filled IS NOT NULL
@@ -1002,18 +1030,18 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
         """,
         (run_id, DATASET_KEY),
     )
-    _disable_autovacuum('rebuild5._profile_path_b_cells')
+    _disable_autovacuum('rb5._profile_path_b_cells')
     execute(
         """
         CREATE INDEX idx_profile_path_b_cells_key
-        ON rebuild5._profile_path_b_cells (operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_path_b_cells (operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('ANALYZE rebuild5._profile_path_b_cells')
-    execute('DROP TABLE IF EXISTS rebuild5._profile_path_b_records')
+    execute('ANALYZE rb5._profile_path_b_cells')
+    execute('DROP TABLE IF EXISTS rb5._profile_path_b_records')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._profile_path_b_records AS
+        CREATE UNLOGGED TABLE rb5._profile_path_b_records AS
         SELECT
             c.run_id,
             c.dataset_key,
@@ -1023,6 +1051,9 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
             c.bs_id,
             c.cell_id,
             c.tech_norm,
+            e.cell_origin,
+            e.timing_advance,
+            e.freq_channel,
             e.record_id,
             e.dev_id,
             e.event_time_std,
@@ -1033,9 +1064,10 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
             e.rsrq,
             e.sinr
         FROM {input_relation} e
-        LEFT JOIN rebuild5.path_a_records a
-          ON a.source_tid = e.ctid
-        JOIN rebuild5._profile_path_b_cells c
+        LEFT JOIN rb5.path_a_records a
+          ON a.source_tid = e.source_row_uid
+         AND a.cell_id = e.cell_id
+        JOIN rb5._profile_path_b_cells c
           ON c.operator_code = e.operator_filled
          AND c.lac = e.lac_filled
          AND c.cell_id = e.cell_id
@@ -1044,17 +1076,17 @@ def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) 
           AND a.source_tid IS NULL
         """
     )
-    _disable_autovacuum('rebuild5._profile_path_b_records')
+    _disable_autovacuum('rb5._profile_path_b_records')
 
 
 def build_profile_obs(run_id: str) -> None:
     # 设计原则（docs/03_流式质量评估.md §GPS 有效性）：
     # 每个 profile_obs 记录必须 GPS 有效。无 GPS 的分钟级观测不应参与
     # independent_obs 计数。否则仅含信号记录的 cell 会凭虚高的观测数晋级。
-    execute('DROP TABLE IF EXISTS rebuild5.profile_obs')
+    execute('DROP TABLE IF EXISTS rb5.profile_obs')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5.profile_obs AS
+        CREATE UNLOGGED TABLE rb5.profile_obs AS
         SELECT
             %s::text AS run_id,
             %s::text AS dataset_key,
@@ -1073,22 +1105,29 @@ def build_profile_obs(run_id: str) -> None:
             COUNT(*) AS raw_records,
             COUNT(*) AS gps_original_records,
             COUNT(*) FILTER (WHERE rsrp IS NOT NULL) AS signal_original_records
-        FROM rebuild5._profile_path_b_records
+        FROM rb5._profile_path_b_records
         WHERE lon_raw IS NOT NULL AND lat_raw IS NOT NULL AND gps_valid
         GROUP BY operator_code, operator_cn, lac, cell_id, tech_norm, date_trunc('minute', event_time_std), DATE(event_time_std)
         """,
         (run_id, DATASET_KEY),
     )
-    _disable_autovacuum('rebuild5.profile_obs')
+    _disable_autovacuum('rb5.profile_obs')
 
 
 def build_profile_base(run_id: str) -> None:
     mad_filter = load_core_mad_filter_params(load_antitoxin_params())
     effective_k_sql = build_core_mad_k_sql('m.total_pts', mad_filter)
-    execute('DROP TABLE IF EXISTS rebuild5._profile_gps_day_dedup')
+    execute('DROP TABLE IF EXISTS rb5._profile_gps_day_dedup')
+    # 去重键（DEDUP-V2.1）：按 origin 区分去重粒度。
+    # - cell_infos: (cell, dev, cell_infos, 5min_bucket)
+    # - ss1: (cell, dev, ss1, record_id)
+    # 原因：天去重会把单设备多次上报压成 1 点，导致半径统计对远点污染敏感
+    # （占比被稀释从 5% 放大到 50%）。cell_infos 保留每设备每 5 分钟 1 点；
+    # ss1 每 raw_gps 报文只保留 1 点，按 record_id 去掉 forward-fill 冗余。
+    # 表名沿用 _profile_gps_day_dedup 仅为向后兼容，语义已变化。
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_gps_day_dedup AS
+        CREATE UNLOGGED TABLE rb5._profile_gps_day_dedup AS
         SELECT DISTINCT ON (
             run_id,
             dataset_key,
@@ -1097,7 +1136,14 @@ def build_profile_base(run_id: str) -> None:
             cell_id,
             tech_norm,
             COALESCE(NULLIF(dev_id, ''), record_id),
-            DATE(event_time_std)
+            COALESCE(cell_origin, ''),
+            CASE WHEN cell_origin = 'ss1'
+                 THEN 'rid:' || record_id
+                 ELSE 'bk5:' || to_char(
+                   date_trunc('minute', event_time_std)
+                     - ((EXTRACT(MINUTE FROM event_time_std)::int % 5) * INTERVAL '1 minute'),
+                   'YYYY-MM-DD HH24:MI')
+            END
         )
             run_id,
             dataset_key,
@@ -1106,13 +1152,16 @@ def build_profile_base(run_id: str) -> None:
             lac,
             cell_id,
             tech_norm,
+            cell_origin,
             COALESCE(NULLIF(dev_id, ''), record_id) AS dedup_dev_id,
             DATE(event_time_std) AS obs_date,
             date_trunc('minute', event_time_std) AS obs_minute,
+            date_trunc('minute', event_time_std)
+              - ((EXTRACT(MINUTE FROM event_time_std)::int % 5) * INTERVAL '1 minute') AS obs_bucket_5min,
             event_time_std,
             lon_raw AS lon,
             lat_raw AS lat
-        FROM rebuild5._profile_path_b_records
+        FROM rb5._profile_path_b_records
         WHERE lon_raw IS NOT NULL
           AND lat_raw IS NOT NULL
           AND gps_valid
@@ -1125,22 +1174,29 @@ def build_profile_base(run_id: str) -> None:
             cell_id,
             tech_norm,
             COALESCE(NULLIF(dev_id, ''), record_id),
-            DATE(event_time_std),
+            COALESCE(cell_origin, ''),
+            CASE WHEN cell_origin = 'ss1'
+                 THEN 'rid:' || record_id
+                 ELSE 'bk5:' || to_char(
+                   date_trunc('minute', event_time_std)
+                     - ((EXTRACT(MINUTE FROM event_time_std)::int % 5) * INTERVAL '1 minute'),
+                   'YYYY-MM-DD HH24:MI')
+            END,
             event_time_std,
             record_id
         """
     )
-    _disable_autovacuum('rebuild5._profile_gps_day_dedup')
+    _disable_autovacuum('rb5._profile_gps_day_dedup')
     execute(
         """
         CREATE INDEX idx_profile_gps_day_dedup_key
-        ON rebuild5._profile_gps_day_dedup (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_gps_day_dedup (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_core_initial_center')
+    execute('DROP TABLE IF EXISTS rb5._profile_core_initial_center')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_core_initial_center AS
+        CREATE UNLOGGED TABLE rb5._profile_core_initial_center AS
         SELECT
             run_id,
             dataset_key,
@@ -1150,21 +1206,21 @@ def build_profile_base(run_id: str) -> None:
             tech_norm,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lon) AS center_lon0,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY lat) AS center_lat0
-        FROM rebuild5._profile_gps_day_dedup
+        FROM rb5._profile_gps_day_dedup
         GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_core_initial_center')
+    _disable_autovacuum('rb5._profile_core_initial_center')
     execute(
         """
         CREATE INDEX idx_profile_core_initial_center_key
-        ON rebuild5._profile_core_initial_center (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_core_initial_center (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_core_point_distance')
+    execute('DROP TABLE IF EXISTS rb5._profile_core_point_distance')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_core_point_distance AS
+        CREATE UNLOGGED TABLE rb5._profile_core_point_distance AS
         SELECT
             p.run_id,
             p.dataset_key,
@@ -1181,8 +1237,8 @@ def build_profile_base(run_id: str) -> None:
             p.lat,
             SQRT(POWER((p.lon - c.center_lon0) * 85300, 2)
                + POWER((p.lat - c.center_lat0) * 111000, 2)) AS dist_to_center0_m
-        FROM rebuild5._profile_gps_day_dedup p
-        JOIN rebuild5._profile_core_initial_center c
+        FROM rb5._profile_gps_day_dedup p
+        JOIN rb5._profile_core_initial_center c
           ON c.run_id = p.run_id
          AND c.dataset_key = p.dataset_key
          AND c.operator_code = p.operator_code
@@ -1191,17 +1247,17 @@ def build_profile_base(run_id: str) -> None:
          AND c.tech_norm = p.tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_core_point_distance')
+    _disable_autovacuum('rb5._profile_core_point_distance')
     execute(
         """
         CREATE INDEX idx_profile_core_point_distance_key
-        ON rebuild5._profile_core_point_distance (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_core_point_distance (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_core_mad_stats')
+    execute('DROP TABLE IF EXISTS rb5._profile_core_mad_stats')
     execute(
         f"""
-        CREATE UNLOGGED TABLE rebuild5._profile_core_mad_stats AS
+        CREATE UNLOGGED TABLE rb5._profile_core_mad_stats AS
         WITH med AS (
             SELECT
                 run_id,
@@ -1212,7 +1268,7 @@ def build_profile_base(run_id: str) -> None:
                 tech_norm,
                 COUNT(*) AS total_pts,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY dist_to_center0_m) AS med_dist_m
-            FROM rebuild5._profile_core_point_distance
+            FROM rb5._profile_core_point_distance
             GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
         )
         SELECT
@@ -1234,7 +1290,7 @@ def build_profile_base(run_id: str) -> None:
                 0
             )) AS keep_threshold_m,
             {int(mad_filter['min_pts'])} AS min_pts
-        FROM rebuild5._profile_core_point_distance d
+        FROM rb5._profile_core_point_distance d
         JOIN med m
           ON m.run_id = d.run_id
          AND m.dataset_key = d.dataset_key
@@ -1253,17 +1309,17 @@ def build_profile_base(run_id: str) -> None:
             m.med_dist_m
         """
     )
-    _disable_autovacuum('rebuild5._profile_core_mad_stats')
+    _disable_autovacuum('rb5._profile_core_mad_stats')
     execute(
         """
         CREATE INDEX idx_profile_core_mad_stats_key
-        ON rebuild5._profile_core_mad_stats (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_core_mad_stats (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_core_points')
+    execute('DROP TABLE IF EXISTS rb5._profile_core_points')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_core_points AS
+        CREATE UNLOGGED TABLE rb5._profile_core_points AS
         SELECT
             d.run_id,
             d.dataset_key,
@@ -1287,8 +1343,8 @@ def build_profile_base(run_id: str) -> None:
                 WHEN s.total_pts < s.min_pts THEN TRUE
                 ELSE d.dist_to_center0_m <= s.keep_threshold_m
             END AS is_core
-        FROM rebuild5._profile_core_point_distance d
-        JOIN rebuild5._profile_core_mad_stats s
+        FROM rb5._profile_core_point_distance d
+        JOIN rb5._profile_core_mad_stats s
           ON s.run_id = d.run_id
          AND s.dataset_key = d.dataset_key
          AND s.operator_code = d.operator_code
@@ -1297,17 +1353,17 @@ def build_profile_base(run_id: str) -> None:
          AND s.tech_norm = d.tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_core_points')
+    _disable_autovacuum('rb5._profile_core_points')
     execute(
         """
         CREATE INDEX idx_profile_core_points_key
-        ON rebuild5._profile_core_points (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_core_points (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_core_gps')
+    execute('DROP TABLE IF EXISTS rb5._profile_core_gps')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_core_gps AS
+        CREATE UNLOGGED TABLE rb5._profile_core_gps AS
         SELECT
             run_id,
             dataset_key,
@@ -1324,21 +1380,21 @@ def build_profile_base(run_id: str) -> None:
             EXTRACT(EPOCH FROM MAX(obs_minute) FILTER (WHERE is_core)
                 - MIN(obs_minute) FILTER (WHERE is_core)) / 3600.0 AS observed_span_hours,
             COUNT(DISTINCT obs_date) FILTER (WHERE is_core) AS active_days
-        FROM rebuild5._profile_core_points
+        FROM rb5._profile_core_points
         GROUP BY run_id, dataset_key, operator_code, operator_cn, lac, cell_id, tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_core_gps')
+    _disable_autovacuum('rb5._profile_core_gps')
     execute(
         """
         CREATE INDEX idx_profile_core_gps_key
-        ON rebuild5._profile_core_gps (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_core_gps (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_counts')
+    execute('DROP TABLE IF EXISTS rb5._profile_counts')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_counts AS
+        CREATE UNLOGGED TABLE rb5._profile_counts AS
         SELECT
             run_id,
             dataset_key,
@@ -1358,21 +1414,21 @@ def build_profile_base(run_id: str) -> None:
             SUM(raw_records) AS record_count,
             SUM(gps_original_records) AS gps_original_count,
             SUM(signal_original_records) AS signal_original_count
-        FROM rebuild5.profile_obs
+        FROM rb5.profile_obs
         GROUP BY run_id, dataset_key, operator_code, operator_cn, lac, cell_id, tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_counts')
+    _disable_autovacuum('rb5._profile_counts')
     execute(
         """
         CREATE INDEX idx_profile_counts_key
-        ON rebuild5._profile_counts (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
+        ON rb5._profile_counts (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)
         """
     )
-    execute('DROP TABLE IF EXISTS rebuild5._profile_devs')
+    execute('DROP TABLE IF EXISTS rb5._profile_devs')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_devs AS
+        CREATE UNLOGGED TABLE rb5._profile_devs AS
         SELECT
             run_id,
             dataset_key,
@@ -1381,16 +1437,16 @@ def build_profile_base(run_id: str) -> None:
             cell_id,
             tech_norm,
             COUNT(DISTINCT dev_id) AS independent_devs
-        FROM rebuild5._profile_path_b_records
+        FROM rb5._profile_path_b_records
         GROUP BY run_id, dataset_key, operator_code, lac, cell_id, tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_devs')
-    execute('CREATE INDEX idx_tmp_devs ON rebuild5._profile_devs (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)')
-    execute('DROP TABLE IF EXISTS rebuild5._profile_radius')
+    _disable_autovacuum('rb5._profile_devs')
+    execute('CREATE INDEX idx_tmp_devs ON rb5._profile_devs (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)')
+    execute('DROP TABLE IF EXISTS rb5._profile_radius')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5._profile_radius AS
+        CREATE UNLOGGED TABLE rb5._profile_radius AS
         SELECT
             p.run_id,
             p.dataset_key,
@@ -1404,8 +1460,8 @@ def build_profile_base(run_id: str) -> None:
             PERCENTILE_CONT(0.9) WITHIN GROUP (
                 ORDER BY SQRT(POWER((p.lon - c.center_lon) * 85300, 2) + POWER((p.lat - c.center_lat) * 111000, 2))
             ) FILTER (WHERE p.is_core) AS p90_radius_m
-        FROM rebuild5._profile_core_points p
-        JOIN rebuild5._profile_core_gps c
+        FROM rb5._profile_core_points p
+        JOIN rb5._profile_core_gps c
           ON c.run_id = p.run_id
          AND c.dataset_key = p.dataset_key
          AND c.operator_code = p.operator_code
@@ -1415,13 +1471,13 @@ def build_profile_base(run_id: str) -> None:
         GROUP BY p.run_id, p.dataset_key, p.operator_code, p.lac, p.cell_id, p.tech_norm
         """
     )
-    _disable_autovacuum('rebuild5._profile_radius')
-    execute('CREATE INDEX idx_tmp_radius ON rebuild5._profile_radius (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)')
+    _disable_autovacuum('rb5._profile_radius')
+    execute('CREATE INDEX idx_tmp_radius ON rb5._profile_radius (run_id, dataset_key, operator_code, lac, cell_id, tech_norm)')
     # Derive bs_id from path_b_cells (MODE aggregated, not part of Cell key)
-    execute('DROP TABLE IF EXISTS rebuild5.profile_base')
+    execute('DROP TABLE IF EXISTS rb5.profile_base')
     execute(
         """
-        CREATE UNLOGGED TABLE rebuild5.profile_base AS
+        CREATE UNLOGGED TABLE rb5.profile_base AS
         SELECT
             c.run_id,
             c.dataset_key,
@@ -1452,47 +1508,48 @@ def build_profile_base(run_id: str) -> None:
             COALESCE(c.gps_original_count::double precision / NULLIF(c.record_count, 0), 0) AS gps_original_ratio,
             COALESCE(COALESCE(g.gps_valid_count, 0)::double precision / NULLIF(c.independent_obs, 0), 0) AS gps_valid_ratio,
             COALESCE(c.signal_original_count::double precision / NULLIF(c.record_count, 0), 0) AS signal_original_ratio
-        FROM rebuild5._profile_counts c
-        JOIN rebuild5._profile_devs d
+        FROM rb5._profile_counts c
+        JOIN rb5._profile_devs d
           ON d.run_id = c.run_id
          AND d.dataset_key = c.dataset_key
          AND d.operator_code = c.operator_code
          AND d.lac = c.lac
          AND d.cell_id = c.cell_id
          AND d.tech_norm = c.tech_norm
-        LEFT JOIN rebuild5._profile_core_gps g
+        LEFT JOIN rb5._profile_core_gps g
           ON g.run_id = c.run_id
          AND g.dataset_key = c.dataset_key
          AND g.operator_code = c.operator_code
          AND g.lac = c.lac
          AND g.cell_id = c.cell_id
          AND g.tech_norm = c.tech_norm
-        LEFT JOIN rebuild5._profile_radius r
+        LEFT JOIN rb5._profile_radius r
           ON r.run_id = c.run_id
          AND r.dataset_key = c.dataset_key
          AND r.operator_code = c.operator_code
          AND r.lac = c.lac
          AND r.cell_id = c.cell_id
          AND r.tech_norm = c.tech_norm
-        LEFT JOIN rebuild5._profile_path_b_cells b
+        LEFT JOIN rb5._profile_path_b_cells b
           ON b.operator_code = c.operator_code
          AND b.lac = c.lac
          AND b.cell_id = c.cell_id
          AND b.tech_norm = c.tech_norm
         """
     )
-    _disable_autovacuum('rebuild5.profile_base')
+    _disable_autovacuum('rb5.profile_base')
 
 
 def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
     input_relation = get_step2_input_relation()
-    execute('DELETE FROM rebuild5.candidate_seed_history WHERE batch_id = %s', (batch_id,))
+    execute('DELETE FROM rb5.candidate_seed_history WHERE batch_id = %s', (batch_id,))
     execute(
         f"""
-        INSERT INTO rebuild5.candidate_seed_history (
+        INSERT INTO rb5.candidate_seed_history (
             batch_id, run_id, dataset_key, source_row_uid, record_id, source_table,
             event_time_std, dev_id,
-            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm,
+            operator_code, operator_cn, lac, bs_id, cell_id, tech_norm, cell_origin,
+            timing_advance, freq_channel,
             gps_valid,
             lon_filled, lat_filled, gps_fill_source,
             rsrp_filled, rsrq_filled, sinr_filled, pressure
@@ -1505,7 +1562,7 @@ def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
                 concat_ws(
                     '|',
                     %s::text,
-                    e.ctid::text,
+                    e.source_row_uid,
                     e.record_id,
                     COALESCE(e.operator_filled, ''),
                     COALESCE(e.lac_filled::text, ''),
@@ -1526,6 +1583,9 @@ def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
             c.bs_id,
             e.cell_id,
             e.tech_norm,
+            e.cell_origin,
+            e.timing_advance,
+            e.freq_channel,
             COALESCE(e.gps_valid, FALSE),
             e.lon_filled,
             e.lat_filled,
@@ -1538,9 +1598,10 @@ def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
                 ELSE NULL::double precision
             END
         FROM {input_relation} e
-        LEFT JOIN rebuild5.path_a_records a
-          ON a.source_tid = e.ctid
-        JOIN rebuild5._profile_path_b_cells c
+        LEFT JOIN rb5.path_a_records a
+          ON a.source_tid = e.source_row_uid
+         AND a.cell_id = e.cell_id
+        JOIN rb5._profile_path_b_cells c
           ON c.operator_code = e.operator_filled
          AND c.lac = e.lac_filled
          AND c.cell_id = e.cell_id
@@ -1550,13 +1611,13 @@ def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
         """,
         (batch_id, run_id, DATASET_KEY, run_id),
     )
-    execute('ANALYZE rebuild5.candidate_seed_history')
+    execute('ANALYZE rb5.candidate_seed_history')
 
 
 def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_version: str) -> dict[str, Any]:
     input_relation = get_step2_input_relation()
     input_row = fetchone(f'SELECT COUNT(*) AS cnt FROM {input_relation}')
-    path_a_row = fetchone('SELECT COUNT(*) AS cnt FROM rebuild5.path_a_records')
+    path_a_row = fetchone('SELECT COUNT(*) AS cnt FROM rb5.path_a_records')
     collision_row = fetchone(
         """
         SELECT
@@ -1567,7 +1628,7 @@ def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_versi
             COUNT(*) FILTER (WHERE match_layer = 'layer1_exact') AS layer1_count,
             COUNT(*) FILTER (WHERE match_layer = 'layer2_relaxed') AS layer2_count,
             COUNT(*) FILTER (WHERE match_layer = 'layer3_collision_gps') AS layer3_count
-        FROM rebuild5._profile_path_a_candidates
+        FROM rb5._profile_path_a_candidates
         """
     )
     path_b_row = fetchone(
@@ -1575,7 +1636,7 @@ def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_versi
         SELECT
             COUNT(*) AS cell_count,
             COALESCE(SUM(record_count), 0) AS record_count
-        FROM rebuild5._profile_path_b_cells
+        FROM rb5._profile_path_b_cells
         WHERE has_raw_gps
         """
     )
@@ -1591,7 +1652,7 @@ def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_versi
             COALESCE(AVG(observed_span_hours), 0) AS avg_observed_span_hours,
             COALESCE(AVG(p50_radius_m), 0) AS avg_p50_radius_m,
             COALESCE(AVG(p90_radius_m), 0) AS avg_p90_radius_m
-        FROM rebuild5.profile_base
+        FROM rb5.profile_base
         """
     )
 
@@ -1639,10 +1700,10 @@ def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_versi
         'avg_p50_radius_m': float(path_b_metrics['avg_p50_radius_m']) if path_b_metrics else 0.0,
         'avg_p90_radius_m': float(path_b_metrics['avg_p90_radius_m']) if path_b_metrics else 0.0,
     }
-    execute('DELETE FROM rebuild5_meta.step2_run_stats WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.step2_run_stats WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.step2_run_stats (
+        INSERT INTO rb5_meta.step2_run_stats (
             run_id, batch_id, dataset_key, status, trusted_snapshot_version, started_at, finished_at,
             input_record_count, path_a_record_count, path_b_record_count, path_b_cell_count, path_c_drop_count,
             path_a_ratio, path_b_ratio, path_c_drop_ratio,
@@ -1685,10 +1746,10 @@ def write_run_log(
     step_chain: str,
     error: str | None = None,
 ) -> None:
-    execute('DELETE FROM rebuild5_meta.run_log WHERE run_id = %s', (run_id,))
+    execute('DELETE FROM rb5_meta.run_log WHERE run_id = %s', (run_id,))
     execute(
         """
-        INSERT INTO rebuild5_meta.run_log (
+        INSERT INTO rb5_meta.run_log (
             run_id, run_type, dataset_key, snapshot_version, status,
             started_at, finished_at, step_chain, result_summary, error
         ) VALUES (%s, %s, %s, %s, %s, NOW(), NOW(), %s, %s::jsonb, %s)
@@ -1706,7 +1767,7 @@ def write_run_log(
     )
     execute(
         """
-        UPDATE rebuild5_meta.dataset_registry
+        UPDATE rb5_meta.dataset_registry
         SET last_run_id = %s,
             last_snapshot_version = %s,
             last_run_status = %s,
@@ -1725,29 +1786,29 @@ def write_run_log(
 
 def cleanup_step2_temp_tables() -> None:
     for table_name in (
-        'rebuild5._profile_path_a_candidates',
-        'rebuild5._profile_path_b_cells',
-        'rebuild5._profile_path_b_records',
-        'rebuild5._profile_gps_day_dedup',
-        'rebuild5._profile_core_initial_center',
-        'rebuild5._profile_core_point_distance',
-        'rebuild5._profile_core_mad_stats',
-        'rebuild5._profile_core_points',
-        'rebuild5._profile_core_gps',
-        'rebuild5._profile_counts',
-        'rebuild5._profile_devs',
-        'rebuild5._profile_radius',
-        'rebuild5._path_a_latest_library',
-        'rebuild5._path_a_collision_cells',
-        'rebuild5._path_a_latest_unique_cell',
-        'rebuild5._path_a_layer1',
-        'rebuild5._path_a_layer2',
-        'rebuild5._path_a_layer3_all',
-        'rebuild5._path_a_layer3',
-        'rebuild5._profile_seed_grid',
-        'rebuild5._profile_primary_seed',
-        'rebuild5._profile_seed_distance',
-        'rebuild5._profile_core_cutoff',
-        'rebuild5._profile_centroid',
+        'rb5._profile_path_a_candidates',
+        'rb5._profile_path_b_cells',
+        'rb5._profile_path_b_records',
+        'rb5._profile_gps_day_dedup',
+        'rb5._profile_core_initial_center',
+        'rb5._profile_core_point_distance',
+        'rb5._profile_core_mad_stats',
+        'rb5._profile_core_points',
+        'rb5._profile_core_gps',
+        'rb5._profile_counts',
+        'rb5._profile_devs',
+        'rb5._profile_radius',
+        'rb5._path_a_latest_library',
+        'rb5._path_a_collision_cells',
+        'rb5._path_a_latest_unique_cell',
+        'rb5._path_a_layer1',
+        'rb5._path_a_layer2',
+        'rb5._path_a_layer3_all',
+        'rb5._path_a_layer3',
+        'rb5._profile_seed_grid',
+        'rb5._profile_primary_seed',
+        'rb5._profile_seed_distance',
+        'rb5._profile_core_cutoff',
+        'rb5._profile_centroid',
     ):
         execute(f'DROP TABLE IF EXISTS {table_name}')

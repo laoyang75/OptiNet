@@ -24,7 +24,7 @@ import sys
 
 os.environ.setdefault(
     'REBUILD5_PG_DSN',
-    'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2',
+    'postgresql://postgres:123456@192.168.200.217:5488/yangca',
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -39,18 +39,18 @@ from rebuild5.backend.app.profile.pipeline import run_profile_pipeline
 
 def _cleanup_after_step4() -> None:
     for rel in (
-        'rebuild5.path_a_records',
-        'rebuild5.profile_obs',
-        'rebuild5.profile_base',
+        'rb5.path_a_records',
+        'rb5.profile_obs',
+        'rb5.profile_base',
     ):
         execute(f'DROP TABLE IF EXISTS {rel}')
 
 
 def _cleanup_after_step5() -> None:
     for rel in (
-        'rebuild5.cell_daily_centroid',
-        'rebuild5.cell_metrics_window',
-        'rebuild5.cell_anomaly_summary',
+        'rb5.cell_daily_centroid',
+        'rb5.cell_metrics_window',
+        'rb5.cell_anomaly_summary',
     ):
         execute(f'DROP TABLE IF EXISTS {rel}')
 
