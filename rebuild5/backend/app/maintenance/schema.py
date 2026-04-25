@@ -134,6 +134,18 @@ def _create_trusted_cell_library() -> None:
     execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_dist_p90_m INTEGER')
     execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS freq_band TEXT')
     execute('ALTER TABLE rb5.trusted_cell_library ADD COLUMN IF NOT EXISTS ta_verification TEXT')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tcl_service_cell
+        ON rb5.trusted_cell_library (batch_id, cell_id, operator_code, lac, tech_norm)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tcl_service_bs_cells
+        ON rb5.trusted_cell_library (batch_id, operator_code, lac, bs_id, p90_radius_m, cell_id)
+        """
+    )
 
 
 def _create_trusted_bs_library() -> None:
@@ -176,6 +188,18 @@ def _create_trusted_bs_library() -> None:
     execute('ALTER TABLE rb5.trusted_bs_library ADD COLUMN IF NOT EXISTS normal_cells BIGINT NOT NULL DEFAULT 0')
     execute('ALTER TABLE rb5.trusted_bs_library ADD COLUMN IF NOT EXISTS anomaly_cells BIGINT NOT NULL DEFAULT 0')
     execute('ALTER TABLE rb5.trusted_bs_library ADD COLUMN IF NOT EXISTS insufficient_cells BIGINT NOT NULL DEFAULT 0')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tbl_service_bs
+        ON rb5.trusted_bs_library (batch_id, bs_id, operator_code, lac)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tbl_service_lac
+        ON rb5.trusted_bs_library (batch_id, operator_code, lac, anomaly_cell_ratio, total_cells)
+        """
+    )
 
 
 def _create_trusted_lac_library() -> None:
@@ -221,6 +245,12 @@ def _create_trusted_lac_library() -> None:
     # LAC 质心（基于正常 BS）
     execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lon DOUBLE PRECISION')
     execute('ALTER TABLE rb5.trusted_lac_library ADD COLUMN IF NOT EXISTS center_lat DOUBLE PRECISION')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tll_service_lac
+        ON rb5.trusted_lac_library (batch_id, lac, operator_code)
+        """
+    )
 
 
 def _create_collision_id_list() -> None:
@@ -377,6 +407,14 @@ def _create_cell_sliding_window() -> None:
     execute("ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS cell_origin TEXT")
     execute("ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS timing_advance INTEGER")
     execute("ALTER TABLE rb5.cell_sliding_window ADD COLUMN IF NOT EXISTS freq_channel INTEGER")
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_csw_dim_time
+        ON rb5.cell_sliding_window (operator_code, lac, cell_id, tech_norm, event_time_std)
+        """
+    )
+    execute('CREATE INDEX IF NOT EXISTS idx_csw_source_uid ON rb5.cell_sliding_window (source_row_uid)')
+    execute('CREATE INDEX IF NOT EXISTS idx_csw_event_time ON rb5.cell_sliding_window (event_time_std)')
 
 
 def _create_cell_daily_centroid() -> None:

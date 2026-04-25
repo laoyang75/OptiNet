@@ -131,6 +131,13 @@ def ensure_enrichment_schema() -> None:
     )
     execute(
         """
+        CREATE INDEX IF NOT EXISTS idx_enriched_batch_time
+        ON rb5.enriched_records (batch_id, event_time_std)
+        """
+    )
+    execute('CREATE INDEX IF NOT EXISTS idx_enriched_source_uid ON rb5.enriched_records (source_row_uid)')
+    execute(
+        """
         CREATE UNLOGGED TABLE IF NOT EXISTS rb5.gps_anomaly_log (
             batch_id INTEGER NOT NULL,
             run_id TEXT NOT NULL,
@@ -163,6 +170,8 @@ def ensure_enrichment_schema() -> None:
     )
     execute("ALTER TABLE rb5.gps_anomaly_log SET (autovacuum_enabled = false)")
     execute("ALTER TABLE rb5.gps_anomaly_log ADD COLUMN IF NOT EXISTS tech_norm TEXT")
+    execute('CREATE INDEX IF NOT EXISTS idx_gps_anomaly_source_uid ON rb5.gps_anomaly_log (source_row_uid)')
+    execute('CREATE INDEX IF NOT EXISTS idx_gps_anomaly_batch_time ON rb5.gps_anomaly_log (batch_id, event_time_std)')
     execute(
         """
         CREATE UNLOGGED TABLE IF NOT EXISTS rb5.snapshot_seed_records (
@@ -200,6 +209,13 @@ def ensure_enrichment_schema() -> None:
     execute("ALTER TABLE rb5.snapshot_seed_records ADD COLUMN IF NOT EXISTS cell_origin TEXT")
     execute("ALTER TABLE rb5.snapshot_seed_records ADD COLUMN IF NOT EXISTS timing_advance INTEGER")
     execute("ALTER TABLE rb5.snapshot_seed_records ADD COLUMN IF NOT EXISTS freq_channel INTEGER")
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch_time
+        ON rb5.snapshot_seed_records (batch_id, event_time_std)
+        """
+    )
+    execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_record_cell ON rb5.snapshot_seed_records (batch_id, record_id, cell_id)')
 
 
 # ---------------------------------------------------------------------------

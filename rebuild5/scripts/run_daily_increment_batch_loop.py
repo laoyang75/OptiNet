@@ -167,7 +167,21 @@ def materialize_step2_scope(*, day: date, input_relation: str) -> int:
         ON {STEP2_INPUT_SCOPE_RELATION} (operator_filled, lac_filled, cell_id)
         """
     )
+    execute(
+        f"""
+        CREATE INDEX idx_step2_batch_input_lookup
+        ON {STEP2_INPUT_SCOPE_RELATION} (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute(
+        f"""
+        CREATE INDEX idx_step2_batch_input_dim_time
+        ON {STEP2_INPUT_SCOPE_RELATION} (operator_filled, lac_filled, cell_id, tech_norm, event_time_std)
+        """
+    )
     execute(f'CREATE INDEX idx_step2_batch_input_record ON {STEP2_INPUT_SCOPE_RELATION} (record_id)')
+    execute(f'CREATE INDEX idx_step2_batch_input_source_uid ON {STEP2_INPUT_SCOPE_RELATION} (source_row_uid)')
+    execute(f'CREATE INDEX idx_step2_batch_input_event_time ON {STEP2_INPUT_SCOPE_RELATION} (event_time_std)')
     execute(f'ANALYZE {STEP2_INPUT_SCOPE_RELATION}')
     row = fetchone(f'SELECT COUNT(*) AS cnt FROM {STEP2_INPUT_SCOPE_RELATION}')
     return int(row['cnt']) if row else 0

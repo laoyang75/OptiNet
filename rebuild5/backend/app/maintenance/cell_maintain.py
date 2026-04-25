@@ -98,6 +98,12 @@ def build_cell_drift_stats(*, batch_id: int) -> None:
         """
     )
     execute("ALTER TABLE rb5.cell_drift_stats SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cell_drift_stats_key
+        ON rb5.cell_drift_stats (batch_id, operator_code, lac, cell_id, tech_norm)
+        """
+    )
     execute('ANALYZE rb5.cell_drift_stats')
 
 

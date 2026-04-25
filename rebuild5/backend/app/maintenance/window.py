@@ -194,6 +194,18 @@ def build_daily_centroids(*, batch_id: int) -> None:
         """
     )
     execute("ALTER TABLE rb5.cell_daily_centroid SET (autovacuum_enabled = false)")
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cdc_cell_date
+        ON rb5.cell_daily_centroid (batch_id, operator_code, lac, cell_id, tech_norm, obs_date)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cdc_lookup
+        ON rb5.cell_daily_centroid (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
     execute('ANALYZE rb5.cell_daily_centroid')
 
 
@@ -249,6 +261,12 @@ def build_cell_metrics_base(*, batch_id: int) -> None:
         """
         CREATE INDEX idx_cell_metrics_base_key
         ON rb5.cell_metrics_base (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cell_metrics_base_dim
+        ON rb5.cell_metrics_base (operator_code, lac, cell_id, tech_norm)
         """
     )
     execute('ANALYZE rb5.cell_metrics_base')
@@ -380,6 +398,7 @@ def build_cell_core_gps_stats(*, batch_id: int) -> None:
         ON rb5.cell_core_gps_day_dedup (operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
+    execute('CREATE INDEX IF NOT EXISTS idx_cell_core_gps_day_dedup_time ON rb5.cell_core_gps_day_dedup (event_time_std)')
     execute('ANALYZE rb5.cell_core_gps_day_dedup')
     execute('DROP TABLE IF EXISTS rb5.cell_core_initial_center')
     execute(
@@ -724,6 +743,12 @@ def build_cell_radius_stats() -> None:
         """
         CREATE INDEX idx_cell_radius_stats_key
         ON rb5.cell_radius_stats (operator_code, lac, bs_id, cell_id, tech_norm)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cell_radius_stats_cell
+        ON rb5.cell_radius_stats (operator_code, lac, cell_id, tech_norm)
         """
     )
     execute('ANALYZE rb5.cell_radius_stats')

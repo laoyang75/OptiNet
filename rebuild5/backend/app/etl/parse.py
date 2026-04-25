@@ -80,6 +80,13 @@ def step1_parse() -> dict[str, Any]:
         SELECT * FROM rb5.etl_ss1
         """
     )
+    execute('CREATE INDEX IF NOT EXISTS idx_etl_parsed_record ON rb5.etl_parsed (record_id)')
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_etl_parsed_cell_lookup
+        ON rb5.etl_parsed (operator_code, lac, cell_id, tech_norm)
+        """
+    )
 
     counts = fetchone(
         """

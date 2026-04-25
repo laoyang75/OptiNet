@@ -109,10 +109,19 @@ def run_enrichment_pipeline() -> dict[str, Any]:
     )
     execute(
         """
+        CREATE INDEX IF NOT EXISTS idx_enriched_batch_time
+        ON rb5.enriched_records (batch_id, event_time_std)
+        """
+    )
+    execute('CREATE INDEX IF NOT EXISTS idx_enriched_source_uid ON rb5.enriched_records (source_row_uid)')
+    execute(
+        """
         CREATE INDEX IF NOT EXISTS idx_gps_anomaly_batch_cell
         ON rb5.gps_anomaly_log (batch_id, operator_code, lac, cell_id)
         """
     )
+    execute('CREATE INDEX IF NOT EXISTS idx_gps_anomaly_source_uid ON rb5.gps_anomaly_log (source_row_uid)')
+    execute('CREATE INDEX IF NOT EXISTS idx_gps_anomaly_batch_time ON rb5.gps_anomaly_log (batch_id, event_time_std)')
     execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch ON rb5.snapshot_seed_records (batch_id)')
     execute(
         """
@@ -120,6 +129,13 @@ def run_enrichment_pipeline() -> dict[str, Any]:
         ON rb5.snapshot_seed_records (batch_id, operator_code, lac, bs_id, cell_id, tech_norm)
         """
     )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_snapshot_seed_batch_time
+        ON rb5.snapshot_seed_records (batch_id, event_time_std)
+        """
+    )
+    execute('CREATE INDEX IF NOT EXISTS idx_snapshot_seed_record_cell ON rb5.snapshot_seed_records (batch_id, record_id, cell_id)')
     execute('ANALYZE rb5.enriched_records')
     execute('ANALYZE rb5.gps_anomaly_log')
     execute('ANALYZE rb5.snapshot_seed_records')

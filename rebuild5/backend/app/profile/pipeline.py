@@ -333,6 +333,18 @@ def ensure_profile_schema() -> None:
     )
     execute(
         """
+        CREATE INDEX IF NOT EXISTS idx_candidate_seed_history_batch_record
+        ON rb5.candidate_seed_history (batch_id, record_id, cell_id, lac, tech_norm)
+        """
+    )
+    execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_candidate_seed_history_dim_time
+        ON rb5.candidate_seed_history (operator_code, lac, cell_id, tech_norm, batch_id, event_time_std)
+        """
+    )
+    execute(
+        """
         CREATE TABLE IF NOT EXISTS rb5.snapshot_diff_cell (
             batch_id INTEGER NOT NULL,
             snapshot_version TEXT NOT NULL,
@@ -563,7 +575,14 @@ def get_step2_input_relation() -> str:
             ON {STEP2_FALLBACK_CELL_RELATION} (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
             """
         )
+        execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_step2_cell_input_dim_time
+            ON {STEP2_FALLBACK_CELL_RELATION} (operator_filled, lac_filled, cell_id, tech_norm, event_time_std)
+            """
+        )
         execute(f'CREATE INDEX IF NOT EXISTS idx_step2_cell_input_source_uid ON {STEP2_FALLBACK_CELL_RELATION} (source_row_uid)')
+        execute(f'CREATE INDEX IF NOT EXISTS idx_step2_cell_input_event_time ON {STEP2_FALLBACK_CELL_RELATION} (event_time_std)')
         execute(f'ANALYZE {STEP2_FALLBACK_CELL_RELATION}')
         return STEP2_FALLBACK_CELL_RELATION
     return 'rb5.etl_cleaned'
@@ -591,7 +610,14 @@ def ensure_step2_indexes() -> None:
             ON rb5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
             """
         )
+        execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_etl_cleaned_dim_time
+            ON rb5.etl_cleaned (operator_filled, lac_filled, cell_id, tech_norm, event_time_std)
+            """
+        )
         execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rb5.etl_cleaned (record_id)')
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_source_uid ON rb5.etl_cleaned (source_row_uid)')
     if relation_exists('rb5.trusted_cell_library'):
         execute(
             """

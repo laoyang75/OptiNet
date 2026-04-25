@@ -23,6 +23,20 @@ def run_step1_pipeline() -> dict[str, Any]:
         before_coverage = calculate_field_coverage(CLEAN_STAGE_TABLE, filled=False)
         fill_result = step1_fill()
         execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rb5.etl_cleaned (event_time_std)')
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rb5.etl_cleaned (record_id)')
+        execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_source_uid ON rb5.etl_cleaned (source_row_uid)')
+        execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_etl_cleaned_path_lookup
+            ON rb5.etl_cleaned (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+            """
+        )
+        execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_etl_cleaned_dim_time
+            ON rb5.etl_cleaned (operator_filled, lac_filled, cell_id, tech_norm, event_time_std)
+            """
+        )
         execute('ANALYZE rb5.etl_cleaned')
         after_coverage = calculate_field_coverage(FINAL_OUTPUT_TABLE, filled=True)
         # Drop intermediate tables no longer needed
