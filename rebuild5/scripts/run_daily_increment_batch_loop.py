@@ -183,7 +183,6 @@ def freeze_step2_input_artifact(
     artifact = f"rb5_stage.step2_input_b{batch_id}_{day.strftime('%Y%m%d')}"
     start_ts = _day_start_ts(day)
     end_ts = _day_start_ts(day + timedelta(days=1))
-    distribution = _source_distribution(source_relation)
 
     execute('CREATE SCHEMA IF NOT EXISTS rb5_stage')
     execute(
@@ -222,16 +221,27 @@ def freeze_step2_input_artifact(
     try:
         execute(f'DROP TABLE IF EXISTS {artifact}')
         execute(f'CREATE UNLOGGED TABLE {artifact} (LIKE {source_relation} INCLUDING DEFAULTS)')
-        if distribution and distribution.get('partmethod') == 'h':
-            distribution_column = distribution.get('distribution_column')
-            if not distribution_column:
-                raise RuntimeError(f'cannot resolve distribution column for {source_relation}: {distribution}')
+        ARTIFACT_DIST_COL = 'cell_id'
+        ARTIFACT_COLOCATE_WITH = 'rb5.cell_sliding_window'
+        if not relation_exists(ARTIFACT_COLOCATE_WITH):
+            ARTIFACT_COLOCATE_WITH = 'rb5.trusted_cell_library'
+        if relation_exists(ARTIFACT_COLOCATE_WITH):
+            target_dist = _source_distribution(ARTIFACT_COLOCATE_WITH)
+            if (
+                not target_dist
+                or target_dist.get('partmethod') != 'h'
+                or target_dist.get('distribution_column') != ARTIFACT_DIST_COL
+            ):
+                raise RuntimeError(
+                    f'colocation target {ARTIFACT_COLOCATE_WITH} not on {ARTIFACT_DIST_COL} '
+                    f'(got {target_dist}); 02b assumption violated'
+                )
             execute(
                 'SELECT create_distributed_table(%s, %s, colocate_with => %s)',
-                (artifact, str(distribution_column), source_relation),
+                (artifact, ARTIFACT_DIST_COL, ARTIFACT_COLOCATE_WITH),
             )
-        elif distribution:
-            execute('SELECT create_reference_table(%s)', (artifact,))
+        else:
+            execute('SELECT create_distributed_table(%s, %s)', (artifact, ARTIFACT_DIST_COL))
 
         execute(
             f"""
