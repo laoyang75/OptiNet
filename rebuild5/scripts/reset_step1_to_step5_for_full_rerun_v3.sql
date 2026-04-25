@@ -97,3 +97,12 @@ DELETE FROM rb5_meta.step5_run_stats;
 
 DELETE FROM rb5_meta.run_log
 WHERE run_type IN ('bootstrap', 'step1', 'pipeline', 'enrichment', 'maintenance');
+
+DROP SCHEMA IF EXISTS rb5_stage CASCADE;
+CREATE SCHEMA rb5_stage;
+DO $$
+BEGIN
+    IF to_regclass('rb5_meta.pipeline_artifacts') IS NOT NULL THEN
+        TRUNCATE TABLE rb5_meta.pipeline_artifacts;
+    END IF;
+END $$;

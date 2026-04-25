@@ -22,7 +22,7 @@ def _disable_autovacuum(table_name: str) -> None:
     execute(f"ALTER TABLE {table_name} SET (autovacuum_enabled = false)")
 
 
-def run_profile_pipeline() -> dict[str, Any]:
+def run_profile_pipeline(*, input_relation: str | None = None) -> dict[str, Any]:
     from ..evaluation.pipeline import run_step3_pipeline
 
     ensure_profile_schema()
@@ -40,6 +40,7 @@ def run_profile_pipeline() -> dict[str, Any]:
             batch_id=batch_id,
             previous_snapshot_version=previous_snapshot_version,
             antitoxin_thresholds=antitoxin_thresholds,
+            input_relation=input_relation,
         )
         step3_stats = run_step3_pipeline(
             run_id=run_id,
@@ -552,7 +553,7 @@ STEP2_INPUT_SCOPE_RELATION = 'rb5.step2_batch_input'
 STEP2_FALLBACK_CELL_RELATION = 'rb5._step2_cell_input'
 
 
-def get_step2_input_relation() -> str:
+def get_step2_input_relation(*, override: str | None = None) -> str:
     """Return the relation Step 2 should consume for the current batch.
 
     Default behavior keeps backward compatibility with the historical full-table
@@ -560,6 +561,10 @@ def get_step2_input_relation() -> str:
     increment scripts can materialize ``rb5.step2_batch_input`` to scope
     Step 2 to a single day without touching downstream logic.
     """
+    if override:
+        if not relation_exists(override):
+            raise RuntimeError(f"input_relation '{override}' does not exist")
+        return override
     if relation_exists(STEP2_INPUT_SCOPE_RELATION):
         return STEP2_INPUT_SCOPE_RELATION
     if relation_exists(STEP2_FALLBACK_CELL_RELATION):
@@ -636,22 +641,34 @@ def run_step2_pipeline(
     batch_id: int,
     previous_snapshot_version: str,
     antitoxin_thresholds: dict[str, float],
+    input_relation: str | None = None,
 ) -> dict[str, Any]:
     ensure_step2_indexes()
-    build_path_a_records(run_id, antitoxin_thresholds=antitoxin_thresholds)
+    step2_input = get_step2_input_relation(override=input_relation)
+    build_path_a_records(run_id, antitoxin_thresholds=antitoxin_thresholds, input_relation=step2_input)
     profile_params = load_profile_params()
     tech_whitelist = profile_params.get('routing', {}).get('path_b_tech_whitelist', ['4G', '5G'])
-    build_path_b_cells(run_id, tech_whitelist=tech_whitelist)
+    build_path_b_cells(run_id, tech_whitelist=tech_whitelist, input_relation=step2_input)
     build_profile_obs(run_id)
     build_profile_base(run_id)
-    persist_candidate_seed_history(batch_id=batch_id, run_id=run_id)
-    stats = write_step2_run_stats(run_id=run_id, batch_id=batch_id, previous_snapshot_version=previous_snapshot_version)
+    persist_candidate_seed_history(batch_id=batch_id, run_id=run_id, input_relation=step2_input)
+    stats = write_step2_run_stats(
+        run_id=run_id,
+        batch_id=batch_id,
+        previous_snapshot_version=previous_snapshot_version,
+        input_relation=step2_input,
+    )
     cleanup_step2_temp_tables()
     return stats
 
 
-def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float]) -> None:
-    input_relation = get_step2_input_relation()
+def build_path_a_records(
+    run_id: str,
+    *,
+    antitoxin_thresholds: dict[str, float],
+    input_relation: str | None = None,
+) -> None:
+    input_relation = get_step2_input_relation(override=input_relation)
     execute('DROP TABLE IF EXISTS rb5.path_a_records')
     execute('DROP TABLE IF EXISTS rb5._profile_path_a_candidates')
     for table_name in (
@@ -1023,8 +1040,13 @@ def build_path_a_records(run_id: str, *, antitoxin_thresholds: dict[str, float])
     execute('CREATE INDEX IF NOT EXISTS idx_path_a_records_source_tid ON rb5.path_a_records (source_tid)')
 
 
-def build_path_b_cells(run_id: str, *, tech_whitelist: list[str] | None = None) -> None:
-    input_relation = get_step2_input_relation()
+def build_path_b_cells(
+    run_id: str,
+    *,
+    tech_whitelist: list[str] | None = None,
+    input_relation: str | None = None,
+) -> None:
+    input_relation = get_step2_input_relation(override=input_relation)
     allowed_techs = tech_whitelist or ['4G', '5G']
     tech_in = ','.join(f"'{t}'" for t in allowed_techs)
     execute('DROP TABLE IF EXISTS rb5._profile_path_b_cells')
@@ -1567,8 +1589,8 @@ def build_profile_base(run_id: str) -> None:
     _disable_autovacuum('rb5.profile_base')
 
 
-def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
-    input_relation = get_step2_input_relation()
+def persist_candidate_seed_history(*, batch_id: int, run_id: str, input_relation: str | None = None) -> None:
+    input_relation = get_step2_input_relation(override=input_relation)
     execute('DELETE FROM rb5.candidate_seed_history WHERE batch_id = %s', (batch_id,))
     execute_distributed_insert(
         f"""
@@ -1641,8 +1663,14 @@ def persist_candidate_seed_history(*, batch_id: int, run_id: str) -> None:
     execute('ANALYZE rb5.candidate_seed_history')
 
 
-def write_step2_run_stats(*, run_id: str, batch_id: int, previous_snapshot_version: str) -> dict[str, Any]:
-    input_relation = get_step2_input_relation()
+def write_step2_run_stats(
+    *,
+    run_id: str,
+    batch_id: int,
+    previous_snapshot_version: str,
+    input_relation: str | None = None,
+) -> dict[str, Any]:
+    input_relation = get_step2_input_relation(override=input_relation)
     input_row = fetchone(f'SELECT COUNT(*) AS cnt FROM {input_relation}')
     path_a_row = fetchone('SELECT COUNT(*) AS cnt FROM rb5.path_a_records')
     collision_row = fetchone(

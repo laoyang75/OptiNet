@@ -5,6 +5,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = REPO_ROOT / "rebuild5" / "scripts" / "run_citus_serial_batches.py"
 PIPELINED_RUNNER_PATH = REPO_ROOT / "rebuild5" / "scripts" / "run_citus_pipelined_batches.py"
+ARTIFACT_PIPELINED_RUNNER_PATH = REPO_ROOT / "rebuild5" / "scripts" / "run_citus_artifact_pipelined.py"
 
 
 def _runner_text() -> str:
@@ -96,3 +97,38 @@ def test_pipelined_runner_calls_materialize_step2_scope_after_step1() -> None:
         and any(alias.name == "materialize_step2_scope" for alias in node.names)
     ]
     assert len(imports) == 1
+
+
+def test_artifact_pipelined_runner_freezes_before_consumer() -> None:
+    """Guard artifact-driven runner ordering and explicit Step 2 input."""
+    text = ARTIFACT_PIPELINED_RUNNER_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(text, filename=str(ARTIFACT_PIPELINED_RUNNER_PATH))
+    producer_defs = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_run_step1_artifact_producer"
+    ]
+    consumer_defs = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_run_artifact_consumer"
+    ]
+
+    assert len(producer_defs) == 1
+    assert len(consumer_defs) == 1
+    positions = {}
+    for child in ast.walk(producer_defs[0]):
+        name = _call_name(child)
+        if name in {"run_step1_pipeline", "freeze_step2_input_artifact", "put"}:
+            positions.setdefault(name, child.lineno)
+
+    assert positions["run_step1_pipeline"] < positions["freeze_step2_input_artifact"]
+    assert positions["freeze_step2_input_artifact"] < positions["put"]
+
+    consumer = consumer_defs[0]
+    consumer_calls = [node for node in ast.walk(consumer) if isinstance(node, ast.Call)]
+    profile_calls = [node for node in consumer_calls if _call_name(node) == "run_profile_pipeline"]
+    assert len(profile_calls) == 1
+    assert any(keyword.arg == "input_relation" for keyword in profile_calls[0].keywords)
+    assert "_ready_artifact_relation" in text
+    assert "FROM rb5_meta.pipeline_artifacts" in text

@@ -2,26 +2,77 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
 
 from .clean import CLEAN_STAGE_TABLE
 from .fill import FINAL_OUTPUT_TABLE
 from .parse import step1_parse
+from . import clean as clean_module
+from . import fill as fill_module
+from . import parse as parse_module
 from .clean import step1_clean
 from .fill import step1_fill
 from .source_prep import DATASET_KEY
-from ..core.database import execute, fetchone
+from ..core.citus_compat import execute_distributed_insert
+from ..core.database import _CTAS_RE, _ensure_citus_layout, _strip_sql, execute, fetchone, get_conn
+
+
+PARALLEL_40_SETUP = [
+    'SET max_parallel_workers_per_gather = 40',
+    'SET max_parallel_workers = 40',
+    'SET max_parallel_maintenance_workers = 16',
+    'SET parallel_tuple_cost = 0.01',
+    'SET parallel_setup_cost = 100',
+]
+
+
+def _execute_step1_parallel(sql: str, params: tuple[Any, ...] | None = None) -> None:
+    match = _CTAS_RE.match(sql)
+    if not match:
+        execute(sql, params)
+        return
+
+    relation = match.group('relation')
+    select_sql = _strip_sql(match.group('select_sql'))
+    unlogged = 'UNLOGGED ' if match.group('unlogged') else ''
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'CREATE {unlogged}TABLE {relation} AS {select_sql} WITH NO DATA', params)
+            _ensure_citus_layout(cur, relation)
+    execute_distributed_insert(
+        f'INSERT INTO {relation} {select_sql}',
+        params=params,
+        session_setup_sqls=PARALLEL_40_SETUP,
+    )
+
+
+@contextmanager
+def _step1_parallel_execution() -> Any:
+    originals = {
+        parse_module: parse_module.execute,
+        clean_module: clean_module.execute,
+        fill_module: fill_module.execute,
+    }
+    try:
+        for module in originals:
+            module.execute = _execute_step1_parallel
+        yield
+    finally:
+        for module, original_execute in originals.items():
+            module.execute = original_execute
 
 
 def run_step1_pipeline() -> dict[str, Any]:
     run_id = f"step1_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     started_at = datetime.now()
     try:
-        parse_result = step1_parse()
-        clean_result = step1_clean()
-        before_coverage = calculate_field_coverage(CLEAN_STAGE_TABLE, filled=False)
-        fill_result = step1_fill()
+        with _step1_parallel_execution():
+            parse_result = step1_parse()
+            clean_result = step1_clean()
+            before_coverage = calculate_field_coverage(CLEAN_STAGE_TABLE, filled=False)
+            fill_result = step1_fill()
         execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_event_time_std ON rb5.etl_cleaned (event_time_std)')
         execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_record ON rb5.etl_cleaned (record_id)')
         execute('CREATE INDEX IF NOT EXISTS idx_etl_cleaned_source_uid ON rb5.etl_cleaned (source_row_uid)')

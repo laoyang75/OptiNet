@@ -5,6 +5,7 @@ from ..core.database import execute
 
 
 def ensure_maintenance_schema() -> None:
+    _create_pipeline_artifact_state()
     _create_step5_run_stats()
     _create_trusted_cell_library()
     _create_trusted_bs_library()
@@ -18,6 +19,38 @@ def ensure_maintenance_schema() -> None:
     _create_cell_metrics_window()
     _apply_maintenance_table_policies()
     _ensure_maintenance_compat_columns()
+
+
+def _create_pipeline_artifact_state() -> None:
+    execute('CREATE SCHEMA IF NOT EXISTS rb5_stage')
+    execute(
+        """
+        CREATE TABLE IF NOT EXISTS rb5_meta.pipeline_artifacts (
+            batch_id INTEGER PRIMARY KEY,
+            day DATE NOT NULL,
+            artifact_relation TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('running', 'ready', 'consumed', 'failed')),
+            row_count BIGINT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            finished_at TIMESTAMPTZ,
+            error TEXT
+        )
+        """
+    )
+    execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_dist_partition
+                WHERE logicalrelid = 'rb5_meta.pipeline_artifacts'::regclass
+            ) THEN
+                PERFORM create_reference_table('rb5_meta.pipeline_artifacts');
+            END IF;
+        END $$;
+        """
+    )
 
 
 def _apply_maintenance_table_policies() -> None:

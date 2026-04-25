@@ -15,7 +15,7 @@ fix6_optim 实现了 Citus 兼容稳定 + pipelined 1.13× 加速 + runbook。
 | 阶段 | Prompt | 产出 | 依赖 | 估时 |
 |---|---|---|---|---|
 | **01 索引补全** | `01_index_additions_prompt.md` | `01_index_additions_report.md` + schema.py 多处 CREATE INDEX | fix6_optim 已收档 | ~半天 |
-| **02 artifact pipelined + Step1 40 核** | `02_artifact_pipelined_prompt.md` ← 01 完成后由 Claude 写 | `02_artifact_pipelined_report.md` + `run_citus_artifact_pipelined.py` + `rb5_meta.pipeline_artifacts` 状态表 | 01 | ~2 天 |
+| **02 artifact pipelined + Step1 40 核** | `02_artifact_pipelined_prompt.md` | `02_artifact_pipelined_report.md` + `run_citus_artifact_pipelined.py` + `rb5_meta.pipeline_artifacts` 状态表 | 01 | ~2 天 |
 | **03 全 7 批重跑验证** | `03_rerun_prompt.md` ← 02 完成后由 Claude 写 | `03_rerun_report.md` + 7 批数据 + 终点验收 | 02 | ~1.5 小时 |
 | **04 UI 8 块** | `04_ui_prompt.md` ← 03 完成后由 Claude 写 | `04_ui_report.md` + 前端组件 | 03 | ~1-2 天 |
 
@@ -38,8 +38,8 @@ fix6_optim 实现了 Citus 兼容稳定 + pipelined 1.13× 加速 + runbook。
 
 ## 当前状态(2026-04-25)
 
-- [ ] 01 索引补全 — agent 用 `01_index_additions_prompt.md`
-- [ ] 02 artifact pipelined — 等 01
+- [x] 01 索引补全 — `01_index_additions_report.md`
+- [x] 02 artifact pipelined — `02_artifact_pipelined_report.md`
 - [ ] 03 重跑验证 — 等 02
 - [ ] 04 UI — 等 03
 

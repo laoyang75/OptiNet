@@ -14,6 +14,7 @@ Important constraints:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -143,6 +144,154 @@ def _assert_ready_for_daily_rebaseline(*, input_relation: str, allow_existing_st
 
 def _drop_step2_scope() -> None:
     execute(f'DROP TABLE IF EXISTS {STEP2_INPUT_SCOPE_RELATION}')
+
+
+def _short_artifact_index_name(artifact_relation: str, suffix: str) -> str:
+    relation_short = artifact_relation.split('.', 1)[1]
+    digest = hashlib.md5(f'{relation_short}_{suffix}'.encode('utf-8')).hexdigest()[:8]
+    return f'idx_s2i_{digest}_{suffix}'
+
+
+def _source_distribution(source_relation: str) -> dict[str, object] | None:
+    return fetchone(
+        """
+        SELECT
+            p.logicalrelid::regclass::text AS logicalrelid,
+            p.partmethod::text AS partmethod,
+            a.attname AS distribution_column,
+            p.partkey::text AS partkey
+        FROM pg_dist_partition p
+        LEFT JOIN pg_attribute a
+          ON a.attrelid = p.logicalrelid
+         AND a.attnum = (regexp_match(p.partkey::text, ':varattno ([0-9]+)'))[1]::int
+        WHERE p.logicalrelid = to_regclass(%s)
+        """,
+        (source_relation,),
+    )
+
+
+def freeze_step2_input_artifact(
+    *,
+    batch_id: int,
+    day: date,
+    source_relation: str = 'rb5.etl_cleaned',
+) -> tuple[str, int]:
+    """Freeze one day of Step 1 output into an immutable Step 2 artifact."""
+    if not relation_exists(source_relation):
+        raise RuntimeError(f'{source_relation} does not exist; cannot freeze Step 2 artifact')
+
+    artifact = f"rb5_stage.step2_input_b{batch_id}_{day.strftime('%Y%m%d')}"
+    start_ts = _day_start_ts(day)
+    end_ts = _day_start_ts(day + timedelta(days=1))
+    distribution = _source_distribution(source_relation)
+
+    execute('CREATE SCHEMA IF NOT EXISTS rb5_stage')
+    execute(
+        """
+        CREATE TABLE IF NOT EXISTS rb5_meta.pipeline_artifacts (
+            batch_id INTEGER PRIMARY KEY,
+            day DATE NOT NULL,
+            artifact_relation TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('running', 'ready', 'consumed', 'failed')),
+            row_count BIGINT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            finished_at TIMESTAMPTZ,
+            error TEXT
+        )
+        """
+    )
+    if not fetchone(
+        """
+        SELECT 1
+        FROM pg_dist_partition
+        WHERE logicalrelid = 'rb5_meta.pipeline_artifacts'::regclass
+        """
+    ):
+        execute("SELECT create_reference_table('rb5_meta.pipeline_artifacts')")
+
+    execute('DELETE FROM rb5_meta.pipeline_artifacts WHERE batch_id = %s', (batch_id,))
+    execute(
+        """
+        INSERT INTO rb5_meta.pipeline_artifacts
+            (batch_id, day, artifact_relation, status)
+        VALUES (%s, %s, %s, 'running')
+        """,
+        (batch_id, day.isoformat(), artifact),
+    )
+
+    try:
+        execute(f'DROP TABLE IF EXISTS {artifact}')
+        execute(f'CREATE UNLOGGED TABLE {artifact} (LIKE {source_relation} INCLUDING DEFAULTS)')
+        if distribution and distribution.get('partmethod') == 'h':
+            distribution_column = distribution.get('distribution_column')
+            if not distribution_column:
+                raise RuntimeError(f'cannot resolve distribution column for {source_relation}: {distribution}')
+            execute(
+                'SELECT create_distributed_table(%s, %s, colocate_with => %s)',
+                (artifact, str(distribution_column), source_relation),
+            )
+        elif distribution:
+            execute('SELECT create_reference_table(%s)', (artifact,))
+
+        execute(
+            f"""
+            INSERT INTO {artifact}
+            SELECT *
+            FROM {source_relation}
+            WHERE event_time_std >= %s
+              AND event_time_std < %s
+            """,
+            (start_ts.isoformat(), end_ts.isoformat()),
+        )
+        execute(f'ALTER TABLE {artifact} SET (autovacuum_enabled = false)')
+        execute(f'CREATE INDEX {_short_artifact_index_name(artifact, "cell")} ON {artifact} (cell_id)')
+        execute(
+            f"""
+            CREATE INDEX {_short_artifact_index_name(artifact, "olc")}
+            ON {artifact} (operator_filled, lac_filled, cell_id)
+            """
+        )
+        execute(
+            f"""
+            CREATE INDEX {_short_artifact_index_name(artifact, "lookup")}
+            ON {artifact} (operator_filled, lac_filled, bs_id, cell_id, tech_norm)
+            """
+        )
+        execute(
+            f"""
+            CREATE INDEX {_short_artifact_index_name(artifact, "dimtime")}
+            ON {artifact} (operator_filled, lac_filled, cell_id, tech_norm, event_time_std)
+            """
+        )
+        execute(f'CREATE INDEX {_short_artifact_index_name(artifact, "record")} ON {artifact} (record_id)')
+        execute(f'CREATE INDEX {_short_artifact_index_name(artifact, "uid")} ON {artifact} (source_row_uid)')
+        execute(f'CREATE INDEX {_short_artifact_index_name(artifact, "etime")} ON {artifact} (event_time_std)')
+        execute(f'ANALYZE {artifact}')
+        row = fetchone(f'SELECT COUNT(*) AS cnt FROM {artifact}')
+        row_count = int(row['cnt']) if row else 0
+        execute(
+            """
+            UPDATE rb5_meta.pipeline_artifacts
+            SET status = 'ready',
+                row_count = %s,
+                finished_at = NOW()
+            WHERE batch_id = %s
+            """,
+            (row_count, batch_id),
+        )
+        return artifact, row_count
+    except Exception as exc:
+        execute(
+            """
+            UPDATE rb5_meta.pipeline_artifacts
+            SET status = 'failed',
+                error = %s,
+                finished_at = NOW()
+            WHERE batch_id = %s
+            """,
+            (str(exc)[:500], batch_id),
+        )
+        raise
 
 
 def materialize_step2_scope(*, day: date, input_relation: str) -> int:
