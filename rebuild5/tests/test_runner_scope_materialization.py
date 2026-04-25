@@ -4,6 +4,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = REPO_ROOT / "rebuild5" / "scripts" / "run_citus_serial_batches.py"
+PIPELINED_RUNNER_PATH = REPO_ROOT / "rebuild5" / "scripts" / "run_citus_pipelined_batches.py"
 
 
 def _runner_text() -> str:
@@ -56,4 +57,42 @@ def test_materialize_step2_scope_imported_from_daily_loop() -> None:
         and any(alias.name == "materialize_step2_scope" for alias in node.names)
     ]
 
+    assert len(imports) == 1
+
+
+def test_pipelined_runner_calls_materialize_step2_scope_after_step1() -> None:
+    """Guard same-day order in the pipelined runner.
+
+    Step 1 for day N+1 may overlap with Step 2-5 for day N, but for the same
+    day the runner must finish Step 1, materialize the daily Step 2 scope, and
+    only then enqueue Step 2-5.
+    """
+    text = PIPELINED_RUNNER_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(text, filename=str(PIPELINED_RUNNER_PATH))
+    producer_defs = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_run_step1_producer"
+    ]
+
+    assert len(producer_defs) == 1
+    producer = producer_defs[0]
+    positions = {}
+    for child in ast.walk(producer):
+        name = _call_name(child)
+        if name in {"run_step1_pipeline", "materialize_step2_scope", "put"}:
+            positions.setdefault(name, child.lineno)
+
+    assert positions["run_step1_pipeline"] < positions["materialize_step2_scope"]
+    assert positions["materialize_step2_scope"] < positions["put"]
+    assert 'DROP TABLE IF EXISTS rb5._step2_cell_input' in text
+
+    imports = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom)
+        and node.module
+        and node.module.endswith("run_daily_increment_batch_loop")
+        and any(alias.name == "materialize_step2_scope" for alias in node.names)
+    ]
     assert len(imports) == 1
