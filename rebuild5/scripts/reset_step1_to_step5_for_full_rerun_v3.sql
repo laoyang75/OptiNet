@@ -40,6 +40,7 @@ BEGIN
 END $$;
 
 DROP TABLE IF EXISTS rb5.path_a_records;
+DROP VIEW IF EXISTS rb5.step2_batch_input;
 DROP TABLE IF EXISTS rb5.step2_batch_input;
 DROP TABLE IF EXISTS rb5._step2_cell_input;
 DROP TABLE IF EXISTS rb5._profile_path_a_candidates;

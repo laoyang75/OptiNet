@@ -2,6 +2,7 @@
 
 > 适用范围:rebuild5 Citus 集群(192.168.200.217:5488/yangca)的"改 -> 跑 -> 验"研究循环。
 > 撰写时间:2026-04-25(fix6_optim 终点阶段)。
+> 现生产版本:2026-04-27 起 `5488` 为 PG18.3 / Citus 14.0-1 / PostGIS 3.6.3；老 PG17.6 fallback 在 `5487`。
 > 撰写依据:fix5 五阶段诊断 + fix6_optim 三阶段加速,实战通过。
 
 ## 1. 快速参考(命令清单)
@@ -111,6 +112,20 @@ bash rebuild5/scripts/runbook/endpoint_check.sh
 | TCL b7 总量 | 341,460 | 348,921(+2.19%) | 340,767(-0.20%) | 340,766(-0.20%) |
 | 7 批总时长 | n/a | ~150 min | ~132 min | **142.34 min** |
 | speedup | 1.0x | 1.0x | 1.13x | **1.05x** |
+
+### 4.1 PG18 upgrade v2 tuned baseline(2026-04-27)
+
+| 指标 | PG18 tuned artifact pipelined |
+|---|---:|
+| TCL b7 总量 | **340,766** |
+| vs loop_optim 03 | **0.000000%** |
+| 7 批总时长 | **7,691.43s = 128.19 min** |
+| vs loop_optim 03 8,540.62s | **快约 9.9%** |
+| checkpoint 间隔 | coordinator 约 10-22min, workers 约 15min |
+| 生产端口 | `5488` |
+| fallback | old PG17.6 on `5487` |
+
+本轮调优参数见 `rebuild5/docs/upgrade/upgrade_v2_finalize_and_tuning_report.md`。
 
 ## 5. 历史诊断 trail
 

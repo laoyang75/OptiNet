@@ -72,9 +72,12 @@ prev_tcl AS (
   GROUP BY p.bid
 )
 SELECT
-  'enriched_single_day' AS check_name,
-  (rows = 0 OR (min_day = expected_day AND max_day = expected_day AND off_day_rows = 0)) AS ok,
-  format('rows=%s min=%s max=%s off_day=%s expected=%s', rows, min_day, max_day, off_day_rows, expected_day) AS detail
+  'enriched_current_batch_single_day' AS check_name,
+  (
+    (bid = 1 AND rows = 0)
+    OR (rows > 0 AND min_day = expected_day AND max_day = expected_day AND off_day_rows = 0)
+  ) AS ok,
+  format('batch=%s rows=%s min=%s max=%s off_day=%s expected=%s note=unlogged_current_batch_only_batch1_path_a_empty_allowed', bid, rows, min_day, max_day, off_day_rows, expected_day) AS detail
 FROM enriched
 UNION ALL
 SELECT
@@ -109,6 +112,6 @@ WHERE NOT ok;
 \if :sentinel_ok
 \else
   \echo sentinel failed for batch :bid: :fail_count check(s) failed
-  \quit 1
+  SELECT 1 / 0;
 \endif
 SQL
