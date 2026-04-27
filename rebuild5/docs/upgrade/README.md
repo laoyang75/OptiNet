@@ -35,6 +35,7 @@
 - v2 fresh rebuild prompt:`upgrade_v2_fresh_rebuild_prompt.md`
 - v2 收尾 + 调优 prompt:`upgrade_v2_finalize_and_tuning_prompt.md`
 - v1 dump safety net:`/nas_vol8/upgrade/backups/dumps/yangca_full_20260426_105359.sql`
+- kernel-ml 6.6.12 全集群升级:完成。控制台 `192.168.200.210`,顺序 `216 -> 219 -> 220 -> 221 -> 217`,5 台当前 `uname -r=6.6.12-1.el7.elrepo.x86_64`,旧 `3.10.0-1160.71.1` 均保留为 GRUB fallback。Citus 未 drain/remove/rebalance,4 workers active,health 全 true,数据基线 TCL b7=`340,766` / sliding=`24,017,207` 一致。XFS warning 按 user 指令记录为 known issue 不阻断。报告:`kernel_upgrade_all_210_report.md`;notes:`kernel_all_done`。
 
 ## 阶段表
 
@@ -43,6 +44,7 @@
 | **upgrade 主任务**(7 子阶段) | `upgrade_prompt.md` | `upgrade_report.md` + 集群升级完成 + 备份在 NAS | ~半天 ~ 1 天 |
 | **upgrade v2 fresh rebuild** | `upgrade_v2_fresh_rebuild_prompt.md` | new PG18 cluster on 5491 + reset rerun trail | ~半天 |
 | **upgrade v2 finalize + tuning** | `upgrade_v2_finalize_and_tuning_prompt.md` | `upgrade_v2_finalize_and_tuning_report.md` + port cutover | ~3 小时 |
+| **kernel-ml 6.6.12 全集群升级** | `kernel_upgrade_all_210_prompt.md` | `kernel_upgrade_all_210_report.md` + 210 控制台归档 | ~1-2 小时 |
 
 v1 失败后没有删除 PG17 数据或 v1 dump。v2 使用 fresh schema + minimal data migration + reset rerun,避开 dumpall 后置 distribute 陷阱。
 
