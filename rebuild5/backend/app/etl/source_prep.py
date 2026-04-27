@@ -100,6 +100,16 @@ CREATE TABLE IF NOT EXISTS rb5_meta.step1_run_stats (
     field_coverage JSONB NOT NULL DEFAULT '{}'::jsonb,
     clean_rules JSONB NOT NULL DEFAULT '[]'::jsonb
 );
+
+CREATE TABLE IF NOT EXISTS rb5_meta.etl_rule_stats (
+    batch_id INTEGER NOT NULL,
+    rule_code TEXT NOT NULL,
+    rule_desc TEXT,
+    hit_count BIGINT NOT NULL,
+    total_rows BIGINT,
+    recorded_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (batch_id, rule_code)
+);
 """.strip()
 
 

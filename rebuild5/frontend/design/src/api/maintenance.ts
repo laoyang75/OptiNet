@@ -68,6 +68,33 @@ export interface MaintenanceCellsPayload {
   limit: number
 }
 
+export interface DeviceWeightedP90Item {
+  dev_id: string
+  point_count: number
+  weight: number
+  max_dist_m: number | null
+  avg_dist_m: number | null
+  contribution_pct: number
+}
+
+export interface DeviceWeightedP90Payload {
+  batch_id: number
+  operator_code: string
+  lac: number | null
+  bs_id: number | null
+  cell_id: number
+  tech_norm: string | null
+  center_lon: number | null
+  center_lat: number | null
+  p90_radius_m: number | null
+  p90_unweighted_m: number | null
+  p90_device_weighted_m: number | null
+  delta_pct: number | null
+  point_count: number
+  device_count: number
+  top_polluting_devices: DeviceWeightedP90Item[]
+}
+
 export interface MaintenanceBSItem {
   operator_code: string
   operator_cn: string | null
@@ -160,6 +187,10 @@ export function getMaintenanceStats(): Promise<MaintenanceStatsPayload> {
 export async function getMaintenanceCells(kind = 'all', page = 1, pageSize = 50): Promise<MaintenanceCellsPayload & { totalCount: number; totalPages: number }> {
   const result = await apiGetPaged<MaintenanceCellsPayload>(`/api/maintenance/cells?kind=${encodeURIComponent(kind)}&page=${page}&page_size=${pageSize}`)
   return { ...result.data, totalCount: result.meta.total_count, totalPages: result.meta.total_pages }
+}
+
+export function getDeviceWeightedP90(cellId: number): Promise<DeviceWeightedP90Payload> {
+  return apiGet<DeviceWeightedP90Payload>(`/api/maintenance/device-weighted-p90?cell_id=${encodeURIComponent(cellId)}`)
 }
 
 export async function getMaintenanceBS(page = 1, pageSize = 50): Promise<MaintenanceBSPayload & { totalCount: number; totalPages: number }> {

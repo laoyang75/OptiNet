@@ -11,6 +11,7 @@ function toRecord(value: unknown): Record<string, any> {
 
 const config = ref<SystemConfigPayload>({
   current_version: { dataset_key: '', run_id: '', snapshot_version: 'v0', status: 'completed', updated_at: '' },
+  dataset_mode: { key: 'single_active', label: '单活数据集', switch_supported: false, message: '', plan_doc: '' },
   datasets: [],
   params: {},
 })

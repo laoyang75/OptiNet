@@ -9,6 +9,7 @@ from ..maintenance.queries import (
     get_antitoxin_hits_payload,
     get_collision_payload,
     get_drift_payload,
+    get_device_weighted_p90_payload,
     get_exit_warnings_payload,
     get_maintenance_bs_detail_payload,
     get_maintenance_bs_payload,
@@ -42,6 +43,14 @@ def maintenance_cells(kind: str = Query('all'), page: int = Query(1, ge=1), page
 @router.get('/cells/{cell_id}')
 def maintenance_cell_detail(cell_id: int) -> dict[str, object]:
     data = get_maintenance_cell_detail_payload(cell_id)
+    if data is None:
+        return error_envelope('NOT_FOUND', f'Cell {cell_id} 未找到')
+    return success_envelope(data)
+
+
+@router.get('/device-weighted-p90')
+def maintenance_device_weighted_p90(cell_id: int = Query(...)) -> dict[str, object]:
+    data = get_device_weighted_p90_payload(cell_id)
     if data is None:
         return error_envelope('NOT_FOUND', f'Cell {cell_id} 未找到')
     return success_envelope(data)

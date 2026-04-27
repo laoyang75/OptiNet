@@ -1,7 +1,7 @@
 """ETL routes for rb5."""
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from ..core.envelope import success_envelope
 from ..etl.pipeline import run_step1_pipeline
@@ -11,6 +11,7 @@ from ..etl.queries import (
     get_etl_source_payload,
     get_etl_stats_page_payload,
     get_field_audit_payload,
+    get_rule_stats_payload,
 )
 
 
@@ -45,3 +46,8 @@ def get_coverage() -> dict[str, object]:
 @router.get('/clean-rules')
 def get_clean_rules() -> dict[str, object]:
     return success_envelope(get_clean_rules_payload())
+
+
+@router.get('/rule-stats')
+def get_rule_stats(batch_id: int | None = Query(None), rule_code: str | None = Query(None)) -> dict[str, object]:
+    return success_envelope(get_rule_stats_payload(batch_id=batch_id, rule_code=rule_code))

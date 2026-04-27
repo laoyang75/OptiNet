@@ -103,6 +103,7 @@ export interface CoveragePayload {
     same_cell: number
     none: number
   }
+  total_records: number
   time_window_seconds: number
 }
 
@@ -115,6 +116,21 @@ export interface RunStep1Payload {
   filled_record_count: number
   clean_deleted_count: number
   clean_pass_rate: number
+}
+
+export interface EtlRuleStatsItem {
+  batch_id: number
+  rule_code: string
+  rule_desc: string
+  hit_count: number
+  total_rows: number | null
+  hit_pct: number
+  recorded_at: string | null
+}
+
+export interface EtlRuleStatsPayload {
+  items: EtlRuleStatsItem[]
+  batches: number[]
 }
 
 export function getEtlSource(): Promise<EtlSourcePayload> {
@@ -131,6 +147,14 @@ export function getEtlStats(): Promise<EtlStatsPayload> {
 
 export function getCleanRules(): Promise<CleanRulesPayload> {
   return apiGet<CleanRulesPayload>('/api/etl/clean-rules')
+}
+
+export function getRuleStats(batchId?: number, ruleCode?: string): Promise<EtlRuleStatsPayload> {
+  const params = new URLSearchParams()
+  if (batchId != null && batchId > 0) params.set('batch_id', String(batchId))
+  if (ruleCode) params.set('rule_code', ruleCode)
+  const suffix = params.toString() ? `?${params.toString()}` : ''
+  return apiGet<EtlRuleStatsPayload>(`/api/etl/rule-stats${suffix}`)
 }
 
 export function getEtlCoverage(): Promise<CoveragePayload> {

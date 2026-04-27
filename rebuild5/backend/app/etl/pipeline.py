@@ -64,6 +64,16 @@ def _step1_parallel_execution() -> Any:
             module.execute = original_execute
 
 
+ODS_RULE_STAT_DEFS = {
+    'ODS-019': 'CellInfos 陈旧缓存对象过滤',
+    'ODS-020': 'SS1 批内锚点陈旧子记录过滤',
+    'ODS-021': 'SS1 无配套信号 Cell 过滤',
+    'ODS-022': 'SS1 全 -1 Sig 条目过滤',
+    'ODS-023b': 'LTE FDD 异常 TA 置空',
+    'ODS-024b': 'CellInfos 同记录同 Cell 重复对象去重',
+}
+
+
 def run_step1_pipeline() -> dict[str, Any]:
     run_id = f"step1_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     started_at = datetime.now()
@@ -105,10 +115,13 @@ def run_step1_pipeline() -> dict[str, Any]:
             before_coverage=before_coverage,
             after_coverage=after_coverage,
         )
+        batch_id = _infer_rule_stats_batch_id()
+        _save_rule_stats(batch_id=batch_id, parse_result=parse_result, clean_result=clean_result)
 
         summary = {
             'run_id': run_id,
             'dataset_key': DATASET_KEY,
+            'batch_id': batch_id,
             'raw_record_count': parse_result['input_count'],
             'parsed_record_count': parse_result['output_count'],
             'cleaned_record_count': clean_result['output_count'],
@@ -126,6 +139,128 @@ def run_step1_pipeline() -> dict[str, Any]:
             error=str(exc),
         )
         raise
+
+
+def ensure_etl_rule_stats_schema() -> None:
+    execute(
+        """
+        CREATE TABLE IF NOT EXISTS rb5_meta.etl_rule_stats (
+            batch_id INTEGER NOT NULL,
+            rule_code TEXT NOT NULL,
+            rule_desc TEXT,
+            hit_count BIGINT NOT NULL,
+            total_rows BIGINT,
+            recorded_at TIMESTAMPTZ DEFAULT NOW(),
+            PRIMARY KEY (batch_id, rule_code)
+        )
+        """
+    )
+    execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_dist_partition
+                WHERE logicalrelid = 'rb5_meta.etl_rule_stats'::regclass
+            ) THEN
+                PERFORM create_reference_table('rb5_meta.etl_rule_stats');
+            END IF;
+        END $$;
+        """
+    )
+
+
+def _infer_rule_stats_batch_id() -> int:
+    """Infer the current daily batch from rb5.raw_gps when callers do not pass it."""
+    row = fetchone(
+        """
+        WITH cur_day AS (
+            SELECT MIN((ts::timestamp)::date) AS day
+            FROM rb5.raw_gps
+            WHERE ts ~ '^\\d{4}-\\d{2}-\\d{2}'
+        ),
+        all_days AS (
+            SELECT DISTINCT (ts::timestamp)::date AS day
+            FROM rb5.raw_gps_full_backup
+            WHERE ts ~ '^\\d{4}-\\d{2}-\\d{2}'
+        )
+        SELECT COUNT(*) FILTER (WHERE all_days.day <= cur_day.day) AS batch_id
+        FROM all_days, cur_day
+        """
+    )
+    if row and row.get('batch_id'):
+        return int(row['batch_id'])
+    fallback = fetchone('SELECT COALESCE(MAX(batch_id), 0) + 1 AS batch_id FROM rb5_meta.etl_rule_stats')
+    return int(fallback['batch_id']) if fallback else 1
+
+
+def _save_rule_stats(*, batch_id: int, parse_result: dict[str, Any], clean_result: dict[str, Any]) -> None:
+    ensure_etl_rule_stats_schema()
+    details = parse_result.get('details') or {}
+    ods_019 = details.get('ods_019') or {}
+    ss1_rules = details.get('ss1_rules') or {}
+    clean_by_id = {rule['id']: rule for rule in clean_result.get('rules', [])}
+
+    rows = [
+        (
+            batch_id,
+            'ODS-019',
+            ODS_RULE_STAT_DEFS['ODS-019'],
+            int(ods_019.get('dropped_stale_count') or 0),
+            int(ods_019.get('total_connected_objects') or 0),
+        ),
+        (
+            batch_id,
+            'ODS-020',
+            ODS_RULE_STAT_DEFS['ODS-020'],
+            int((ss1_rules.get('ods_020') or {}).get('dropped_subrec') or 0),
+            int((ss1_rules.get('ods_020') or {}).get('total_subrec') or 0),
+        ),
+        (
+            batch_id,
+            'ODS-021',
+            ODS_RULE_STAT_DEFS['ODS-021'],
+            0,
+            int((ss1_rules.get('ods_020') or {}).get('total_subrec') or 0),
+        ),
+        (
+            batch_id,
+            'ODS-022',
+            ODS_RULE_STAT_DEFS['ODS-022'],
+            int((ss1_rules.get('ods_022') or {}).get('dropped_sigs') or 0),
+            int((ss1_rules.get('ods_022') or {}).get('total_sigs') or 0),
+        ),
+        (
+            batch_id,
+            'ODS-023b',
+            ODS_RULE_STAT_DEFS['ODS-023b'],
+            int((clean_by_id.get('ODS-023b') or {}).get('violations') or 0),
+            int(clean_result.get('input_count') or 0),
+        ),
+        (
+            batch_id,
+            'ODS-024b',
+            ODS_RULE_STAT_DEFS['ODS-024b'],
+            int((ods_019.get('ods_024b') or {}).get('dropped_duplicate_count') or 0),
+            int((ods_019.get('ods_024b') or {}).get('total_after_ods019') or 0),
+        ),
+    ]
+    execute('DELETE FROM rb5_meta.etl_rule_stats WHERE batch_id = %s', (batch_id,))
+    for row in rows:
+        execute(
+            """
+            INSERT INTO rb5_meta.etl_rule_stats
+                (batch_id, rule_code, rule_desc, hit_count, total_rows, recorded_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (batch_id, rule_code) DO UPDATE SET
+                rule_desc = EXCLUDED.rule_desc,
+                hit_count = EXCLUDED.hit_count,
+                total_rows = EXCLUDED.total_rows,
+                recorded_at = EXCLUDED.recorded_at
+            """,
+            row,
+        )
 
 
 def calculate_field_coverage(table_name: str, *, filled: bool) -> dict[str, float]:

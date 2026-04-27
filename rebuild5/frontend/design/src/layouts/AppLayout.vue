@@ -33,6 +33,7 @@ const navSections: NavSection[] = [
           { label: '字段定义', path: '/etl/field-audit', group: 'etl' },
           { label: '解析', path: '/etl/parse', group: 'etl' },
           { label: '清洗', path: '/etl/clean', group: 'etl' },
+          { label: 'ODS 规则命中', path: '/etl/rule-stats', group: 'etl' },
           { label: '补齐', path: '/etl/fill', group: 'etl' },
         ]
       },

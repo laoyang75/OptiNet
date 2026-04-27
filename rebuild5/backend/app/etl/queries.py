@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from .definitions import L0_FIELD_DEFINITIONS, RAW_FIELD_DEFINITIONS, get_l0_field_groups, summarize_decisions
+from .pipeline import ODS_RULE_STAT_DEFS, ensure_etl_rule_stats_schema
 from .source_prep import DATASET_KEY
 from ..core.database import fetchall, fetchone
 
@@ -350,3 +351,52 @@ def get_clean_rules_payload() -> dict[str, Any]:
             'passRate': float(latest.get('clean_pass_rate', 0)),
         },
     }
+
+
+def get_rule_stats_payload(batch_id: int | None = None, rule_code: str | None = None) -> dict[str, Any]:
+    ensure_etl_rule_stats_schema()
+    params: list[Any] = []
+    where = []
+    if batch_id is not None:
+        where.append('batch_id = %s')
+        params.append(batch_id)
+    if rule_code:
+        where.append('rule_code = %s')
+        params.append(rule_code)
+    where_sql = f"WHERE {' AND '.join(where)}" if where else ''
+    rows = fetchall(
+        f"""
+        SELECT
+            batch_id,
+            rule_code,
+            rule_desc,
+            hit_count,
+            total_rows,
+            CASE
+                WHEN COALESCE(total_rows, 0) <= 0 THEN 0::double precision
+                ELSE hit_count::double precision / total_rows
+            END AS hit_pct,
+            recorded_at
+        FROM rb5_meta.etl_rule_stats
+        {where_sql}
+        ORDER BY batch_id DESC, hit_count DESC, rule_code
+        """,
+        tuple(params) if params else None,
+    )
+    if not rows:
+        fallback_batch = batch_id or 0
+        rows = [
+            {
+                'batch_id': fallback_batch,
+                'rule_code': code,
+                'rule_desc': desc,
+                'hit_count': 0,
+                'total_rows': 0,
+                'hit_pct': 0,
+                'recorded_at': None,
+            }
+            for code, desc in ODS_RULE_STAT_DEFS.items()
+            if not rule_code or code == rule_code
+        ]
+    batches = sorted({int(row['batch_id']) for row in rows if row.get('batch_id') is not None}, reverse=True)
+    return {'items': rows, 'batches': batches}

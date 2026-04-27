@@ -466,3 +466,164 @@ def get_exit_warnings_payload(page: int = 1, page_size: int = 50) -> dict[str, A
         page_size=page_size,
     )
     return {'items': result['items'], '_page_info': result}
+
+
+def get_device_weighted_p90_payload(cell_id: int) -> dict[str, Any] | None:
+    """Expose the existing device-weighted p90 calculation for one cell.
+
+    Step 5 already stores `trusted_cell_library.p90_radius_m` as the weighted
+    p90. This endpoint recomputes the comparison and top device contribution
+    from the retained core points so the UI can explain the delta.
+    """
+    cell = _safe_fetchone(
+        """
+        SELECT batch_id, operator_code, lac, bs_id, cell_id, tech_norm,
+               center_lon, center_lat, p90_radius_m
+        FROM rb5.trusted_cell_library
+        WHERE batch_id = (SELECT COALESCE(MAX(batch_id), 0) FROM rb5.trusted_cell_library)
+          AND cell_id = %s
+        ORDER BY p90_radius_m DESC NULLS LAST
+        LIMIT 1
+        """,
+        (cell_id,),
+    )
+    if not cell:
+        return None
+
+    stats = _safe_fetchone(
+        """
+        WITH points AS (
+            SELECT
+                COALESCE(NULLIF(dev_id, ''), record_id) AS dedup_dev_id,
+                SQRT(POWER((lon_final - %s) * 85300, 2)
+                   + POWER((lat_final - %s) * 111000, 2)) AS dist_m
+            FROM rb5.cell_sliding_window
+            WHERE operator_code = %s
+              AND lac IS NOT DISTINCT FROM %s
+              AND bs_id IS NOT DISTINCT FROM %s
+              AND cell_id = %s
+              AND tech_norm IS NOT DISTINCT FROM %s
+              AND gps_valid
+              AND event_time_std IS NOT NULL
+              AND lon_final IS NOT NULL
+              AND lat_final IS NOT NULL
+        ),
+        weighted AS (
+            SELECT
+                dedup_dev_id,
+                dist_m,
+                1.0 / NULLIF(COUNT(*) OVER (PARTITION BY dedup_dev_id), 0) AS point_weight
+            FROM points
+        ),
+        ranked AS (
+            SELECT
+                dedup_dev_id,
+                dist_m,
+                point_weight,
+                SUM(point_weight) OVER (ORDER BY dist_m ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum_w,
+                SUM(point_weight) OVER () AS total_w
+            FROM weighted
+        )
+        SELECT
+            COUNT(*) AS point_count,
+            COUNT(DISTINCT dedup_dev_id) AS device_count,
+            PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY dist_m) AS p90_unweighted_m,
+            MIN(dist_m) FILTER (WHERE cum_w >= 0.9 * total_w) AS p90_device_weighted_m
+        FROM ranked
+        """,
+        (
+            cell['center_lon'],
+            cell['center_lat'],
+            cell['operator_code'],
+            cell['lac'],
+            cell['bs_id'],
+            cell['cell_id'],
+            cell['tech_norm'],
+        ),
+    )
+    if not stats or int(stats.get('point_count') or 0) == 0:
+        return {
+            **cell,
+            'p90_unweighted_m': None,
+            'p90_device_weighted_m': cell.get('p90_radius_m'),
+            'delta_pct': None,
+            'point_count': 0,
+            'device_count': 0,
+            'top_polluting_devices': [],
+        }
+
+    top_devices = _safe_fetchall(
+        """
+        WITH points AS (
+            SELECT
+                COALESCE(NULLIF(dev_id, ''), record_id) AS dedup_dev_id,
+                SQRT(POWER((lon_final - %s) * 85300, 2)
+                   + POWER((lat_final - %s) * 111000, 2)) AS dist_m
+            FROM rb5.cell_sliding_window
+            WHERE operator_code = %s
+              AND lac IS NOT DISTINCT FROM %s
+              AND bs_id IS NOT DISTINCT FROM %s
+              AND cell_id = %s
+              AND tech_norm IS NOT DISTINCT FROM %s
+              AND gps_valid
+              AND event_time_std IS NOT NULL
+              AND lon_final IS NOT NULL
+              AND lat_final IS NOT NULL
+        ),
+        weighted AS (
+            SELECT
+                dedup_dev_id,
+                dist_m,
+                1.0 / NULLIF(COUNT(*) OVER (PARTITION BY dedup_dev_id), 0) AS point_weight
+            FROM points
+        ),
+        device_stats AS (
+            SELECT
+                dedup_dev_id,
+                COUNT(*) AS point_count,
+                MAX(dist_m) AS max_dist_m,
+                AVG(dist_m) AS avg_dist_m,
+                SUM(point_weight * dist_m) AS weighted_dist_sum
+            FROM weighted
+            GROUP BY dedup_dev_id
+        ),
+        total AS (
+            SELECT SUM(weighted_dist_sum) AS total_weighted_dist FROM device_stats
+        )
+        SELECT
+            dedup_dev_id AS dev_id,
+            point_count,
+            1.0 AS weight,
+            max_dist_m,
+            avg_dist_m,
+            CASE WHEN COALESCE(total_weighted_dist, 0) <= 0 THEN 0::double precision
+                 ELSE weighted_dist_sum / total_weighted_dist
+            END AS contribution_pct
+        FROM device_stats, total
+        ORDER BY max_dist_m DESC, contribution_pct DESC
+        LIMIT 5
+        """,
+        (
+            cell['center_lon'],
+            cell['center_lat'],
+            cell['operator_code'],
+            cell['lac'],
+            cell['bs_id'],
+            cell['cell_id'],
+            cell['tech_norm'],
+        ),
+    )
+    unweighted = stats.get('p90_unweighted_m')
+    weighted = stats.get('p90_device_weighted_m') or cell.get('p90_radius_m')
+    delta_pct = None
+    if unweighted is not None and weighted is not None and float(unweighted) > 0:
+        delta_pct = (float(unweighted) - float(weighted)) / float(unweighted)
+    return {
+        **cell,
+        'p90_unweighted_m': unweighted,
+        'p90_device_weighted_m': weighted,
+        'delta_pct': delta_pct,
+        'point_count': int(stats.get('point_count') or 0),
+        'device_count': int(stats.get('device_count') or 0),
+        'top_polluting_devices': top_devices,
+    }

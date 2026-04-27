@@ -6,14 +6,19 @@ import Pagination from '../../components/common/Pagination.vue'
 import SummaryCard from '../../components/common/SummaryCard.vue'
 import PercentBar from '../../components/common/PercentBar.vue'
 import {
-  getMaintenanceStats, getCollisionList, getAntitoxinHits, getExitWarnings, getDriftDistribution,
+  getMaintenanceStats, getCollisionList, getAntitoxinHits, getExitWarnings,
   runMaintenance,
   type MaintenanceStatsPayload, type CollisionItem, type AntitoxinHitItem, type ExitWarningItem,
 } from '../../api/maintenance'
-import { fmt, pct } from '../../composables/useFormat'
+import { fmt } from '../../composables/useFormat'
 import { DRIFT_LABELS, type DriftPattern } from '../../types'
 
-const driftKeys: DriftPattern[] = ['stable', 'large_coverage', 'insufficient', 'moderate_drift', 'collision', 'migration']
+// 8 类对齐 fix5/fix6/loop_optim 后的实际 drift_pattern 落库分类
+// (moderate_drift 是 PG17 时代旧值,新数据不再产生,展示用 fallback)
+const driftKeys: DriftPattern[] = [
+  'stable', 'large_coverage', 'dual_cluster', 'uncertain',
+  'oversize_single', 'migration', 'collision', 'insufficient',
+]
 
 const running = ref(false)
 const stats = ref<MaintenanceStatsPayload>({
@@ -44,16 +49,22 @@ const exitPage = ref(1)
 const exitTotal = ref(0)
 const exitTotalPages = ref(0)
 
-// Drift distribution
-const driftDist = computed<Record<DriftPattern, number>>(() => ({
-  stable: Number(stats.value.drift_distribution.stable ?? 0),
-  large_coverage: Number(stats.value.drift_distribution.large_coverage ?? 0),
-  insufficient: Number(stats.value.drift_distribution.insufficient ?? 0),
-  moderate_drift: Number(stats.value.drift_distribution.moderate_drift ?? 0),
-  collision: Number(stats.value.drift_distribution.collision ?? 0),
-  migration: Number(stats.value.drift_distribution.migration ?? 0),
-}))
-const driftTotal = computed(() => Object.values(driftDist.value).reduce((s, v) => s + v, 0))
+// Drift distribution(8 类对齐 fix5/fix6/loop_optim 后实际落库分类)
+const driftDist = computed<Record<DriftPattern, number>>(() => {
+  const d = stats.value.drift_distribution as Record<string, unknown>
+  return {
+    stable: Number(d.stable ?? 0),
+    large_coverage: Number(d.large_coverage ?? 0),
+    dual_cluster: Number(d.dual_cluster ?? 0),
+    uncertain: Number(d.uncertain ?? 0),
+    oversize_single: Number(d.oversize_single ?? 0),
+    migration: Number(d.migration ?? 0),
+    collision: Number(d.collision ?? 0),
+    insufficient: Number(d.insufficient ?? 0),
+    dynamic: Number(d.dynamic ?? 0),
+    moderate_drift: Number(d.moderate_drift ?? 0),  // PG17 时代旧值,fallback
+  }
+})
 const driftMax = computed(() => Math.max(...Object.values(driftDist.value), 1))
 
 function fmtTime(v: string | null): string {
@@ -127,6 +138,16 @@ onMounted(loadAll)
       <button class="btn btn-sm ml-md" :disabled="running" @click="doRun">{{ running ? '运行中...' : '运行 Step 5' }}</button>
     </div>
   </PageHeader>
+
+  <!-- 集群版本信息条(2026-04-27 PG18 升级后)-->
+  <!-- 注:静态展示,版本变化时手动更新此处 -->
+  <div class="cluster-info-bar mb-md">
+    <span class="info-pill"><span class="info-label">PostgreSQL</span> 18.3</span>
+    <span class="info-pill"><span class="info-label">Citus</span> 14.0-1</span>
+    <span class="info-pill"><span class="info-label">PostGIS</span> 3.6.3</span>
+    <span class="info-pill"><span class="info-label">集群</span> 1 coord + 4 worker @ 5488</span>
+    <span class="info-pill info-pill-fallback"><span class="info-label">PG17 fallback</span> 5487(观察期)</span>
+  </div>
 
   <!-- Section 1: Key change cards -->
   <div class="grid grid-6 mb-lg">
@@ -289,6 +310,29 @@ onMounted(loadAll)
 .drift-large_coverage { background: var(--c-warning); }
 .drift-moderate_drift { background: var(--c-dormant); }
 .drift-insufficient { background: var(--c-waiting); }
+/* fix5/fix6 新增 4 类 */
+.drift-dual_cluster { background: #f97316; }       /* 双质心 - orange */
+.drift-uncertain { background: #ec4899; }          /* 多质心 - pink */
+.drift-oversize_single { background: #06b6d4; }    /* 单簇超大 - cyan */
+.drift-dynamic { background: #ef4444; }            /* 动态 - red */
 
 .empty-row { padding: 20px; text-align: center; color: var(--c-text-muted); }
+
+/* 集群版本信息条 */
+.cluster-info-bar {
+  display: flex; flex-wrap: wrap; gap: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-md); background: var(--c-bg);
+  border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+.info-pill {
+  padding: 3px 10px; background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 12px; color: var(--c-text-secondary);
+}
+.info-pill .info-label {
+  color: var(--c-text-muted); margin-right: 4px;
+}
+.info-pill-fallback {
+  background: #fef3c7; border-color: #fde68a; color: #92400e;
+}
 </style>

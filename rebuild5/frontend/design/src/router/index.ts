@@ -15,6 +15,7 @@ const router = createRouter({
     { path: '/etl/field-audit', component: () => import('../views/etl/FieldAudit.vue'), meta: { title: '字段定义', group: 'etl' } },
     { path: '/etl/parse', component: () => import('../views/etl/Parse.vue'), meta: { title: '解析', group: 'etl' } },
     { path: '/etl/clean', component: () => import('../views/etl/Clean.vue'), meta: { title: '清洗', group: 'etl' } },
+    { path: '/etl/rule-stats', component: () => import('../views/etl/RuleStats.vue'), meta: { title: 'ODS 规则命中', group: 'etl' } },
     { path: '/etl/fill', component: () => import('../views/etl/Fill.vue'), meta: { title: '补齐', group: 'etl' } },
     // 画像主链
     { path: '/profile/routing', component: () => import('../views/profile/Routing.vue'), meta: { title: '基础画像与分流', group: 'profile' } },

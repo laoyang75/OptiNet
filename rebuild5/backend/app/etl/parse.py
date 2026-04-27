@@ -107,7 +107,7 @@ def step1_parse() -> dict[str, Any]:
 
 
 def _collect_ods_019_stats() -> dict[str, Any]:
-    """Count how many cell_infos objects ODS-019 filtered as stale cache.
+    """Count how many cell_infos objects ODS-019 / ODS-024b filter.
 
     Scans raw_gps once; expected cost is comparable to one parse-phase SELECT
     but not structurally heavy. Used by /api/etl/clean-rules to surface
@@ -116,32 +116,66 @@ def _collect_ods_019_stats() -> dict[str, Any]:
     max_age_sec = _load_cell_infos_cfg()['max_age_sec']
     row = fetchone(
         f"""
+        WITH expanded AS (
+            SELECT
+                r."记录数唯一标识" AS record_id,
+                COALESCE(
+                    e.cell->'cell_identity'->>'Ci',
+                    e.cell->'cell_identity'->>'Nci',
+                    e.cell->'cell_identity'->>'nci',
+                    e.cell->'cell_identity'->>'cid'
+                ) AS cell_id_text,
+                (e.cell->>'isConnected')::int = 1 AS is_connected,
+                (
+                    e.cell->>'timeStamp' ~ '^[0-9]+$'
+                    AND e.cell->>'past_time' ~ '^[0-9]+(\\.[0-9]+)?$'
+                    AND length(e.cell->>'timeStamp') <= 19
+                    AND split_part((e.cell->>'past_time'), '.', 1)::bigint
+                        - CASE WHEN length(e.cell->>'timeStamp') <= 13
+                               THEN (e.cell->>'timeStamp')::numeric / 1000
+                               ELSE (e.cell->>'timeStamp')::numeric / 1000000000
+                          END > {max_age_sec}
+                ) AS is_stale
+            FROM rb5.raw_gps r,
+                 jsonb_each(NULLIF(btrim(r."cell_infos"), '')::jsonb) AS e(key, cell)
+            WHERE r."cell_infos" IS NOT NULL AND length(r."cell_infos") > 5
+        ),
+        kept_connected AS (
+            SELECT *
+            FROM expanded
+            WHERE is_connected
+              AND cell_id_text IS NOT NULL
+              AND NOT COALESCE(is_stale, false)
+        )
         SELECT
-            COUNT(*) FILTER (WHERE (e.cell->>'isConnected')::int = 1) AS total_connected,
-            COUNT(*) FILTER (
-                WHERE (e.cell->>'isConnected')::int = 1
-                  AND e.cell->>'timeStamp' ~ '^[0-9]+$'
-                  AND e.cell->>'past_time' ~ '^[0-9]+(\\.[0-9]+)?$'
-                  AND length(e.cell->>'timeStamp') <= 19
-                  AND split_part((e.cell->>'past_time'), '.', 1)::bigint
-                      - CASE WHEN length(e.cell->>'timeStamp') <= 13
-                             THEN (e.cell->>'timeStamp')::numeric / 1000
-                             ELSE (e.cell->>'timeStamp')::numeric / 1000000000
-                        END > {max_age_sec}
-            ) AS dropped_stale
-        FROM rb5.raw_gps r,
-             jsonb_each(NULLIF(btrim(r."cell_infos"), '')::jsonb) AS e(key, cell)
-        WHERE r."cell_infos" IS NOT NULL AND length(r."cell_infos") > 5
+            COUNT(*) FILTER (WHERE is_connected) AS total_connected,
+            COUNT(*) FILTER (WHERE is_connected AND is_stale) AS dropped_stale,
+            (SELECT COUNT(*) FROM kept_connected) AS total_after_ods019,
+            (SELECT COALESCE(SUM(cnt - 1), 0)
+             FROM (
+                 SELECT record_id, cell_id_text, COUNT(*) AS cnt
+                 FROM kept_connected
+                 GROUP BY record_id, cell_id_text
+                 HAVING COUNT(*) > 1
+             ) d) AS dropped_duplicate
+        FROM expanded
         """
     )
     total = int(row['total_connected']) if row else 0
     dropped = int(row['dropped_stale']) if row else 0
+    total_after_ods019 = int(row['total_after_ods019']) if row else 0
+    duplicate = int(row['dropped_duplicate']) if row else 0
     return {
         'max_age_sec': max_age_sec,
         'total_connected_objects': total,
         'dropped_stale_count': dropped,
         'kept_count': max(total - dropped, 0),
         'drop_rate': round(dropped / total, 4) if total else 0.0,
+        'ods_024b': {
+            'dropped_duplicate_count': duplicate,
+            'total_after_ods019': total_after_ods019,
+            'drop_rate': round(duplicate / total_after_ods019, 4) if total_after_ods019 else 0.0,
+        },
     }
 
 

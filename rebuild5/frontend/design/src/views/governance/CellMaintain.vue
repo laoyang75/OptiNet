@@ -5,16 +5,25 @@ import PageHeader from '../../components/common/PageHeader.vue'
 import Pagination from '../../components/common/Pagination.vue'
 import SummaryCard from '../../components/common/SummaryCard.vue'
 import StatusTag from '../../components/common/StatusTag.vue'
-import { getMaintenanceCells, getMaintenanceStats, runMaintenance, type MaintenanceCellItem, type MaintenanceStatsPayload } from '../../api/maintenance'
+import {
+  getDeviceWeightedP90,
+  getMaintenanceCells,
+  getMaintenanceStats,
+  runMaintenance,
+  type DeviceWeightedP90Payload,
+  type MaintenanceCellItem,
+  type MaintenanceStatsPayload,
+} from '../../api/maintenance'
 // 注：p90_radius_m 现在是方案 B（MAD + 设备-天去重）输出，在列表中以"质心覆盖"展示
-import { fmt } from '../../composables/useFormat'
+import { fmt, pct } from '../../composables/useFormat'
 import { DRIFT_LABELS, type DriftPattern } from '../../types'
 
 // 来源 antitoxin_params.yaml: drift.insufficient_min_days
 const INSUFFICIENT_MIN_DAYS = 2
+type CurrentDriftPattern = Exclude<DriftPattern, 'moderate_drift'>
 
 // 新分类顺序（正常 → 覆盖大 → 双质心 → 迁移 → 碰撞 → 动态 → 多质心 → 单簇超大 → 证据不足）
-const driftKeys: DriftPattern[] = [
+const driftKeys: CurrentDriftPattern[] = [
   'stable', 'large_coverage', 'dual_cluster', 'migration',
   'collision', 'dynamic', 'uncertain', 'oversize_single', 'insufficient',
 ]
@@ -22,11 +31,19 @@ type FilterKind = 'all' | 'anomaly' | DriftPattern | 'multi_centroid' | 'has_ta'
 const selectedKind = ref<FilterKind>('all')
 const cells = ref<MaintenanceCellItem[]>([])
 const expandedIdx = ref<number | null>(null)
+const activeDetailTab = ref<'overview' | 'weighted-p90'>('overview')
 const page = ref(1)
 const pageSize = ref(20)
 const totalCount = ref(0)
 const totalPages = ref(0)
 const running = ref(false)
+const taRangeMin = ref(0)
+const taRangeMax = ref(1300)
+const freqBandFilter = ref('all')
+const taVerificationFilters = ref<string[]>([])
+const timingAdvanceFilter = ref<'all' | 'has' | 'none'>('all')
+const weightedP90ByCell = ref<Record<string, DeviceWeightedP90Payload | null>>({})
+const weightedP90Loading = ref<Record<string, boolean>>({})
 const stats = ref<MaintenanceStatsPayload>({
   version: { run_id: '', dataset_key: '', snapshot_version: 'v0', snapshot_version_prev: 'v0' },
   summary: {
@@ -36,7 +53,7 @@ const stats = ref<MaintenanceStatsPayload>({
   drift_distribution: {},
 })
 
-const driftDist = computed<Record<Exclude<DriftPattern, 'moderate_drift'>, number>>(() => ({
+const driftDist = computed<Record<CurrentDriftPattern, number>>(() => ({
   stable: Number(stats.value.drift_distribution.stable ?? 0),
   large_coverage: Number(stats.value.drift_distribution.large_coverage ?? 0),
   dual_cluster: Number((stats.value.drift_distribution as any).dual_cluster ?? 0),
@@ -80,15 +97,37 @@ const filterKinds = [
   { key: 'ta_reliable', label: 'TA 可信 (n≥10)' },
 ]
 
+const taVerificationOptions = [
+  { key: 'verified', label: 'verified' },
+  { key: 'disputed', label: 'disputed' },
+  { key: 'unverified', label: 'unverified' },
+]
+
+function taVerificationGroup(v: string | null | undefined): string {
+  if (v === 'ok') return 'verified'
+  if (v === 'large' || v === 'xlarge') return 'disputed'
+  return 'unverified'
+}
+
+const filteredCells = computed(() => cells.value.filter(item => {
+  const taDist = item.ta_dist_p90_m
+  if (taDist != null && (taDist < taRangeMin.value || taDist > taRangeMax.value)) return false
+  if (taDist == null && (taRangeMin.value > 0 || taRangeMax.value < 1300)) return false
+  if (freqBandFilter.value !== 'all') {
+    if (freqBandFilter.value === 'unknown') {
+      if (item.freq_band) return false
+    } else if ((item.freq_band || '').toLowerCase() !== freqBandFilter.value) return false
+  }
+  if (taVerificationFilters.value.length > 0 && !taVerificationFilters.value.includes(taVerificationGroup(item.ta_verification))) return false
+  if (timingAdvanceFilter.value === 'has' && (item.ta_n_obs ?? 0) <= 0) return false
+  if (timingAdvanceFilter.value === 'none' && (item.ta_n_obs ?? 0) > 0) return false
+  return true
+}))
+
 function densityLabel(days: number): { label: string; style: string } {
   if (days >= 20) return { label: '高密度', style: 'background:#fee2e2;color:#991b1b' }
   if (days >= 10) return { label: '中密度', style: 'background:#fef3c7;color:#92400e' }
   return { label: '低密度', style: 'background:#f3f4f6;color:#6b7280' }
-}
-
-function fmtRsrp(v: any): string {
-  if (v == null) return '-'
-  return Number(v).toFixed(2)
 }
 
 // ==================== TA 覆盖评估辅助 ====================
@@ -184,7 +223,35 @@ function coverageClass(p90: number | null | undefined): string {
   return 'cov-large'                          // 偏大（将进入多质心深度分析）
 }
 
-function toggle(idx: number) { expandedIdx.value = expandedIdx.value === idx ? null : idx }
+function detailKey(item: MaintenanceCellItem): string {
+  return `${item.operator_code}-${item.lac}-${item.cell_id}-${item.tech_norm || ''}`
+}
+
+function maskDevId(v: string | null | undefined): string {
+  if (!v) return '-'
+  if (v.length <= 8) return v
+  return `${v.slice(0, 4)}...${v.slice(-4)}`
+}
+
+function toggle(idx: number) {
+  expandedIdx.value = expandedIdx.value === idx ? null : idx
+  activeDetailTab.value = 'overview'
+}
+
+async function openWeightedP90(item: MaintenanceCellItem) {
+  activeDetailTab.value = 'weighted-p90'
+  const key = detailKey(item)
+  if (weightedP90ByCell.value[key] !== undefined || weightedP90Loading.value[key]) return
+  weightedP90Loading.value = { ...weightedP90Loading.value, [key]: true }
+  try {
+    const payload = await getDeviceWeightedP90(item.cell_id)
+    weightedP90ByCell.value = { ...weightedP90ByCell.value, [key]: payload }
+  } catch {
+    weightedP90ByCell.value = { ...weightedP90ByCell.value, [key]: null }
+  } finally {
+    weightedP90Loading.value = { ...weightedP90Loading.value, [key]: false }
+  }
+}
 
 async function loadCells(kind = selectedKind.value) {
   selectedKind.value = kind
@@ -263,6 +330,48 @@ onMounted(async () => {
         </button>
       </div>
     </div>
+    <div class="ta-filter-panel">
+      <div class="ta-filter-head">
+        <span class="font-semibold text-xs">TA 筛选</span>
+        <span class="text-xs text-secondary">当前页命中 {{ fmt(filteredCells.length) }} / {{ fmt(cells.length) }}</span>
+      </div>
+      <div class="ta-filter-grid">
+        <label class="filter-field">
+          <span>TA 估距区间</span>
+          <div class="range-row">
+            <input v-model.number="taRangeMin" type="range" min="0" max="1300" step="50">
+            <input v-model.number="taRangeMax" type="range" min="0" max="1300" step="50">
+            <strong class="font-mono">{{ taRangeMin }}-{{ taRangeMax }}m</strong>
+          </div>
+        </label>
+        <label class="filter-field">
+          <span>freq_band</span>
+          <select v-model="freqBandFilter">
+            <option value="all">全部</option>
+            <option value="fdd">FDD</option>
+            <option value="tdd">TDD</option>
+            <option value="unknown">未知</option>
+          </select>
+        </label>
+        <div class="filter-field">
+          <span>ta_verification</span>
+          <div class="check-row">
+            <label v-for="opt in taVerificationOptions" :key="opt.key">
+              <input v-model="taVerificationFilters" type="checkbox" :value="opt.key">
+              {{ opt.label }}
+            </label>
+          </div>
+        </div>
+        <label class="filter-field">
+          <span>timing_advance</span>
+          <select v-model="timingAdvanceFilter">
+            <option value="all">全部</option>
+            <option value="has">有值</option>
+            <option value="none">无值</option>
+          </select>
+        </label>
+      </div>
+    </div>
 
     <table class="data-table" style="margin-top:var(--sp-sm)">
       <thead>
@@ -275,7 +384,7 @@ onMounted(async () => {
         </tr>
       </thead>
       <tbody>
-        <template v-for="(item, idx) in cells" :key="`${item.operator_code}-${item.lac}-${item.cell_id}-${item.tech_norm || ''}`">
+        <template v-for="(item, idx) in filteredCells" :key="`${item.operator_code}-${item.lac}-${item.cell_id}-${item.tech_norm || ''}`">
           <tr class="clickable-row" :class="{ 'antitoxin-row': item.antitoxin_hit }" @click="toggle(idx)">
             <td class="expand-icon">{{ expandedIdx === idx ? '▾' : '▸' }}</td>
             <td class="text-xs">{{ item.operator_cn || item.operator_code }}</td>
@@ -303,6 +412,11 @@ onMounted(async () => {
           <tr v-if="expandedIdx === idx" class="detail-row">
             <td :colspan="13">
               <div class="detail-content">
+                <div class="detail-tabs">
+                  <button class="tab-btn" :class="{ active: activeDetailTab === 'overview' }" @click.stop="activeDetailTab = 'overview'">概览</button>
+                  <button class="tab-btn" :class="{ active: activeDetailTab === 'weighted-p90' }" @click.stop="openWeightedP90(item)">加权 P90</button>
+                </div>
+                <template v-if="activeDetailTab === 'overview'">
                 <div class="detail-section">
                   <div class="section-title">空间 · 质心覆盖（方案 B：MAD + 设备-天去重）</div>
                   <div class="detail-grid">
@@ -424,11 +538,51 @@ onMounted(async () => {
                     </tbody>
                   </table>
                 </div>
+                </template>
+                <div v-else class="detail-section weighted-section">
+                  <div class="section-title">device-weighted p90</div>
+                  <template v-if="weightedP90Loading[detailKey(item)]">
+                    <div class="text-xs text-secondary">加载中...</div>
+                  </template>
+                  <template v-else-if="weightedP90ByCell[detailKey(item)]">
+                    <div class="p90-compare">
+                      <div class="p90-bar-row">
+                        <span>无权 P90</span>
+                        <div class="p90-track"><div class="p90-fill raw" :style="{ width: `${Math.min(((weightedP90ByCell[detailKey(item)]!.p90_unweighted_m || 0) / Math.max(weightedP90ByCell[detailKey(item)]!.p90_unweighted_m || 0, weightedP90ByCell[detailKey(item)]!.p90_device_weighted_m || 0, 1)) * 100, 100)}%` }"></div></div>
+                        <strong class="font-mono">{{ weightedP90ByCell[detailKey(item)]!.p90_unweighted_m != null ? Math.round(weightedP90ByCell[detailKey(item)]!.p90_unweighted_m!) + 'm' : '-' }}</strong>
+                      </div>
+                      <div class="p90-bar-row">
+                        <span>加权 P90</span>
+                        <div class="p90-track"><div class="p90-fill weighted" :style="{ width: `${Math.min(((weightedP90ByCell[detailKey(item)]!.p90_device_weighted_m || 0) / Math.max(weightedP90ByCell[detailKey(item)]!.p90_unweighted_m || 0, weightedP90ByCell[detailKey(item)]!.p90_device_weighted_m || 0, 1)) * 100, 100)}%` }"></div></div>
+                        <strong class="font-mono">{{ weightedP90ByCell[detailKey(item)]!.p90_device_weighted_m != null ? Math.round(weightedP90ByCell[detailKey(item)]!.p90_device_weighted_m!) + 'm' : '-' }}</strong>
+                      </div>
+                    </div>
+                    <div class="delta-line">
+                      加权后半径减少
+                      <strong>{{ weightedP90ByCell[detailKey(item)]!.delta_pct != null ? pct(weightedP90ByCell[detailKey(item)]!.delta_pct!) : '-' }}</strong>
+                      <span class="text-muted ml-sm">points={{ fmt(weightedP90ByCell[detailKey(item)]!.point_count) }} / devices={{ fmt(weightedP90ByCell[detailKey(item)]!.device_count) }}</span>
+                    </div>
+                    <table class="data-table centroid-table">
+                      <thead><tr><th>设备</th><th>点数</th><th>权重</th><th>最大距离</th><th>平均距离</th><th>贡献</th></tr></thead>
+                      <tbody>
+                        <tr v-for="dev in weightedP90ByCell[detailKey(item)]!.top_polluting_devices" :key="dev.dev_id">
+                          <td class="font-mono">{{ maskDevId(dev.dev_id) }}</td>
+                          <td class="font-mono">{{ fmt(dev.point_count) }}</td>
+                          <td class="font-mono">{{ dev.weight.toFixed(1) }}</td>
+                          <td class="font-mono">{{ dev.max_dist_m != null ? Math.round(dev.max_dist_m) + 'm' : '-' }}</td>
+                          <td class="font-mono">{{ dev.avg_dist_m != null ? Math.round(dev.avg_dist_m) + 'm' : '-' }}</td>
+                          <td class="font-mono">{{ pct(dev.contribution_pct) }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </template>
+                  <div v-else class="text-xs text-secondary">暂无加权 P90 明细</div>
+                </div>
               </div>
             </td>
           </tr>
         </template>
-        <tr v-if="cells.length === 0">
+        <tr v-if="filteredCells.length === 0">
           <td colspan="13" class="empty-row">暂无 Cell 维护数据</td>
         </tr>
       </tbody>
@@ -494,8 +648,35 @@ onMounted(async () => {
 .expand-icon { font-size: 10px; color: var(--c-text-muted); text-align: center; }
 .wrap-row { flex-wrap: wrap; }
 
+.ta-filter-panel {
+  margin: var(--sp-md) var(--sp-lg) 0;
+  padding: 10px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-bg);
+}
+.ta-filter-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ta-filter-grid { display: grid; grid-template-columns: 1.4fr 150px 1.4fr 150px; gap: 10px; align-items: start; }
+.filter-field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--c-text-muted); }
+.filter-field select {
+  height: 28px; border: 1px solid var(--c-border); border-radius: 4px;
+  background: var(--c-card); color: var(--c-text); padding: 2px 8px;
+}
+.range-row { display: grid; grid-template-columns: 1fr 1fr 86px; gap: 6px; align-items: center; color: var(--c-text); }
+.range-row input { min-width: 0; }
+.check-row { display: flex; flex-wrap: wrap; gap: 6px 10px; color: var(--c-text); }
+.check-row label { display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 1200px) { .ta-filter-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .ta-filter-grid { grid-template-columns: 1fr; } }
+
 .detail-row td { background: var(--c-bg); padding: 0 !important; }
 .detail-content { padding: 16px 20px; }
+.detail-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.tab-btn {
+  border: 1px solid var(--c-border); background: var(--c-card); color: var(--c-text);
+  border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+}
+.tab-btn.active { background: var(--c-primary); border-color: var(--c-primary); color: white; }
 .detail-section { margin-bottom: 12px; }
 .detail-section:last-child { margin-bottom: 0; }
 .section-title {
@@ -566,4 +747,13 @@ onMounted(async () => {
 .threshold-over    { background: #fee2e2; color: #991b1b; }
 .threshold-under   { background: #dcfce7; color: #166534; }
 .threshold-conflict{ background: #fef3c7; color: #92400e; font-weight: 600; }
+
+.weighted-section { background: #fafbfc; padding: 8px; border-radius: 6px; }
+.p90-compare { display: grid; gap: 8px; max-width: 620px; margin-bottom: 10px; }
+.p90-bar-row { display: grid; grid-template-columns: 86px minmax(160px, 1fr) 70px; align-items: center; gap: 10px; font-size: 12px; }
+.p90-track { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
+.p90-fill { height: 100%; border-radius: 6px; }
+.p90-fill.raw { background: #f97316; }
+.p90-fill.weighted { background: #0ea5e9; }
+.delta-line { font-size: 12px; margin-bottom: 10px; color: var(--c-text); }
 </style>
