@@ -96,3 +96,16 @@
 - notes:
   - 4 条 grep 扫描均显式排除了 `DOC_CONSOLIDATION_PROMPT.md`
   - `archive/` 冷冻区未纳入修复或残留判定
+
+### doc_consolidation_phase7_done
+
+- final_report: `rebuild5/docs/archive/_consolidation_report.md`
+- archived_prompt: `rebuild5/docs/archive/_consolidation_prompt.md`
+- file_counts:
+  - markdown_total_before = 161
+  - markdown_total_after = 165
+  - top_level_markdown_before = 29
+  - top_level_markdown_after = 19
+- notes:
+  - 最终阶段使用显式 `git add`,避免遗漏新文件
+  - `gps1/` 保持 active,未纳入本轮提交
