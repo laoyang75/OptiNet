@@ -261,6 +261,11 @@ Cell -> BS -> LAC
 
 ### 6.1 文档阅读顺序
 
+> 想了解项目当前状态(PG18 升级后 / fix5/fix6/loop/upgrade trail) → 看 [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+> 想直接操作集群(跑数 / 验证 / 升级)→ 看 [runbook.md](./runbook.md)
+>
+> ⚠️ **以下文档阅读顺序写于 PG17 时代**,环境前置(§ 0)中的 PG17 / 5433 / fix4_codex 等信息已过时,**当前生产是 PG18.3 / 5488 / yangca**(详见 PROJECT_STATUS.md)。但架构主线(Step1-5 状态机 / 业务规则 / 术语)仍然适用。
+
 | 步骤 | 文档 | 阅读目的 |
 |---|---|---|
 | 1 | [处理流程总览.md](./处理流程总览.md) | 理解 Step1-5 状态机全貌，是最重要的架构文档 |
@@ -273,7 +278,7 @@ Cell -> BS -> LAC
 | 8 | [04_知识补数.md](./04_知识补数.md) | Step4 donor 补数逻辑细节 |
 | 9 | [05_画像维护.md](./05_画像维护.md) | Step5 多质心、碰撞、动态维护细节 |
 | 10 | [06_服务层_运营商数据库与分析服务.md](./06_服务层_运营商数据库与分析服务.md) | Step6 结果库查询与服务层（只读消费层） |
-| 11 | [runbook_v5.md](./runbook_v5.md) | 完整跑通操作手册，含样例验证结果 |
+| 11 | [archive/old_prompts/runbook_v5.md](./archive/old_prompts/runbook_v5.md) | 历史完整跑通操作手册，保留作 trail 参考 |
 
 > 按需查阅（非主线必读）：
 > - [07_数据集选择与运行管理.md](./07_数据集选择与运行管理.md) — 数据集元数据与运行版本管理
@@ -310,14 +315,18 @@ Cell -> BS -> LAC
 | `docs/04_知识补数.md` | Step4 donor 补数 | ✅ 实现 Step4 时读 |
 | `docs/05_画像维护.md` | Step5 维护、碰撞、多质心 | ✅ 实现 Step5 时读 |
 | `docs/06_服务层_运营商数据库与分析服务.md` | Step6 结果库查询（只读服务层） | ✅ 实现查询服务时读 |
-| `docs/runbook_v5.md` | 操作手册 + 样例验证结果 | ✅ 跑通样例时读 |
+| `docs/archive/old_prompts/runbook_v5.md` | 历史操作手册 + 样例验证结果 | 🟡 只在查旧 trail 时读 |
 | `docs/07_数据集选择与运行管理.md` | 数据集元数据与运行版本管理 | 🟡 按需查阅 |
 | `docs/08_UI设计.md` | UI 设计总纲与页面清单 | 🟡 前端对接时参考 |
 | `docs/09_控制操作_初始化重算与回归.md` | 管道运行控制、重跑策略 | 🟡 运维自动化时参考 |
 | `docs/10_调试期结果保留与字段口径提示.md` | 调试期临时规则 | 🟡 主链稳定后可忽略 |
-| `docs/human_guide/` | 另一套按步骤组织的操作指南 | 🟡 可辅助参考 |
-| `docs/fix/`、`docs/fix1/` ~ `docs/fix4/` | 历史问题研究与修复过程 | ❌ 接手阶段不需要读 |
-| `docs/dev/` | 开发期调试笔记与性能优化记录 | ❌ 接手阶段不需要读 |
+| `docs/archive/human_guide/` | 另一套按步骤组织的操作指南 | 🟡 可辅助参考 |
+| `docs/archive/fix_history/fix_legacy/`、`docs/archive/fix_history/fix1/` ~ `fix4/` | 历史问题研究与修复过程 | ❌ 接手阶段不需要读 |
+| `docs/archive/fix_history/fix5/` | Citus 迁移可行性 + 4 根因修复(已收档) | 🟡 想看 Citus 兼容陷阱时读 |
+| `docs/archive/fix_history/fix6_optim/` | 抽 Citus 兼容统一 helper + pipelined 加速 + runbook(已收档) | 🟡 想看 helper 设计 / 02C 守护测试时读 |
+| `docs/archive/fix_history/loop_optim/` | 索引补全 + artifact pipelined runner(已收档) | 🟡 想看 artifact 流水线设计时读 |
+| `docs/archive/fix_history/upgrade/` | PG17 → PG18 升级 trail + 内核 6.6.12 升级试验 | 🟡 想看 Citus 跨集群迁移正确路径时读 |
+| `docs/archive/dev/` | 开发期调试笔记与性能优化记录 | ❌ 接手阶段不需要读 |
 | `prompts/` | AI 辅助开发使用的提示词 | ❌ 不需要读 |
 | `scripts/archive/` | 旧版 runbook 和脚本（已被 runbook_v5.md 替代） | ❌ 不需要读 |
 
@@ -378,4 +387,3 @@ Cell -> BS -> LAC
 - 分表重构
 
 都应建立在“这条主线已在云端可靠可重放”的前提上。
-

@@ -33,3 +33,17 @@
   - `fix/ fix1/ fix2/ fix3/ fix4/ fix5/ fix6_optim/ loop_optim/ upgrade/ dev/ human_guide/ gps研究/` 已物理移入 `archive/`
   - `rerun_delivery_* / 重跑* / 样例速度优化* / 速度优化评估* / runbook_v5.md` 已移入 `archive/`
   - `gps1/` 保持顶层 active; `DOC_CONSOLIDATION_PROMPT.md` 保留到阶段 7 再归档
+
+### doc_consolidation_phase2_done
+
+- link_hits_before: 11
+- link_hits_after: 0
+- files_updated:
+  - `rebuild5/docs/PROJECT_STATUS.md`
+  - `rebuild5/docs/CLUSTER_USAGE.md`
+  - `rebuild5/docs/runbook.md`
+  - `rebuild5/docs/README.md`
+- notes:
+  - 只修 active 区域对 `fix* / fix6_optim / loop_optim / upgrade / runbook_v5` 的链接
+  - `archive/` 内部链接保持冷冻态,未修
+  - 验证 grep 显式排除了 `DOC_CONSOLIDATION_PROMPT.md`

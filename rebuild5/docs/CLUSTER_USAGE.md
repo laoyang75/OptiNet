@@ -129,7 +129,7 @@ cd rebuild5 && python3 -m pytest tests/test_citus_compat.py tests/test_citus_cal
 
 ## 5. 跑批(改代码后验证流程)
 
-详见 [`runbook.md`](./runbook.md) 和 [`fix6_optim/04_runbook.md`](./fix6_optim/04_runbook.md)。
+详见 [`runbook.md`](./runbook.md) 和 [`archive/fix_history/fix6_optim/04_runbook.md`](./archive/fix_history/fix6_optim/04_runbook.md)。
 
 | 改动范围 | 推荐验证方式 | 时长 |
 |---|---|---|
