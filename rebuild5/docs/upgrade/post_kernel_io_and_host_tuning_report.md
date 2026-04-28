@@ -3,8 +3,9 @@
 ## 0. TL;DR
 
 - 结果:完成。
-- PG18 IO:5 节点均已 `ALTER SYSTEM` 到 `io_method=worker` / `io_workers=10` / `effective_io_concurrency=64` / `maintenance_io_concurrency=64`。
-- Pending restart:IO 四项 `pending_restart=none`;网络 backlog 对 PG18 listen socket 的完整拾取需等下次容器重启,本阶段按约束未重启。
+- PG18 IO:5 节点最终已从 `worker` AIO 升级到真正 `io_uring` AIO;`io_workers=10` / `effective_io_concurrency=64` / `maintenance_io_concurrency=64` 保持。
+- Pending restart:5 节点 `io_method=io_uring,pending_restart=false`。
+- 容器安全配置:5 节点 PG18 容器已滚动重建并加入 `--security-opt seccomp=unconfined`,容器内 `io_uring_setup=OK`。
 - Host profile:5 节点从 `balanced` 切到 `throughput-performance`。
 - 网络 backlog:5 节点通过 `/etc/sysctl.d/99-citus-network.conf` 持久化 `somaxconn=4096` / `tcp_max_syn_backlog=4096` / `netdev_max_backlog=30000`。
 - 集群健康: `citus_check_cluster_node_health()` 25/25 true,4 workers active。
@@ -173,9 +174,46 @@ Note: `post_kernel_phase4_done`.
 
 待办仅保留 RAID 写入参数,按 user 指令推迟。
 
-## 7. 已知限制 / 后续维护建议
+## 7. io_uring 后续完成记录
 
-1. PG18 容器本阶段未重启,因此 listen socket backlog 对新 `somaxconn` 的完整拾取留到下次容器重启。
-2. RAID 写入参数属于 06 §9 项 6,本阶段按 user 指令不做。
-3. `throughput-performance` 已稳定切换并通过健康检查;后续如果有完整 workload 基准,可再评估是否需要更细的 tuned profile。
-4. 本阶段没有修改 WAL/checkpoint/parallel/cache 等业务 PG 参数,也没有修改 backend/app 代码。
+用户确认可以重启/重建 PG18 容器后,本阶段追加完成真正 `io_uring` AIO:
+
+1. 5 节点执行 `ALTER SYSTEM SET io_method = 'io_uring'`;reload 后进入 `pending_restart=true`。
+2. 先重建 worker `192.168.200.216` 验证,再滚动重建 `219/220/221`,最后重建 coordinator `217`。
+3. 重建保留原数据卷、镜像、端口、`--shm-size=16g`、restart policy、stop timeout 和 nofile ulimit,新增:
+
+```text
+--security-opt seccomp=unconfined
+```
+
+最终 5 节点:
+
+```text
+io_method=io_uring
+pending_restart=false
+container SecurityOpt=["seccomp=unconfined"]
+container io_uring_setup=OK
+```
+
+验证:
+
+```text
+citus_check_cluster_node_health(): 25/25 result=true
+active workers: 4
+TCL b7 = 340766
+cell_sliding_window = 24017207
+sentinels.sh 7 PASS
+endpoint_check.sh PASS
+```
+
+容器 inspect 备份保存到各节点:
+
+```text
+/nas_vol8/upgrade/configs/io_uring_citus-*_5488_<timestamp>.json
+```
+
+## 8. 已知限制 / 后续维护建议
+
+1. RAID 写入参数属于 06 §9 项 6,本阶段按 user 指令不做。
+2. `throughput-performance` 已稳定切换并通过健康检查;后续如果有完整 workload 基准,可再评估是否需要更细的 tuned profile。
+3. 本阶段没有修改 WAL/checkpoint/parallel/cache 等业务 PG 参数,也没有修改 backend/app 代码。

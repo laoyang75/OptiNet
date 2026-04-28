@@ -184,7 +184,7 @@ PG 参数(已 ALTER SYSTEM):
   wal_compression = lz4
   effective_cache_size = 180GB
   random_page_cost = 1.2
-  io_method = worker / io_workers = 10
+  io_method = io_uring / io_workers = 10
   effective_io_concurrency = 64 / maintenance_io_concurrency = 64
   max_parallel_workers = 24 / max_parallel_workers_per_gather = 4
   shared_preload_libraries = citus, pg_stat_statements, auto_explain
@@ -199,6 +199,7 @@ Docker:
   --restart unless-stopped
   --stop-timeout=300
   --ulimit nofile=1048576:1048576
+  --security-opt seccomp=unconfined(io_uring_setup 需要;全 5 节点 PG18 容器已重建)
 
 Host profile:
   tuned-adm active = throughput-performance(全 5 节点)
@@ -207,7 +208,7 @@ Linux sysctl(/etc/sysctl.d/99-citus-network.conf,全 5 节点):
   net.core.somaxconn = 4096
   net.ipv4.tcp_max_syn_backlog = 4096
   net.core.netdev_max_backlog = 30000
-  注:PG18 listener backlog 需要下次容器重启后自然拾取新 somaxconn;本阶段未重启容器。
+  注:PG18 容器已在 io_uring 切换时滚动重建,listener backlog 已拾取新 somaxconn。
 
 待办(后续优化):
   RAID 写入参数(按 user 指令推迟,不盲目永久修改)
