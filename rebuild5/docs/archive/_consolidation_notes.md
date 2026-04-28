@@ -1,0 +1,24 @@
+# consolidation notes
+
+## 2026-04-28
+
+### doc_consolidation_phase0_done
+
+- scope: `rebuild5/docs/`
+- inventory_rows: 161
+- category_counts:
+  - authority = 6
+  - core13 = 13
+  - archive_dirs = 130
+  - archive_top_files = 9
+  - active_gps1 = 2
+  - prompt_final_archive = 1
+- outdated_hits: 39
+- outdated_hit_files:
+  - `rebuild5/docs/05_画像维护.md` = 2
+  - `rebuild5/docs/11_核心表说明.md` = 37
+- link_hits: 104
+- notes:
+  - `PROJECT_STATUS.md` / `CLUSTER_USAGE.md` / `runbook.md` / `README.md` 是阶段 2 的主要修链对象。
+  - `11_核心表说明.md` 是阶段 3 的最高风险文档,表名前缀更新必须保守执行。
+  - grep/link 验证阶段都必须排除 `DOC_CONSOLIDATION_PROMPT.md` 自身。
