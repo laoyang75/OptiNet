@@ -1,389 +1,81 @@
-# Rebuild5 交付说明
+# Rebuild5 文档导航
 
-本文件面向即将接手 `rebuild5` 的云端开发团队。
+> 更新声明(2026-04-28)
+> - 当前生产环境: PG 18.3 / Citus 14.0-1 / PostGIS 3.6.3 / coordinator `192.168.200.217:5488` / database `yangca`
+> - 本文件只承担导航职责;业务规则、状态机、术语和操作细节分别以下层权威文档为准
 
-目标不是解释全部业务细节，而是帮助团队在最短时间内回答下面 5 个问题：
+## 1. 先看这 6 份权威文档
 
-1. 这个系统在做什么（→ 第 1 节）
-2. Step1 - Step5 各自负责什么（→ 第 2 节）
-3. 当前哪些逻辑已经确认正确（→ 第 3 节）
-4. 云端重构时哪些边界不能改坏（→ 第 4 节）
-5. 代码和文档里的术语都是什么意思（→ 第 5 节）
-6. 怎么上手（→ 第 6 节 + runbook_v5.md）
-
----
-
-## 0. 环境前置（接手后第一件事）
-
-### 0.1 Python 版本
-
-当前开发与验证环境：**Python 3.9+**（建议 3.9 或 3.11）
-
-### 0.2 安装依赖
-
-```bash
-# 在仓库根目录（WangYou_Data/）执行
-pip install -r rebuild5/backend/requirements.txt
-```
-
-主要依赖：`fastapi`、`psycopg[binary]`（PostgreSQL 驱动）、`pydantic`、`PyYAML`、`pytest`
-
-### 0.3 数据库要求
-
-- **PostgreSQL 17**（当前验证环境为 `192.168.200.217:5433`）
-- 必须启用 **PostGIS 扩展**（用于地理距离计算，Step5 碰撞逻辑依赖）
-- 样例库名称：`ip_loc2_fix4_codex`
-
-```bash
-# 验证 PostGIS 是否已启用
-select postgis_version();
-```
-
-### 0.4 环境变量（必须设置）
-
-```bash
-export REBUILD5_PG_DSN='postgresql://postgres:123456@192.168.200.217:5433/ip_loc2_fix4_codex'
-```
-
-> 云端迁移时请替换为云端数据库地址和密码。
-
-### 0.5 工作目录约定
-
-**所有脚本和 SQL 命令，均在仓库根目录 `WangYou_Data/` 下执行。**
-
-```bash
-cd /path/to/WangYou_Data
-# 然后再执行 python3 rebuild5/scripts/...
-```
-
-## 1. 项目是什么
-
-`rebuild5` 是一套分步骤、按批次运行的网络位置画像处理链路。
-
-主目标：
-
-1. 从原始报文中清洗出结构化定位数据
-2. 构建 Cell（小区）/ BS（基站）/ LAC（位置区）三层对象画像
-3. 按批次累积证据，逐步让对象进入正式库（`trusted_*_library`，即已发布的可信结果）
-4. 对已发布对象做维护：补数（填补缺失字段）、多质心（多个位置中心）、碰撞（位置冲突）、动态识别（位置不稳定）等
-
-核心对象：
-
-| 层级 | 说明 | 业务键 |
-|---|---|---|
-| Cell（小区） | 最小分析单元，一个天线扇区 | `(operator_code, tech_norm, lac, cell_id)` |
-| BS（基站） | 物理站点聚合层，下属多个小区 | `(operator_code, lac, bs_id)` |
-| LAC（位置区） | 区域聚合层 | `(operator_code, lac)` |
-
-### 本文术语速查
-
-下表列出本文中出现的所有内部术语。完整术语表见 [术语对照表.md](./术语对照表.md)。
-
-| 内部术语 | 含义 |
+| 文档 | 用途 |
 |---|---|
-| **画像** | 对一个 Cell/BS/LAC 积累的空间统计描述（位置、半径、观测量等） |
-| **正式库** (`trusted_*_library`) | Step5 发布后的可信结果，供下一批消费 |
-| **快照** (`snapshot`) | 某一批次结束时冻结的全量评估结果 |
-| **donor**（补数来源小区） | Step2 中命中正式库的已发布小区，用于在 Step4 向缺字段记录输出位置和信号知识 |
-| **补数** | 用 donor 的已知信息填补当前记录缺失的 GPS 等字段（Step4 执行） |
-| **Path A**（命中可信库） | 当前记录命中上一轮正式库，直接进入 Step4 补数 |
-| **Path B**（进入评估） | 未命中正式库、但有有效 GPS 证据，进入 Step3 评估 |
-| **Path C**（信息不足丢弃） | 未命中且无有效 GPS 证据，丢弃 |
-| **候选域** | Path B 记录按 Cell 聚合后形成的待评估对象池 |
-| **生命周期** (`lifecycle`) | Cell 当前所处阶段：`waiting`（等待）→ `observing`（观察）→ `qualified`（合格）→ `excellent`（优秀） |
-| **`anchor_eligible`**（锚点资格） | 高可信空间锚点资格，是评估/统计字段，不是 Step4 donor 的门槛 |
-| **`independent_obs`** | 独立观测次数，生命周期晋级的唯一判据 |
-| **`p50` / `p90`** | 观测点到质心距离的第 50 / 90 百分位半径（米），衡量空间聚合精度 |
-| **核心点过滤** | 先找主热点 seed，按距离裁掉离群点，只用剩余核心点算质心和半径 |
-| **滑动窗口** | Step5 维护时，取最近 N 批数据做质心重算的时间窗口 |
-| **多质心** (`multi_centroid`) | 一个 Cell 存在两个或以上稳定位置中心 |
-| **碰撞** (`collision`) | 同一对象出现互相冲突的位置簇（Step5 基于地理距离判定） |
-| **动态** (`dynamic`) | 位置跨度大或位置不稳定的对象 |
-| **`span24`** | 旧指标：观测时间跨度是否超过 24 小时。当前主线已不再用于生命周期晋级 |
+| [`PROJECT_STATUS.md`](./PROJECT_STATUS.md) | 当前状态、历史阶段索引、回归基线 |
+| [`CLUSTER_USAGE.md`](./CLUSTER_USAGE.md) | 集群使用原则、Citus 兼容边界、环境禁忌 |
+| [`runbook.md`](./runbook.md) | 日常跑批、验证、升级/维护入口 |
+| [`处理流程总览.md`](./处理流程总览.md) | Step1-5 状态机总线 |
+| [`术语对照表.md`](./术语对照表.md) | UI/文档/代码术语统一口径 |
+| [`00_全局约定.md`](./00_全局约定.md) | 字段命名、状态定义、全局边界 |
 
-## 2. 当前正确的主线理解
+## 2. 推荐阅读顺序
 
-这是最重要的部分。
+1. [`处理流程总览.md`](./处理流程总览.md) — 先建立 Step1-5 的状态机边界。
+2. [`00_全局约定.md`](./00_全局约定.md) — 再看字段、状态和全局约束。
+3. [`术语对照表.md`](./术语对照表.md) — 避免把内部术语和 UI 表达混用。
+4. [`PROJECT_STATUS.md`](./PROJECT_STATUS.md) — 对齐当前环境、基线和历史阶段。
+5. [`CLUSTER_USAGE.md`](./CLUSTER_USAGE.md) — 写 SQL / 改代码前必须读。
+6. [`runbook.md`](./runbook.md) — 真正开始跑批或验证时再读。
 
-### 2.1 Step1 - Step5 不是 5 个独立模块，而是一条状态机
+## 3. 13 篇核心开发文档
 
-正确主线：
-
-```text
-Step1 清洗（原始报文 → 结构化数据）
--> Step2 路由分流 + 确认 donor（补数来源小区）
--> Step3 评估候选域（待评估对象池）并冻结 snapshot（快照）
--> Step4 只用已确认 donor 补数（填补缺失字段）
--> Step5 维护已发布对象并发布下一轮正式库
-```
-
-如果云端重构后，把某一步做成“局部更自洽”，但破坏了这条状态机，那就是错误。
-
-### 2.2 最核心的职责边界
-
-| 判断 / 动作 | 正确责任步骤 |
+| 文档 | 主题 |
 |---|---|
-| 原始字段清洗、同报文互补 | Step 1 |
-| 当前记录是否命中正式库 → 分流为 Path A / B / C | Step 2 |
-| donor（补数来源小区）是谁 | Step 2 |
-| 候选域（Path B 聚合后的待评估对象）生命周期评估 | Step 3 |
-| Path A（命中可信库）记录补数 | Step 4 |
-| 已发布对象维护：多质心、碰撞、动态识别 | Step 5 |
+| [`00_全局约定.md`](./00_全局约定.md) | 系统级约定 |
+| [`01a_数据源接入_功能要求.md`](./01a_数据源接入_功能要求.md) | Step1 功能要求 |
+| [`01b_数据源接入_处理规则.md`](./01b_数据源接入_处理规则.md) | Step1 处理规则 |
+| [`02_基础画像.md`](./02_基础画像.md) | Step2 分流与基础画像 |
+| [`03_流式质量评估.md`](./03_流式质量评估.md) | Step3 生命周期评估 |
+| [`04_知识补数.md`](./04_知识补数.md) | Step4 补数 |
+| [`05_画像维护.md`](./05_画像维护.md) | Step5 维护 / 多质心 / 碰撞 |
+| [`06_服务层_运营商数据库与分析服务.md`](./06_服务层_运营商数据库与分析服务.md) | Step6 查询消费层 |
+| [`07_数据集选择与运行管理.md`](./07_数据集选择与运行管理.md) | 数据集与运行管理 |
+| [`08_UI设计.md`](./08_UI设计.md) | UI 设计总纲 |
+| [`09_控制操作_初始化重算与回归.md`](./09_控制操作_初始化重算与回归.md) | 重跑与回归控制 |
+| [`10_调试期结果保留与字段口径提示.md`](./10_调试期结果保留与字段口径提示.md) | 调试期口径提示 |
+| [`11_核心表说明.md`](./11_核心表说明.md) | 核心表与 schema 口径 |
 
-### 2.3 一个关键原则：上游决定的事，下游不能重复判断
+## 4. 当前 active 区域
 
-最典型的是 Step4 donor 逻辑。
-
-当前正确设计：
-
-- Step 2 决定 donor（补数来源）身份
-- Step 4 直接消费 donor
-- Step 4 不再重新判断 donor “够不够资格”
-
-错误设计：
-
-- Step 2 已确认 donor
-- Step 4 又基于 `anchor_eligible`（锚点资格）再筛一遍 donor
-
-这会打断 `Path A（命中可信库）-> Step4（补数）` 闭环。
-
-## 3. 当前已确认正确的逻辑
-
-### 3.1 生命周期逻辑
-
-当前确认有效的 Step3 生命周期口径是（`independent_obs` = 独立观测次数）：
-
-| 状态 | 含义 | 规则 |
-|---|---|---|
-| `waiting`（等待） | 证据太少 | `independent_obs < 3` |
-| `observing`（观察） | 有一些证据但不够 | `3 <= independent_obs < 10` |
-| `qualified`（合格） | 达到可信门槛 | `independent_obs >= 10` |
-| `excellent`（优秀） | 高精度 | `independent_obs >= 30` |
-
-说明：
-
-- 生命周期只用于”晋级”，只看 `independent_obs` 一个指标
-- `span24`（观测时间跨度是否超 24 小时）是旧逻辑遗留，不再作为 Step3 晋级门槛
-- 设备数、`p90`（第 90 百分位半径）、跨度等仍然保留，但用于资格字段和后续治理，不再决定生命周期本身
-
-### 3.2 `anchor_eligible` 的正确角色
-
-`anchor_eligible`（锚点资格：能不能作为补数来源）仍然是重要字段，但当前主线里它的角色是：
-
-- 评估 / 治理 / 统计字段
-
-它**不是**：
-
-- Step4 donor（补数来源）的二次准入门槛
-
-### 3.3 GPS / 质心计算
-
-当前主线里，GPS / 质心计算已经升级，不要再按旧的“全点直接中位数”理解。
-
-当前实际逻辑（核心点过滤）：
-
-1. 对分钟级独立观测点做 `SnapToGrid`（网格对齐去重）
-2. 选主热点 seed（观测最密集的网格点）
-3. 计算每个观测点到 seed 的距离
-4. 根据 `core_position_filter` 配置计算 `keep_radius_m`（保留半径），裁掉离群点
-5. 只用保留的核心点重算 `center_lon / center_lat`（质心经纬度）和 `p50 / p90`（第 50/90 百分位半径，单位米）
-
-这套逻辑分两层使用：
-
-- Step2 用于稳住候选域的初始质心和半径
-- Step5 在滑动窗口（最近 N 批数据的时间窗口）上再次使用，用于维护态重算
-
-### 3.4 Step5 多质心 / 碰撞
-
-当前主线里：
-
-- A 类碰撞（同一对象出现互相冲突的位置簇）不是旧的 `COUNT(DISTINCT bs_id)` 逻辑
-- 当前是基于 `cell_centroid_detail`（小区质心明细表）中稳定簇之间的地理距离判断
-
-多质心（一个 Cell 有两个或以上稳定位置中心）候选也不是只看过滤后的 `p90_radius_m`（第 90 百分位半径），还会联合：
-
-- `raw_p90_radius_m`（过滤前的原始 p90 半径）
-- `max_spread_m`（观测点最大展布距离）
-- `core_outlier_ratio`（核心点过滤时被裁掉的离群点占比）
-- `gps_anomaly_type`（GPS 异常类型标签）
-
-## 4. 云端重构时不要踩的坑
-
-### 4.1 不要把 Step4 再改回 `anchor_eligible`（锚点资格）二次过滤
-
-这是最容易被误改坏的点。donor 由 Step2 确认，Step4 直接用，不能再加门槛。
-
-### 4.2 不要把 Step3 生命周期又改成”`span24` 决定晋级”
-
-`span24`（观测时间跨度是否超 24 小时）是旧逻辑遗留，不适合当前流式晋级状态机。
-
-如果云端团队要判断对象是否稳定，应该放到：
-
-- Step5
-- 或后续 Step6/统计质量层
-
-而不是塞回 Step3 生命周期。
-
-### 4.3 不要把 BS/LAC 重新当成原始观测对象
-
-BS/LAC 只能自下而上派生：
-
-```text
-Cell -> BS -> LAC
-```
-
-不能跳过 Cell 重新定义一套原始规则。
-
-### 4.4 不要把样例验证和正式全量混成同一个过程
-
-推荐顺序必须是：
-
-1. 样例验证
-2. 样例指标核对
-3. 备份正式库
-4. 正式库重跑
-
-## 5. 术语对照
-
-代码和文档中有大量内部术语（如 `donor`、`Path A/B/C`、`anchor_eligible`、`snapshot` 等），工程团队在读代码和写 UI 时需要知道它们的含义和对应的中文显示名。
-
-完整术语表见 [术语对照表.md](./术语对照表.md)，涵盖：
-
-- 流程与路径术语（donor、Path A/B/C、routing 等）
-- 生命周期状态术语（waiting / observing / qualified / excellent 等）
-- 资格术语（anchor_eligible、baseline_eligible 等）
-- 对象与版本术语（Cell / BS / LAC、snapshot、trusted_library 等）
-- 治理标签与诊断分类（collision、migration、multi_centroid、dynamic 等）
-
-核心规则只有一条：**同一个概念在全系统只叫一个名字**。详见术语表第 1 节使用规则。
-
-## 6. 云端团队推荐上手顺序
-
-### 6.1 文档阅读顺序
-
-> 想了解项目当前状态(PG18 升级后 / fix5/fix6/loop/upgrade trail) → 看 [PROJECT_STATUS.md](./PROJECT_STATUS.md)
-> 想直接操作集群(跑数 / 验证 / 升级)→ 看 [runbook.md](./runbook.md)
->
-> ⚠️ **以下文档阅读顺序写于 PG17 时代**,环境前置(§ 0)中的 PG17 / 5433 / fix4_codex 等信息已过时,**当前生产是 PG18.3 / 5488 / yangca**(详见 PROJECT_STATUS.md)。但架构主线(Step1-5 状态机 / 业务规则 / 术语)仍然适用。
-
-| 步骤 | 文档 | 阅读目的 |
-|---|---|---|
-| 1 | [处理流程总览.md](./处理流程总览.md) | 理解 Step1-5 状态机全貌，是最重要的架构文档 |
-| 2 | [00_全局约定.md](./00_全局约定.md) | 理解字段命名、状态定义、关键边界约定 |
-| 3 | [术语对照表.md](./术语对照表.md) | 代码内部术语 → 中文含义对照，读代码时随时查 |
-| 4 | [01a_数据源接入_功能要求.md](./01a_数据源接入_功能要求.md) | Step1 ETL 的模块职责和输入输出 |
-| 5 | [01b_数据源接入_处理规则.md](./01b_数据源接入_处理规则.md) | Step1 具体解析、清洗、补齐规则 |
-| 6 | [02_基础画像.md](./02_基础画像.md) | Step2 路由分流与基础画像逻辑 |
-| 7 | [03_流式质量评估.md](./03_流式质量评估.md) | Step3 生命周期评估逻辑细节 |
-| 8 | [04_知识补数.md](./04_知识补数.md) | Step4 donor 补数逻辑细节 |
-| 9 | [05_画像维护.md](./05_画像维护.md) | Step5 多质心、碰撞、动态维护细节 |
-| 10 | [06_服务层_运营商数据库与分析服务.md](./06_服务层_运营商数据库与分析服务.md) | Step6 结果库查询与服务层（只读消费层） |
-| 11 | [archive/old_prompts/runbook_v5.md](./archive/old_prompts/runbook_v5.md) | 历史完整跑通操作手册，保留作 trail 参考 |
-
-> 按需查阅（非主线必读）：
-> - [07_数据集选择与运行管理.md](./07_数据集选择与运行管理.md) — 数据集元数据与运行版本管理
-> - [09_控制操作_初始化重算与回归.md](./09_控制操作_初始化重算与回归.md) — 管道运行控制、重跑与回归
-> - [10_调试期结果保留与字段口径提示.md](./10_调试期结果保留与字段口径提示.md) — 调试期临时规则，主链稳定后可忽略
-
-### 6.2 代码阅读顺序
-
-| 步骤 | 文件 | 核心看什么 |
-|---|---|---|
-| 1 | `backend/app/etl/pipeline.py` | Step1 ETL 入口：解析、清洗、字段对齐 |
-| 2 | `backend/app/profile/pipeline.py` | Step2 路由分流和 donor 确认入口 |
-| 3 | `backend/app/evaluation/pipeline.py` | Step3 生命周期评估主逻辑 |
-| 4 | `backend/app/enrichment/pipeline.py` | Step4 补数逻辑，重点看 donor 消费方式 |
-| 5 | `backend/app/maintenance/pipeline.py` | Step5 维护主入口（串联 window → collision → publish） |
-| 6 | `backend/app/maintenance/window.py` | Step5 滑动窗口与质心重算 |
-| 7 | `backend/app/maintenance/collision.py` | Step5 碰撞判断（地理距离方式） |
-| 8 | `backend/app/maintenance/publish_bs_lac.py` | Step5 BS/LAC 上卷发布 |
-
-> 补充：每个模块的 SQL 逻辑集中在同目录的 `queries.py` 文件中，如 `profile/queries.py`、`enrichment/queries.py` 等。
-
-### 6.3 文档地图（哪些文件需要读，哪些不用）
-
-| 目录/文件 | 性质 | 接手团队是否需要读 |
-|---|---|---|
-| `docs/README.md` | 交接说明（本文件） | ✅ 首先读 |
-| `docs/处理流程总览.md` | 状态机总览 | ✅ 架构理解必读 |
-| `docs/00_全局约定.md` | 字段命名、状态定义、边界约定 | ✅ 编码前必读 |
-| `docs/术语对照表.md` | 内部术语 → 中文含义对照 | ✅ 读代码时随时查 |
-| `docs/01a_数据源接入_功能要求.md` | Step1 ETL 模块职责与输入输出 | ✅ 实现 Step1 时读 |
-| `docs/01b_数据源接入_处理规则.md` | Step1 具体解析清洗规则 | ✅ 实现 Step1 时读 |
-| `docs/02_基础画像.md` | Step2 路由分流与基础画像 | ✅ 实现 Step2 时读 |
-| `docs/03_流式质量评估.md` | Step3 生命周期评估 | ✅ 实现 Step3 时读 |
-| `docs/04_知识补数.md` | Step4 donor 补数 | ✅ 实现 Step4 时读 |
-| `docs/05_画像维护.md` | Step5 维护、碰撞、多质心 | ✅ 实现 Step5 时读 |
-| `docs/06_服务层_运营商数据库与分析服务.md` | Step6 结果库查询（只读服务层） | ✅ 实现查询服务时读 |
-| `docs/archive/old_prompts/runbook_v5.md` | 历史操作手册 + 样例验证结果 | 🟡 只在查旧 trail 时读 |
-| `docs/07_数据集选择与运行管理.md` | 数据集元数据与运行版本管理 | 🟡 按需查阅 |
-| `docs/08_UI设计.md` | UI 设计总纲与页面清单 | 🟡 前端对接时参考 |
-| `docs/09_控制操作_初始化重算与回归.md` | 管道运行控制、重跑策略 | 🟡 运维自动化时参考 |
-| `docs/10_调试期结果保留与字段口径提示.md` | 调试期临时规则 | 🟡 主链稳定后可忽略 |
-| `docs/archive/human_guide/` | 另一套按步骤组织的操作指南 | 🟡 可辅助参考 |
-| `docs/archive/fix_history/fix_legacy/`、`docs/archive/fix_history/fix1/` ~ `fix4/` | 历史问题研究与修复过程 | ❌ 接手阶段不需要读 |
-| `docs/archive/fix_history/fix5/` | Citus 迁移可行性 + 4 根因修复(已收档) | 🟡 想看 Citus 兼容陷阱时读 |
-| `docs/archive/fix_history/fix6_optim/` | 抽 Citus 兼容统一 helper + pipelined 加速 + runbook(已收档) | 🟡 想看 helper 设计 / 02C 守护测试时读 |
-| `docs/archive/fix_history/loop_optim/` | 索引补全 + artifact pipelined runner(已收档) | 🟡 想看 artifact 流水线设计时读 |
-| `docs/archive/fix_history/upgrade/` | PG17 → PG18 升级 trail + 内核 6.6.12 升级试验 | 🟡 想看 Citus 跨集群迁移正确路径时读 |
-| `docs/archive/dev/` | 开发期调试笔记与性能优化记录 | ❌ 接手阶段不需要读 |
-| `prompts/` | AI 辅助开发使用的提示词 | ❌ 不需要读 |
-| `scripts/archive/` | 旧版 runbook 和脚本（已被 runbook_v5.md 替代） | ❌ 不需要读 |
-
-### 6.4 关键目录说明
-
-| 目录 | 说明 |
+| 路径 | 说明 |
 |---|---|
-| `backend/app/` | 后端核心代码，按模块组织（etl / profile / evaluation / enrichment / maintenance） |
-| `backend/app/core/` | 公共基础：数据库连接、配置、并行框架 |
-| `backend/app/routers/` | FastAPI 路由层，每个模块一个 router |
-| `config/` | YAML 配置文件（数据集、画像参数、防毒化参数、保留策略） |
-| `scripts/` | 运行脚本：批量循环入口、重置 SQL、性能测试等 |
-| `tests/` | 单元测试 |
-| `frontend/design/` | UI 设计稿（Vue 3 + TS 实现，仅供参考） |
-| `launcher/` | 本地启动器（开发调试用，云端不需要） |
+| [`gps1/`](./gps1/) | 2026-04-28 启动的新分析周期工作区 |
+| [`PROJECT_STATUS.md`](./PROJECT_STATUS.md) | 当前项目状态总览 |
+| [`runbook.md`](./runbook.md) | 当前操作入口 |
 
-## 7. 云端改造建议
+## 5. 历史 trail
 
-### 7.1 当前适合云端化的方向
+所有历史修复、升级、交付和旧 prompt 已统一归档到 [`archive/`](./archive/)。
 
-云端团队的任务不应该是改业务语义，而应该是：
+| 路径 | 说明 |
+|---|---|
+| [`archive/fix_history/`](./archive/fix_history/) | `fix` / `fix1-5` / `fix6_optim` / `loop_optim` / `upgrade` |
+| [`archive/delivery_reports/`](./archive/delivery_reports/) | 历史交付报告 |
+| [`archive/old_prompts/`](./archive/old_prompts/) | 老 prompt / 老 runbook |
+| [`archive/dev/`](./archive/dev/) | 开发期调试笔记 |
+| [`archive/human_guide/`](./archive/human_guide/) | 老操作指南 |
+| [`archive/gps研究/`](./archive/gps研究/) | 老 GPS 研究目录 |
 
-1. 把现在已经确认的主线逻辑稳定搬到云端
-2. 把数据库访问、日志、重跑控制、调度方式云端化
-3. 让样例验证、正式重跑、回滚备份更自动化
+## 6. 快速判断
 
-### 7.2 当前不建议优先做的事
+| 你要做的事 | 先看哪里 |
+|---|---|
+| 跑批 / 验证 / reset | [`runbook.md`](./runbook.md) |
+| 改 SQL / 改分布式写入逻辑 | [`CLUSTER_USAGE.md`](./CLUSTER_USAGE.md) |
+| 理解主链状态机 | [`处理流程总览.md`](./处理流程总览.md) |
+| 查字段或核心表 | [`00_全局约定.md`](./00_全局约定.md) + [`11_核心表说明.md`](./11_核心表说明.md) |
+| 查历史为什么这么设计 | [`PROJECT_STATUS.md`](./PROJECT_STATUS.md) + [`archive/fix_history/`](./archive/fix_history/) |
+| 开启新研究周期 | [`gps1/README.md`](./gps1/README.md) |
 
-不要优先在云端重构阶段做：
+## 7. 现在不要做的事
 
-1. 生命周期业务语义重定义
-2. 多质心分类大改
-3. 全面分表重构
-4. UI 逻辑改写
-
-这些都应该放在“现有主线先稳定跑通”之后。
-
-### 7.3 当前最适合云端团队先做的能力
-
-1. 远端样例验证脚本化
-2. 远端正式库备份与重跑脚本化
-3. 完整日志落盘
-4. 失败恢复
-5. 参数化运行
-6. 数据库连接与环境隔离
-
-## 8. 最后的判断
-
-对云端团队来说，当前最重要的不是“继续猜业务逻辑”，而是：
-
-**先把已经确认正确的主线状态机和运行边界稳定搬到云端。**
-
-如果后续需要继续做：
-
-- 生命周期优化
-- 参数验证
-- 速度持续优化
-- 分表重构
-
-都应建立在“这条主线已在云端可靠可重放”的前提上。
+- 不要把新文档继续塞回 `fix5/ fix6_optim/ loop_optim/ upgrade` 这类历史目录;它们已经冻结到 `archive/`。
+- 不要把 `archive/` 当成当前权威文档源;当前口径以前 6 份权威文档和 13 篇核心开发文档为准。
+- 不要根据旧 `runbook_v5.md`、旧 prompt 或 PG17/5433 时代说明直接操作当前生产环境。

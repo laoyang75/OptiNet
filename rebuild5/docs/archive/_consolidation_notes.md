@@ -60,3 +60,11 @@
   - 13 篇核心开发文档已统一补文首“更新声明”
   - 只改 A-D 类内容:环境前置、schema/SQL 示例、量化口径、archive 路径
   - `11_核心表说明.md` 已从旧 `rebuild5.* / rebuild5_meta.* / rebuild5_tmp.*` 对齐到当前 `rb5.* / rb5_meta.* / rb5_stage.*`
+
+### doc_consolidation_phase4_done
+
+- file_rewritten: `rebuild5/docs/README.md`
+- navigation_mode: flat
+- notes:
+  - 顶层 README 已从旧时代长文混排改为扁平导航入口
+  - README 只保留入口职责;业务规则、状态机、术语和操作细节下沉到权威文档
