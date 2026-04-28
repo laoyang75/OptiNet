@@ -89,10 +89,13 @@ bash rebuild5/scripts/runbook/run_full_pipelined.sh
 
 ### 5.2 内核升级
 
-参考 prompt:[`archive/fix_history/upgrade/kernel_upgrade_216_prompt.md`](./archive/fix_history/upgrade/kernel_upgrade_216_prompt.md)
+参考 trail:
+- [`archive/fix_history/upgrade/kernel_upgrade_216_prompt.md`](./archive/fix_history/upgrade/kernel_upgrade_216_prompt.md)
+- [`archive/fix_history/upgrade/kernel_upgrade_216_report.md`](./archive/fix_history/upgrade/kernel_upgrade_216_report.md)
+- [`archive/fix_history/upgrade/kernel_upgrade_all_210_report.md`](./archive/fix_history/upgrade/kernel_upgrade_all_210_report.md)
 依据文档:`/Users/yangcongan/cursor/DataBase/Docs/06_kernel_ml_6.6.12升级计划.md`
 
-**当前进度**:216 单机试验阶段,prompt 已落地,等 agent 执行。
+**当前进度**:216 单机试验已完成并回退记录归档;当前 5 节点均已升级到 `6.6.12-1.el7.elrepo.x86_64`,旧 `3.10.0-1160.71.1` 保留作 GRUB fallback。
 
 **关键约束**:
 - 走 § 3.1.1 不 drain 路径(暂停写入 + 不从 Citus 摘除)
@@ -101,9 +104,9 @@ bash rebuild5/scripts/runbook/run_full_pipelined.sh
 - 主源 ELRepo archive(coreix.net),**不要清华/阿里**(它们的 elrepo 目录是滚动镜像,可能没 6.6.12 旧版)
 - 不删旧 3.10 内核(GRUB 回退)
 
-**复用脚本**(216 试验成功后,219/220/221/217 后续升级用):
+**复用脚本**(后续再做单节点复核 / 回退 / 新节点升级时沿用):
 ```
-217:/data/upgrade/kernel-ml-6.6.12/scripts/install_kernel_on_worker.sh <node_ip>
+217:/data/upgrade/kernel-ml-6.6.12/scripts/install_kernel_on_node.sh <node_ip>
 217:/data/upgrade/kernel-ml-6.6.12/scripts/post_boot_validation.sh <node_ip>
 217:/data/upgrade/kernel-ml-6.6.12/scripts/rollback_to_old_kernel.sh <node_ip> [--reboot]
 ```

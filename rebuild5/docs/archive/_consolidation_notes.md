@@ -68,3 +68,20 @@
 - notes:
   - 顶层 README 已从旧时代长文混排改为扁平导航入口
   - README 只保留入口职责;业务规则、状态机、术语和操作细节下沉到权威文档
+
+### doc_consolidation_phase5_done
+
+- authority_files_aligned:
+  - `rebuild5/docs/README.md`
+  - `rebuild5/docs/PROJECT_STATUS.md`
+  - `rebuild5/docs/CLUSTER_USAGE.md`
+  - `rebuild5/docs/runbook.md`
+  - `rebuild5/docs/处理流程总览.md`
+  - `rebuild5/docs/术语对照表.md`
+- files_changed_this_phase:
+  - `rebuild5/docs/PROJECT_STATUS.md`
+  - `rebuild5/docs/runbook.md`
+- notes:
+  - `PROJECT_STATUS.md` 已把“当前 active 的事”改到 2026-04-28 口径,移除过时的 216 待执行表述
+  - `runbook.md` 已对齐最终内核升级状态,并统一复用脚本名为 `install_kernel_on_node.sh`
+  - `CLUSTER_USAGE.md` / `处理流程总览.md` / `术语对照表.md` 本阶段只做对齐复核,正文无需再改
