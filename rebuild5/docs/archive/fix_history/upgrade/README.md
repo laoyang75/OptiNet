@@ -35,6 +35,7 @@
 - v2 fresh rebuild prompt:`upgrade_v2_fresh_rebuild_prompt.md`
 - v2 收尾 + 调优 prompt:`upgrade_v2_finalize_and_tuning_prompt.md`
 - v1 dump safety net:`/nas_vol8/upgrade/backups/dumps/yangca_full_20260426_105359.sql`
+- kernel-ml 6.6.12 / 216 单机试验:失败并已自动回退。216 成功启动 `6.6.12-1.el7.elrepo.x86_64`,但新内核 journal 出现 root XFS `Reset corrupted AGFL` warning,按系统层异常处理回退到旧内核 `3.10.0-1160.71.1.el7.x86_64`。最终 PG18 5488/Citus 4 worker active,数据基线 TCL b7=`340,766` / sliding=`24,017,207` 一致。报告:`kernel_upgrade_216_report.md`;notes:`kernel_216_failed`,`kernel_216_rollback_done`。
 - kernel-ml 6.6.12 全集群升级:完成。控制台 `192.168.200.210`,顺序 `216 -> 219 -> 220 -> 221 -> 217`,5 台当前 `uname -r=6.6.12-1.el7.elrepo.x86_64`,旧 `3.10.0-1160.71.1` 均保留为 GRUB fallback。Citus 未 drain/remove/rebalance,4 workers active,health 全 true,数据基线 TCL b7=`340,766` / sliding=`24,017,207` 一致。XFS warning 按 user 指令记录为 known issue 不阻断。报告:`kernel_upgrade_all_210_report.md`;notes:`kernel_all_done`。
 
 ## 阶段表
