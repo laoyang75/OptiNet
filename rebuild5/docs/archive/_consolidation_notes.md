@@ -47,3 +47,16 @@
   - 只修 active 区域对 `fix* / fix6_optim / loop_optim / upgrade / runbook_v5` 的链接
   - `archive/` 内部链接保持冷冻态,未修
   - 验证 grep 显式排除了 `DOC_CONSOLIDATION_PROMPT.md`
+
+### doc_consolidation_phase3_done
+
+- core_docs_reviewed: 13
+- lines_changed_total: 312
+- lines_added: 183
+- lines_deleted: 129
+- explicit_second_review_flags:
+  - `rebuild5/docs/06_服务层_运营商数据库与分析服务.md` — `rebuild4_meta.lac_location_snapshot` 长期口径待 user 二审
+- notes:
+  - 13 篇核心开发文档已统一补文首“更新声明”
+  - 只改 A-D 类内容:环境前置、schema/SQL 示例、量化口径、archive 路径
+  - `11_核心表说明.md` 已从旧 `rebuild5.* / rebuild5_meta.* / rebuild5_tmp.*` 对齐到当前 `rb5.* / rb5_meta.* / rb5_stage.*`
