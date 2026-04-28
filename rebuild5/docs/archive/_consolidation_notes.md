@@ -85,3 +85,14 @@
   - `PROJECT_STATUS.md` 已把“当前 active 的事”改到 2026-04-28 口径,移除过时的 216 待执行表述
   - `runbook.md` 已对齐最终内核升级状态,并统一复用脚本名为 `install_kernel_on_node.sh`
   - `CLUSTER_USAGE.md` / `处理流程总览.md` / `术语对照表.md` 本阶段只做对齐复核,正文无需再改
+
+### doc_consolidation_phase6_done
+
+- verification_scans:
+  - legacy_cross_reference_links = 0
+  - outdated_env_and_schema_keywords = 0
+  - legacy_meta_or_tmp_schema = 0
+  - direct_runbook_v5_reference = 0
+- notes:
+  - 4 条 grep 扫描均显式排除了 `DOC_CONSOLIDATION_PROMPT.md`
+  - `archive/` 冷冻区未纳入修复或残留判定
