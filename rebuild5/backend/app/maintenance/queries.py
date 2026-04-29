@@ -26,22 +26,31 @@ def _attach_admin_area(items: list[dict[str, Any]]) -> None:
         lon_arr.append(float(lon) if lon is not None else None)
         lat_arr.append(float(lat) if lat is not None else None)
 
-    rows = fetchall(
-        """
-        SELECT p.idx, loc.province_name, loc.city_name, loc.district_name
-        FROM unnest(%s::int[], %s::double precision[], %s::double precision[])
-             WITH ORDINALITY AS p(idx, lon, lat, ord)
-        LEFT JOIN LATERAL (
-            SELECT a.province_name, a.city_name, a.name AS district_name
-            FROM rebuild2.dim_admin_area a
-            WHERE p.lon IS NOT NULL AND p.lat IS NOT NULL
-            ORDER BY (a.center_lon - p.lon) * (a.center_lon - p.lon)
-                   + (a.center_lat - p.lat) * (a.center_lat - p.lat)
-            LIMIT 1
-        ) loc ON true
-        """,
-        (idx_arr, lon_arr, lat_arr),
-    )
+    try:
+        rows = fetchall(
+            """
+            SELECT p.idx, loc.province_name, loc.city_name, loc.district_name
+            FROM unnest(%s::int[], %s::double precision[], %s::double precision[])
+                 WITH ORDINALITY AS p(idx, lon, lat, ord)
+            LEFT JOIN LATERAL (
+                SELECT a.province_name, a.city_name, a.name AS district_name
+                FROM rebuild2.dim_admin_area a
+                WHERE p.lon IS NOT NULL AND p.lat IS NOT NULL
+                ORDER BY (a.center_lon - p.lon) * (a.center_lon - p.lon)
+                       + (a.center_lat - p.lat) * (a.center_lat - p.lat)
+                LIMIT 1
+            ) loc ON true
+            """,
+            (idx_arr, lon_arr, lat_arr),
+        )
+    except Exception as exc:
+        if _missing_relation(exc):
+            for it in items:
+                it.setdefault('province_name', None)
+                it.setdefault('city_name', None)
+                it.setdefault('district_name', None)
+            return
+        raise
     admin_by_idx = {int(r['idx']): r for r in rows}
     for i, it in enumerate(items):
         row = admin_by_idx.get(i) or {}

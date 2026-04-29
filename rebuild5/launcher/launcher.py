@@ -38,7 +38,7 @@ BACKEND_HOST = os.environ.get('REBUILD5_BACKEND_HOST', '127.0.0.1')
 BACKEND_PORT = int(os.environ.get('REBUILD5_BACKEND_PORT', '47231'))
 FRONTEND_HOST = os.environ.get('REBUILD5_FRONTEND_HOST', '127.0.0.1')
 FRONTEND_PORT = int(os.environ.get('REBUILD5_FRONTEND_PORT', '47232'))
-DB_DSN = os.environ.get('REBUILD5_PG_DSN', 'postgresql://postgres:123456@192.168.200.217:5433/ip_loc2')
+DB_DSN = os.environ.get('REBUILD5_PG_DSN', 'postgresql://postgres:123456@192.168.200.217:5488/yangca')
 
 
 @dataclass(frozen=True)
@@ -99,7 +99,7 @@ SERVICE_REGISTRY: dict[str, ServiceSpec] = {
         name='数据库',
         tech='PostgreSQL',
         host='192.168.200.217',
-        port=5433,
+        port=5488,
         pid_file=None,
         log_file=None,
         start_script=None,

@@ -28,8 +28,6 @@ def _get_config() -> dict[str, Any]:
         'dataset_key': cfg.get('dataset_key', 'beijing_7d'),
         'source_desc': cfg.get('source_desc', '北京 7 天全量'),
         'time_range': cfg.get('time_range', '2025-12-01 ~ 2025-12-07'),
-        'legacy_gps_table': cfg.get('legacy_gps_table', 'legacy."网优项目_gps定位北京明细数据_20251201_20251207"'),
-        'legacy_lac_table': cfg.get('legacy_lac_table', 'legacy."网优项目_lac定位北京明细数据_20251201_20251207"'),
     }
 
 
@@ -125,19 +123,17 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
         dataset replaces the shared Step 0/1 tables instead of storing multiple
         datasets side by side for UI switching.
 
-    Merges GPS and LAC legacy tables, deduplicates by 记录数唯一标识,
-    and populates rb5.raw_gps (main input) and rb5.raw_lac (empty).
+    Deduplicates rb5.raw_gps_full_backup (the merged GPS+LAC source) by 记录数唯一标识
+    and populates rb5.raw_gps (main input).
     """
     cfg = _get_config()
     run_id = f"prepare_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     bootstrap_metadata_tables(execute_fn=execute_fn)
 
     try:
-        gps_table = cfg['legacy_gps_table']
-        lac_table = cfg['legacy_lac_table']
         dataset_key = cfg['dataset_key']
 
-        # Common columns (26 columns excluding the source-specific last column)
+        # Common columns (26 columns shared across rb5.raw_gps_full_backup)
         common_cols = '''
             "记录数唯一标识", "数据来源dna或daa", "did", "ts", "ip", "pkg_name",
             "wifi_name", "wifi_mac", "sdk_ver", "gps上报时间", "主卡运营商id",
@@ -146,17 +142,12 @@ def prepare_current_dataset(*, execute_fn=execute, fetchone_fn=fetchone) -> dict
             "基带版本信息", "arp_list", "压力", "imei", "oaid"
         '''
 
-        # Merge and deduplicate
         execute_fn('DROP TABLE IF EXISTS rb5.raw_gps')
         execute_fn(
             f"""
             CREATE TABLE rb5.raw_gps AS
             SELECT DISTINCT ON ("记录数唯一标识") {common_cols}
-            FROM (
-                SELECT {common_cols} FROM {gps_table}
-                UNION ALL
-                SELECT {common_cols} FROM {lac_table}
-            ) combined
+            FROM rb5.raw_gps_full_backup
             ORDER BY "记录数唯一标识"
             """
         )

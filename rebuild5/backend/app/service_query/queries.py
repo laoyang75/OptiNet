@@ -254,7 +254,7 @@ def get_service_coverage_payload() -> dict[str, Any]:
         """
         SELECT
             operator_code,
-            MAX(operator_cn) AS operator_cn,
+            MODE() WITHIN GROUP (ORDER BY operator_cn) AS operator_cn,
             COUNT(*) AS cells,
             COALESCE(AVG(CASE WHEN lifecycle_state IN ('qualified', 'excellent') THEN 1 ELSE 0 END), 0) AS qualified_pct,
             COALESCE(AVG(CASE WHEN lifecycle_state = 'excellent' THEN 1 ELSE 0 END), 0) AS excellent_pct,
